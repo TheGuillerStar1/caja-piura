@@ -1,0 +1,211 @@
+// CONTRATO (F0). Los agentes no editan este archivo: si necesitan un cambio, lo reportan.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Zona {
+  RURAL
+  URBANA
+}
+
+enum Ocupacion {
+  COMERCIANTE
+  AGRICULTOR
+  TRANSPORTISTA
+  OTRO
+}
+
+enum Gama {
+  BAJA
+  MEDIA
+  ALTA
+}
+
+enum Vista {
+  ASISTIDA
+  ESTANDAR
+}
+
+enum EstadoCuota {
+  PENDIENTE
+  PAGADA
+}
+
+enum TipoPago {
+  CUOTA
+  FRECUENTE
+  RECIBO
+}
+
+enum EstadoPago {
+  EXITOSO
+  FALLIDO
+}
+
+enum Rubro {
+  LUZ
+  AGUA
+  TELEFONIA
+  INTERNET
+}
+
+model Cliente {
+  id                 Int        @id @default(autoincrement())
+  dni                String     @unique @db.VarChar(8)
+  nombre             String     @db.VarChar(60)
+  apellido           String     @db.VarChar(60)
+  edad               Int
+  ocupacion          Ocupacion
+  zona               Zona
+  distrito           String     @db.VarChar(60)
+  opsPresencialesMes Int
+  opsDigitalesMes    Int
+  gamaDispositivo    Gama
+  diaPagoHabitual    Int // 1..28
+  /// Clave simulada de 6 dígitos (datos ficticios; nunca se muestra ni se envía a la IA)
+  claveDemo          String     @db.VarChar(6)
+  vistaPreferida     Vista?
+  primerIngreso      Boolean    @default(true)
+  /// Reloj simulado para la demo ("Adelantar 30 días")
+  fechaSimulada      DateTime   @default(now())
+  pagosSinAyuda      Int        @default(0)
+  esDemo             Boolean    @default(false)
+  creadoEn           DateTime   @default(now())
+
+  cuentas    Cuenta[]
+  cuotas     Cuota[]
+  frecuentes Frecuente[]
+  pagos      Pago[]
+  puntos     Punto[]
+  eventos    Evento[]
+}
+
+model Cuenta {
+  id        Int     @id @default(autoincrement())
+  clienteId Int
+  numero    String  @unique @db.VarChar(20)
+  tipo      String  @db.VarChar(30) // "Ahorro", "Ahorro emprendedor"
+  saldo     Decimal @db.Decimal(12, 2)
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  pagos   Pago[]
+
+  @@index([clienteId])
+}
+
+model Cuota {
+  id           Int         @id @default(autoincrement())
+  clienteId    Int
+  credito      String      @db.VarChar(20) // número de crédito
+  numero       Int // n.º de cuota
+  totalCuotas  Int
+  monto        Decimal     @db.Decimal(12, 2)
+  vencimiento  DateTime
+  estado       EstadoCuota @default(PENDIENTE)
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId, estado, vencimiento])
+}
+
+model Servicio {
+  id            Int     @id @default(autoincrement())
+  empresa       String  @db.VarChar(60) // "Enosa", "EPS Grau", ...
+  rubro         Rubro
+  /// Regex que valida el código de suministro, p. ej. "^\\d{8}$"
+  formatoCodigo String  @db.VarChar(60)
+  /// Texto de ayuda: dónde está el código en el recibo
+  ayudaCodigo   String  @db.VarChar(160)
+
+  recibos    Recibo[]
+  frecuentes Frecuente[]
+}
+
+model Recibo {
+  id          Int      @id @default(autoincrement())
+  codigo      String   @db.VarChar(30) // código de suministro
+  servicioId  Int
+  titular     String   @db.VarChar(120)
+  monto       Decimal  @db.Decimal(12, 2)
+  vencimiento DateTime
+  pagado      Boolean  @default(false)
+  /// Clave del objeto en R2 si es un recibo de demo con imagen
+  imagenKey   String?  @db.VarChar(200)
+
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+
+  @@unique([servicioId, codigo, vencimiento])
+  @@index([codigo])
+}
+
+model Frecuente {
+  id         Int      @id @default(autoincrement())
+  clienteId  Int
+  alias      String   @db.VarChar(40) // "Luz de mamá"
+  servicioId Int
+  codigo     String   @db.VarChar(30)
+  esPropio   Boolean  @default(true)
+  creadoEn   DateTime @default(now())
+
+  cliente  Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  servicio Servicio @relation(fields: [servicioId], references: [id])
+
+  @@unique([clienteId, servicioId, codigo])
+}
+
+model Pago {
+  id             Int        @id @default(autoincrement())
+  idempotencyKey String     @unique @db.VarChar(64)
+  clienteId      Int
+  cuentaId       Int
+  tipo           TipoPago
+  /// id de Cuota, id de Frecuente o id de Recibo según el tipo
+  referenciaId   Int
+  descripcion    String     @db.VarChar(120)
+  monto          Decimal    @db.Decimal(12, 2)
+  estado         EstadoPago
+  conAyuda       Boolean    @default(false)
+  puntosGanados  Int        @default(0)
+  operacion      String     @db.VarChar(20) // n.º de operación de la constancia
+  creadoEn       DateTime   @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  cuenta  Cuenta  @relation(fields: [cuentaId], references: [id])
+
+  @@index([clienteId, creadoEn])
+}
+
+model Punto {
+  id        Int      @id @default(autoincrement())
+  clienteId Int
+  motivo    String   @db.VarChar(80)
+  puntos    Int
+  creadoEn  DateTime @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([clienteId])
+}
+
+model Evento {
+  id            Int      @id @default(autoincrement())
+  clienteId     Int?
+  sesionId      String   @db.VarChar(40)
+  pantalla      String   @db.VarChar(40)
+  accion        String   @db.VarChar(40) // ver | tocar | completar | abandonar | error | ayuda
+  flujo         String?  @db.VarChar(20) // CUOTA | FRECUENTE | RECIBO | LOGIN | ASISTENTE
+  msDesdeInicio Int?
+  ayudaUsada    Boolean  @default(false)
+  creadoEn      DateTime @default(now())
+
+  cliente Cliente? @relation(fields: [clienteId], references: [id], onDelete: SetNull)
+
+  @@index([pantalla, accion])
+  @@index([sesionId])
+}

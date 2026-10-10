@@ -1,0 +1,38 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file=../../.env src/index.ts",
+    "start": "prisma migrate deploy && tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:migrate": "dotenv -e ../../.env -- prisma migrate dev",
+    "db:seed": "dotenv -e ../../.env -- tsx prisma/seed.ts",
+    "db:studio": "dotenv -e ../../.env -- prisma studio",
+    "postinstall": "prisma generate"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3",
+    "@cp/shared": "*",
+    "@prisma/client": "^6",
+    "cookie-parser": "^1.4.7",
+    "express": "^5",
+    "groq-sdk": "*",
+    "multer": "^2",
+    "prisma": "^6",
+    "tsx": "^4",
+    "zod": "^4"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9",
+    "@types/cookie-parser": "^1",
+    "@types/express": "^5",
+    "@types/multer": "^1",
+    "@types/node": "^22",
+    "dotenv-cli": "^8",
+    "typescript": "^5",
+    "vitest": "^3"
+  }
+}

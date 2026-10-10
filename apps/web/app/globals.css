@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* Tokens de diseño Caja Piura (F0). Usar las clases de Tailwind: bg-marca, text-tinta, border-linea, etc. */
+@theme {
+  --color-marca: #0a4fa3;        /* azul Caja Piura */
+  --color-marca-oscuro: #073a7a;
+  --color-marca-claro: #e5effc;
+  --color-acento: #e30613;       /* rojo Caja Piura: solo para alertas importantes */
+  --color-fondo: #f3f6fa;
+  --color-superficie: #ffffff;
+  --color-tinta: #14233a;
+  --color-tenue: #55657d;
+  --color-linea: #c9d4e3;
+  --color-exito: #15803d;
+  --color-exito-claro: #e3f5ea;
+  --color-aviso: #a16207;
+  --color-aviso-claro: #fff4dc;
+  --color-error: #b42318;
+  --color-error-claro: #fdeceb;
+
+  --font-sans: var(--font-atkinson), "Segoe UI", system-ui, sans-serif;
+  --radius-boton: 14px;
+}
+
+/* Vista asistida: todo crece porque Tailwind usa rem. La clase se pone en <html data-vista="..."> */
+html { font-size: 16px; }
+html[data-vista="ASISTIDA"] { font-size: 19px; }
+
+body {
+  background: var(--color-fondo);
+  color: var(--color-tinta);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Objetivos táctiles mínimos de 48px */
+button, a, [role="button"] { min-height: 48px; }
+
+/* Guía "toca aquí": anillo pulsante sobre el elemento a tocar */
+@keyframes pulso {
+  0% { box-shadow: 0 0 0 0 rgb(10 79 163 / 0.55); }
+  70% { box-shadow: 0 0 0 14px rgb(10 79 163 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(10 79 163 / 0); }
+}
+.guia-toca { animation: pulso 1.6s infinite; position: relative; z-index: 10; }
+
+@keyframes rebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+.anim-rebote { animation: rebote 1.8s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .guia-toca, .anim-rebote { animation: none; }
+}
