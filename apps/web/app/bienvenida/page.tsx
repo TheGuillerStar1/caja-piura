@@ -171,10 +171,12 @@ export default function Bienvenida() {
 
       <VistaPrevia vista={previa} />
 
-      <ul key={previa} className="anim-previa flex flex-wrap justify-center gap-2" aria-live="polite">
+      <ul key={previa} className="anim-previa grid grid-cols-3 gap-2" aria-live="polite">
         {CHIPS[previa].map((c) => (
-          <li key={c.texto} className="flex items-center gap-1.5 rounded-full border border-linea bg-superficie px-3 py-1 text-base font-medium">
-            <span aria-hidden>{c.icono}</span>
+          <li key={c.texto} className="flex flex-col items-center justify-center gap-1 rounded-xl border border-linea bg-superficie px-1.5 py-2 text-center text-sm font-bold leading-tight">
+            <span aria-hidden className="text-xl leading-none">
+              {c.icono}
+            </span>
             {c.texto}
           </li>
         ))}
