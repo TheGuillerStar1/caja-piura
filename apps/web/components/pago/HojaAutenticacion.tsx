@@ -28,7 +28,7 @@ export function HojaAutenticacion({ onOk, onCancelar, asistida }: Props) {
   const tecla = (d: string) => setClave((c) => (c.length < 6 ? c + d : c));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-tinta/50" role="dialog" aria-modal="true" aria-label="Confirma que eres tú">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Confirma que eres tú">
       <div className="anim-hoja w-full max-w-md rounded-t-3xl bg-superficie px-5 pb-6 pt-5 shadow-2xl">
         {escaneando ? (
           <div className="flex flex-col items-center gap-4 py-6" role="status">

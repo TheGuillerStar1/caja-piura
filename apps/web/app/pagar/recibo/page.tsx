@@ -136,7 +136,7 @@ export default function PagarRecibo() {
   );
 
   return (
-    <Pantalla titulo="Pagar un recibo" volver="/inicio">
+    <Pantalla titulo="Pagar un recibo" volver="/pagos">
       {inputs}
       {error && <MensajeError mensaje={error} />}
 

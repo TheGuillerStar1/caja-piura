@@ -30,7 +30,7 @@ export function NotificacionesSimuladas({ mensajes, alTocar, alCerrar }: Props) 
           key={m + i}
           type="button"
           onClick={alTocar}
-          className="cp-noti pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-tinta shadow-lg ring-1 ring-black/10 backdrop-blur"
+          className="cp-noti pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#14233a] shadow-lg ring-1 ring-black/10 backdrop-blur"
           style={{ animationDelay: `${i * 350}ms` }}
         >
           <IconoCaja />
@@ -45,8 +45,8 @@ export function NotificacionesSimuladas({ mensajes, alTocar, alCerrar }: Props) 
         </button>
       ))}
       <div className="pointer-events-auto flex w-full max-w-md items-center justify-between px-1">
-        <span className="rounded-full bg-tinta/80 px-2 py-0.5 text-xs text-white">Notificación simulada</span>
-        <button type="button" onClick={alCerrar} className="min-w-12 rounded-full bg-tinta/80 px-3 text-sm text-white">
+        <span className="rounded-full bg-black/70 px-2 py-0.5 text-xs text-white">Notificación simulada</span>
+        <button type="button" onClick={alCerrar} className="min-w-12 rounded-full bg-black/70 px-3 text-sm text-white">
           Cerrar
         </button>
       </div>

@@ -48,7 +48,7 @@ export default function ProgresoPage() {
   }
 
   return (
-    <Pantalla titulo="Mi progreso" volver="/inicio">
+    <Pantalla titulo="Mi progreso" volver="/para-ti">
       {!datos && !error && <Cargando texto="Cargando tu progreso…" />}
       {error && <MensajeError mensaje={error} reintentar={cargar} />}
       {datos && (

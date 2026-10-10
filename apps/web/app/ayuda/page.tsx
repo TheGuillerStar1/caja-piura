@@ -112,7 +112,7 @@ export default function Ayuda() {
 
   return (
     <Pantalla
-      titulo="Ayuda"
+      titulo="Pía · tu asistente"
       volver="/inicio"
       pie={
         <form

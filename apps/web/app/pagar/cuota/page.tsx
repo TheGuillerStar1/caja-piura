@@ -44,7 +44,7 @@ export default function PagarCuota() {
   }, [cargar]);
 
   return (
-    <Pantalla titulo="Pagar mi cuota" volver="/inicio">
+    <Pantalla titulo="Pagar mi cuota" volver="/pagos">
       {error ? (
         <MensajeError mensaje={error} reintentar={cargar} />
       ) : cuota === undefined ? (

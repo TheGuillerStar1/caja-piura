@@ -43,7 +43,7 @@ export default function PagarFrecuentes() {
   const primeroConDeuda = lista?.find((f) => f.deuda)?.id;
 
   return (
-    <Pantalla titulo="Mis pagos frecuentes" volver="/inicio">
+    <Pantalla titulo="Frecuentes" pestana="frecuentes">
       {error ? (
         <MensajeError mensaje={error} reintentar={cargar} />
       ) : !lista ? (

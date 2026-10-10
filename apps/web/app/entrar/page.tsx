@@ -1,44 +1,52 @@
 "use client";
-// Dueño: Agente A. Inicio de sesión guiado (fase 2): DNI → método (cara, huella o clave) → /bienvenida o /inicio.
-// Biometría simulada. La clave NUNCA se muestra ni se insinúa; 2 errores → salida a agencia.
+// Ingreso, réplica de la app oficial: DNI (solo la primera vez o con "otra cuenta") → PIN de 6 dígitos con teclado
+// aleatorio → /bienvenida (primer ingreso) o /inicio. La clave NUNCA se muestra; 2 errores → salida a agencia.
 import type { ClienteDemo, LoginReq, LoginRes, MeRes } from "@cp/shared";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { Boton, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
+import { useEffect, useState } from "react";
+import { IcAtras, IcUsuario } from "@/components/app/IconosApp";
+import { Boton, Mascota, Pantalla, Tarjeta } from "@/components/ui";
 import { api, ApiFallo } from "@/lib/api";
+import { cargarCliente, leerUsuario, recordarUsuario } from "@/lib/cliente";
 import { iniciarFlujo, track } from "@/lib/track";
 import { useVista } from "@/lib/vista";
-import { Escaner } from "../_entrada/Escaner";
-import { PuntosClave, Teclado } from "../_entrada/Teclado";
+import { FondoAcceso } from "../_entrada/FondoAcceso";
+import { BarraClave, Teclado } from "../_entrada/Teclado";
 
-type Paso = "dni" | "metodo" | "escaneo" | "clave" | "entrando" | "bloqueado";
+type Paso = "dni" | "clave" | "entrando" | "bloqueado";
 const P = "entrar";
+const sombra = "[text-shadow:0_1px_3px_rgb(70_50_150/0.45)]";
 
 export default function Entrar() {
   const router = useRouter();
   const { setVista } = useVista();
   const [paso, setPaso] = useState<Paso>("dni");
   const [dni, setDni] = useState("");
-  const [nombreDemo, setNombreDemo] = useState("");
+  const [nombre, setNombre] = useState("");
   const [demo, setDemo] = useState<ClienteDemo[]>([]);
-  const [metodo, setMetodo] = useState<"ROSTRO" | "HUELLA">("HUELLA");
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
-  const temporizador = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     track(P, "ver", { flujo: "LOGIN" });
     iniciarFlujo("LOGIN");
+    const otra = new URLSearchParams(location.search).has("otra");
+    const u = otra ? null : leerUsuario();
+    if (u) {
+      setDni(u.dni);
+      setNombre(u.nombre);
+      setPaso("clave");
+    }
     api<ClienteDemo[]>("/auth/clientes-demo").then(setDemo).catch(() => {});
-    return () => clearTimeout(temporizador.current);
   }, []);
 
   async function despuesDeEntrar() {
     track(P, "completar", { flujo: "LOGIN" });
     setPaso("entrando");
     try {
-      const me = await api<MeRes>("/me");
+      const me: MeRes = await cargarCliente(true);
       if (me.vistaPreferida === null) {
         setVista(me.recomendacion.vista);
         router.replace("/bienvenida");
@@ -55,60 +63,40 @@ export default function Entrar() {
     setEnviando(true);
     setError("");
     try {
-      await api<LoginRes>("/auth/login", { cuerpo });
+      const r = await api<LoginRes>("/auth/login", { cuerpo });
+      recordarUsuario({ dni: cuerpo.dni, nombre: r.nombre });
       await despuesDeEntrar();
     } catch (e) {
       const f = e instanceof ApiFallo ? e : new ApiFallo(0, "INTERNO", "Ocurrió un error. Inténtalo de nuevo.");
-      if (f.codigo === "BLOQUEADO") {
-        track(P, "abandonar", { flujo: "LOGIN" });
-        setPaso("bloqueado");
-      } else if (f.codigo === "CLAVE_INCORRECTA") {
-        track(P, "error", { flujo: "LOGIN" });
-        setClave("");
-        setError(f.message);
-      } else if (f.codigo === "NO_EXISTE") {
-        track(P, "error", { flujo: "LOGIN" });
+      track(P, f.codigo === "BLOQUEADO" ? "abandonar" : "error", { flujo: "LOGIN" });
+      setClave("");
+      if (f.codigo === "BLOQUEADO") setPaso("bloqueado");
+      else if (f.codigo === "NO_EXISTE") {
+        recordarUsuario(null);
         setError(f.message);
         setPaso("dni");
-      } else {
-        track(P, "error", { flujo: "LOGIN" });
-        setError(f.message);
-        setPaso((p) => (p === "escaneo" ? "metodo" : p));
-      }
+      } else setError(f.message);
     } finally {
       setEnviando(false);
     }
   }
 
-  function elegirDni(valor: string, nombre = "") {
+  function elegirDni(valor: string, n = "") {
     setDni(valor);
-    setNombreDemo(nombre);
+    setNombre(n);
     setError("");
+    setClave("");
     track(P, "tocar", { flujo: "LOGIN" });
-    setPaso("metodo");
-  }
-
-  function biometria(m: "ROSTRO" | "HUELLA") {
-    track(P, "tocar", { flujo: "LOGIN" });
-    setMetodo(m);
-    setError("");
-    setPaso("escaneo");
-    temporizador.current = setTimeout(() => login({ metodo: m, dni }), 1500);
-  }
-
-  function digitoClave(d: string) {
-    if (enviando || clave.length >= 6) return;
-    const nueva = clave + d;
-    setClave(nueva);
-    setError("");
-    if (nueva.length === 6) login({ metodo: "CLAVE", dni, clave: nueva });
+    setPaso("clave");
   }
 
   // ── Bloqueado: salida a agencia ─────────────────
   if (paso === "bloqueado") {
     return (
-      <Pantalla titulo="Recupera tu clave">
-        <Mascota mensaje="No te preocupes, esto pasa. Por tu seguridad pausamos el ingreso con clave." />
+      <Pantalla titulo="Recupera tu clave" volver="/">
+        <div className="rounded-lg bg-superficie p-4">
+          <Mascota mensaje="No te preocupes, esto pasa. Por tu seguridad pausamos el ingreso con clave." />
+        </div>
         <Tarjeta tono="aviso">
           <p className="text-lg">
             Acércate a una agencia o llama al <b>(073) 284-500</b> para recuperar tu clave.
@@ -117,18 +105,7 @@ export default function Entrar() {
         <a href="tel:073284500" className="text-center text-lg font-bold text-marca underline underline-offset-4">
           Llamar al (073) 284-500
         </a>
-        <Tarjeta>
-          <p className="text-tenue">También puedes entrar con tu cara o tu huella.</p>
-        </Tarjeta>
-        <div className="mt-auto flex flex-col gap-3">
-          <Boton
-            onClick={() => {
-              setClave("");
-              setPaso("metodo");
-            }}
-          >
-            Entrar con mi cara o huella
-          </Boton>
+        <div className="mt-auto">
           <Boton variante="secundario" href="/">
             Volver al inicio
           </Boton>
@@ -137,146 +114,109 @@ export default function Entrar() {
     );
   }
 
-  // ── Escaneo simulado / entrando ─────────────────
-  if (paso === "escaneo" || paso === "entrando") {
+  if (paso === "entrando") {
     return (
-      <Pantalla titulo="Ingresar">
-        <div className="flex flex-1 flex-col items-center justify-center gap-6">
-          {paso === "escaneo" ? <Escaner tipo={metodo} /> : <p className="text-xl font-bold text-exito">¡Listo! Entrando…</p>}
+      <FondoAcceso>
+        <div className="flex flex-1 flex-col items-center justify-center gap-4" role="status">
+          <span aria-hidden="true" className="h-12 w-12 animate-spin rounded-full border-4 border-white/40 border-t-white" />
+          <p className={`text-lg font-medium ${sombra}`}>Ingresando…</p>
         </div>
-      </Pantalla>
+      </FondoAcceso>
     );
   }
 
-  // ── Clave con teclado propio ────────────────────
-  if (paso === "clave") {
-    return (
-      <Pantalla titulo="Usar mi clave">
-        <Mascota mensaje="Es la clave de 6 números que creaste en la agencia." />
-        <p className="text-sm text-tenue">Caja Piura nunca te pedirá tu clave por teléfono ni por mensaje. Nadie debe verla.</p>
-        <div className="py-2">
-          <PuntosClave largo={clave.length} error={Boolean(error)} />
-        </div>
+  const enDni = paso === "dni";
+  const dniValido = /^\d{8}$/.test(dni);
+  const primerNombre = nombre.split(" ")[0];
+
+  function digito(d: string) {
+    if (enviando) return;
+    setError("");
+    if (enDni) return setDni((v) => (v.length < 8 ? v + d : v));
+    if (clave.length >= 6) return;
+    const nueva = clave + d;
+    setClave(nueva);
+    if (nueva.length === 6) login({ metodo: "CLAVE", dni, clave: nueva });
+  }
+
+  return (
+    <FondoAcceso>
+      <header className="flex h-14 items-center px-1">
+        {enDni ? (
+          <Link href="/" aria-label="Volver" className="flex w-12 items-center justify-center">
+            <IcAtras />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            aria-label="Volver"
+            className="flex w-12 items-center justify-center"
+            onClick={() => (leerUsuario() ? router.push("/") : setPaso("dni"))}
+          >
+            <IcAtras />
+          </button>
+        )}
+      </header>
+
+      <main className="flex flex-1 flex-col justify-end gap-3 px-6 pb-6">
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#3d3a8c]">
+          <IcUsuario />
+        </span>
+        <h1 className={`text-center text-4xl font-medium ${sombra}`}>{enDni ? "Hola" : primerNombre || "Hola"}</h1>
+        <p className={`text-center text-white/95 ${sombra}`}>{enDni ? "Ingresa tu número de DNI" : "Ingresa tu pin de 6 dígitos"}</p>
+
+        {enDni ? (
+          <div className="flex h-14 items-center rounded-lg bg-fondo px-4" aria-live="polite">
+            <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" fill="none" stroke="#fff" strokeWidth="1.8" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2" />
+              <circle cx="9" cy="11" r="2" />
+              <path d="M6 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4M14 13.5h3" />
+            </svg>
+            <span className={`flex-1 text-center text-2xl font-medium tracking-[0.3em] ${dni ? "text-white" : "text-white/40"}`}>{dni || "DNI"}</span>
+          </div>
+        ) : (
+          <BarraClave largo={clave.length} error={Boolean(error)} />
+        )}
+
         {error && (
-          <p role="alert" className="text-center text-lg font-bold text-error">
+          <p role="alert" className="rounded-md bg-fondo/85 px-3 py-2 text-center font-medium text-white">
             {error}
           </p>
         )}
-        <div className="mt-auto flex flex-col gap-3">
-          <Teclado onDigito={digitoClave} onBorrar={() => setClave((c) => c.slice(0, -1))} deshabilitado={enviando} />
-          <Boton variante="fantasma" onClick={() => setPaso("metodo")}>
-            Prefiero usar mi cara o huella
-          </Boton>
-        </div>
-      </Pantalla>
-    );
-  }
 
-  // ── Método ─────────────────────────────────────
-  if (paso === "metodo") {
-    return (
-      <Pantalla titulo="Ingresar">
-        <Mascota animada mensaje={<>{nombreDemo ? `Hola, ${nombreDemo.split(" ")[0]}. ` : ""}¿Cómo quieres ingresar?</>} />
-        {error && <MensajeError mensaje={error} />}
-        <div className="flex flex-col gap-3">
-          <BotonMetodo icono="🙂" texto="Ingresar con mi cara" ayuda="Solo mira a la cámara" guia onClick={() => biometria("ROSTRO")} />
-          <BotonMetodo icono="👆" texto="Ingresar con mi huella" ayuda="Apoya tu dedo" onClick={() => biometria("HUELLA")} />
-          <BotonMetodo
-            icono="🔢"
-            texto="Usar mi clave"
-            ayuda="Tu clave de 6 números"
-            onClick={() => {
-              track(P, "tocar", { flujo: "LOGIN" });
-              setError("");
-              setClave("");
-              setPaso("clave");
-            }}
-          />
-        </div>
-        <button type="button" className="mt-auto text-tenue underline underline-offset-4" onClick={() => setPaso("dni")}>
-          No es mi DNI ({dni.replace(/^(\d{2})\d{4}/, "$1****")})
-        </button>
-      </Pantalla>
-    );
-  }
+        {enDni ? (
+          demo.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <p className={`text-center text-sm ${sombra}`}>O elige un cliente de prueba:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {demo.map((c) => (
+                  <button
+                    key={c.dni}
+                    type="button"
+                    onClick={() => elegirDni(c.dni, c.nombre)}
+                    className="min-h-10! rounded-full bg-white/90 px-3 text-sm font-medium text-[#2d2a6e] active:bg-white"
+                    title={c.descripcion}
+                  >
+                    {c.nombre.split(" ")[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        ) : (
+          <Link href="/servicio?n=Recuperar%20clave&v=/entrar" className={`self-center px-2 text-sm ${sombra}`}>
+            ¿Olvidaste tu clave?
+          </Link>
+        )}
+      </main>
 
-  // ── DNI ────────────────────────────────────────
-  const dniValido = /^\d{8}$/.test(dni);
-  return (
-    <Pantalla titulo="Ingresar" volver="/">
-      <Mascota mensaje="Escribe tu número de DNI." />
-      <form
-        className="flex flex-col gap-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (dniValido) elegirDni(dni);
-        }}
-      >
-        <label htmlFor="dni" className="text-lg font-bold">
-          Número de DNI
-        </label>
-        <input
-          id="dni"
-          inputMode="numeric"
-          autoComplete="off"
-          pattern="\d{8}"
-          maxLength={8}
-          value={dni}
-          onChange={(e) => {
-            setDni(e.target.value.replace(/\D/g, "").slice(0, 8));
-            setError("");
-          }}
-          placeholder="8 números"
-          className="h-16 rounded-boton border-2 border-linea bg-superficie px-4 text-center text-3xl font-bold tracking-[0.3em] text-tinta outline-none focus:border-marca"
-        />
-        {error && <MensajeError mensaje={error} />}
-        <Boton type="submit" guia={dniValido} disabled={!dniValido}>
-          Continuar
-        </Boton>
-      </form>
-
-      {demo.length > 0 && (
-        <section className="mt-2 flex flex-col gap-2">
-          <h2 className="font-bold text-tenue">O elige un cliente de prueba</h2>
-          {demo.map((c) => (
-            <button
-              key={c.dni}
-              type="button"
-              onClick={() => elegirDni(c.dni, c.nombre)}
-              className="flex items-center gap-3 rounded-2xl border-2 border-linea bg-superficie p-3 text-left active:bg-marca-claro"
-            >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-marca-claro text-xl font-bold text-marca">
-                {c.nombre[0]}
-              </span>
-              <span className="flex-1">
-                <span className="block font-bold">
-                  {c.nombre}, {c.edad}
-                </span>
-                <span className="block text-sm text-tenue">{c.descripcion}</span>
-              </span>
-              <span className="rounded-full bg-aviso-claro px-2 py-0.5 text-xs font-bold text-aviso">Demo</span>
-            </button>
-          ))}
-        </section>
-      )}
-    </Pantalla>
-  );
-}
-
-function BotonMetodo({ icono, texto, ayuda, guia, onClick }: { icono: string; texto: string; ayuda: string; guia?: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-4 rounded-2xl border-2 border-marca bg-superficie p-4 text-left active:bg-marca-claro ${guia ? "guia-toca" : ""}`}
-    >
-      <span className="text-4xl" aria-hidden="true">
-        {icono}
-      </span>
-      <span>
-        <span className="block text-xl font-bold text-marca">{texto}</span>
-        <span className="block text-tenue">{ayuda}</span>
-      </span>
-    </button>
+      <Teclado
+        deshabilitado={enviando}
+        onDigito={digito}
+        onBorrar={() => (enDni ? setDni((v) => v.slice(0, -1)) : setClave((c) => c.slice(0, -1)))}
+        listoActivo={enDni ? dniValido : clave.length === 6}
+        onListo={() => (enDni ? elegirDni(dni) : login({ metodo: "CLAVE", dni, clave }))}
+      />
+    </FondoAcceso>
   );
 }

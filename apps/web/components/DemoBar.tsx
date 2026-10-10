@@ -192,7 +192,7 @@ export default function DemoBar() {
         onClick={() => setAbierta((v) => !v)}
         aria-label="Abrir opciones de demostración"
         // A media altura del borde izquierdo: no tapa el encabezado ni los botones del pie (Confirmar pago, Continuar…).
-        className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-full border border-l-0 border-linea bg-tinta/75 px-2 text-xs font-bold text-white shadow [writing-mode:vertical-rl]"
+        className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-full border border-l-0 border-linea bg-black/75 px-2 text-xs font-bold text-white shadow [writing-mode:vertical-rl]"
         style={{ minHeight: 56, minWidth: 28 }}
       >
         Demo

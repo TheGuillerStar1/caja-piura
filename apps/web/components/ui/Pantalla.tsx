@@ -1,26 +1,27 @@
-// F0. Marco de cada pantalla: barra superior con "Volver" y título, contenido centrado a 28rem.
-import Link from "next/link";
+// Marco de cada pantalla, como la app oficial: barra superior azul (☰ o ‹ + título), contenido sobre fondo oscuro
+// y, en las cinco secciones principales, la barra inferior (pestana) con el botón de ayuda de Pía.
+import { Cabecera } from "@/components/app/Cabecera";
+import { BarraInferior, type Pestana } from "@/components/BarraInferior";
 
-type Props = { titulo?: string; volver?: string; children: React.ReactNode; pie?: React.ReactNode };
+type Props = {
+  titulo?: string;
+  volver?: string;
+  subtitulo?: React.ReactNode;
+  pestana?: Pestana;
+  sinPia?: boolean;
+  /** Sin relleno lateral: listas de borde a borde (Pagos, Transferencias, Para ti). */
+  plano?: boolean;
+  children: React.ReactNode;
+  pie?: React.ReactNode;
+};
 
-export function Pantalla({ titulo, volver, children, pie }: Props) {
+export function Pantalla({ titulo, volver, subtitulo, pestana, sinPia, plano, children, pie }: Props) {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
-      {(titulo || volver) && (
-        <header className="sticky top-0 z-20 flex items-center gap-2 bg-marca px-2 py-2 text-white">
-          {volver ? (
-            <Link href={volver} aria-label="Volver" className="flex w-12 items-center justify-center text-2xl">
-              ←
-            </Link>
-          ) : (
-            <span className="w-12" />
-          )}
-          <h1 className="flex-1 text-center text-lg font-bold">{titulo}</h1>
-          <span className="w-12" />
-        </header>
-      )}
-      <main className="flex flex-1 flex-col gap-4 px-4 py-5">{children}</main>
-      {pie && <footer className="sticky bottom-0 bg-fondo/95 px-4 pb-5 pt-3">{pie}</footer>}
+    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-fondo">
+      {(titulo || volver || pestana) && <Cabecera titulo={titulo} volver={volver} subtitulo={subtitulo} />}
+      <main className={`flex flex-1 flex-col gap-4 ${plano ? "py-3" : "px-4 py-5"}`}>{children}</main>
+      {pie && <footer className="sticky bottom-0 border-t border-linea bg-fondo/95 px-4 pb-5 pt-3">{pie}</footer>}
+      {pestana && <BarraInferior activa={pestana} sinPia={sinPia} />}
     </div>
   );
 }

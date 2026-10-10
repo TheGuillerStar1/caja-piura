@@ -60,7 +60,7 @@ export default function Bienvenida() {
   }
 
   if (!me) {
-    return <Pantalla>{error ? <MensajeError mensaje={error} reintentar={cargar} /> : <Cargando />}</Pantalla>;
+    return <Pantalla titulo="Elige cómo ver tu app">{error ? <MensajeError mensaje={error} reintentar={cargar} /> : <Cargando />}</Pantalla>;
   }
 
   const rec = me.recomendacion.vista;
@@ -68,6 +68,7 @@ export default function Bienvenida() {
 
   return (
     <Pantalla
+      titulo="Elige cómo ver tu app"
       pie={
         <div className="flex flex-col gap-2">
           <Boton guia disabled={guardando} onClick={() => elegir(rec)}>
@@ -84,7 +85,7 @@ export default function Bienvenida() {
         tamano={80}
         mensaje={
           <>
-            Hola, {me.nombre}. Te damos la bienvenida al nuevo Caja Piura. Ahora tienes una asistente, <b>Pía</b>.
+            Hola, {me.nombre.split(" ")[0]}. Ahora puedes elegir cómo usar Caja Piura: <b>vista estándar</b> o <b>vista asistida</b>. Yo soy <b>Pía</b> y te acompaño.
           </>
         }
       />
