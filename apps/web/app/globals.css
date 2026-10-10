@@ -67,6 +67,24 @@ body {
   animation: pulso 1.6s ease-out infinite;
   will-change: transform, opacity;
 }
+/* Etiqueta explícita sobre el botón guía (solo Boton guia; los bloques resaltados en "Enséñame" no la llevan). */
+.guia-etiqueta { margin-top: 2.25rem; overflow: visible; }
+.guia-etiqueta::before {
+  content: "👇 Toca aquí";
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 12px;
+  border-radius: 999px;
+  background: var(--color-tinta);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+  pointer-events: none;
+}
 @keyframes pulso {
   0% { transform: scale(1); opacity: 1; }
   70%, 100% { transform: scale(1.04, 1.12); opacity: 0; }

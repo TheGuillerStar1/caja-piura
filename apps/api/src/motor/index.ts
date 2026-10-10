@@ -1,9 +1,10 @@
 // Dueño: Agente A. Motor de personalización por reglas deterministas (sin LLM).
 // Firma estable: otros agentes (C: sugerencias del asistente) importan recomendar().
 //
-// Puntaje 0..100 (mayor = más digital). La señal principal es la TASA DIGITAL
-// (digitales / (digitales + presenciales)); edad, zona, gama del celular y pagos sin ayuda solo ajustan.
-//   puntaje = BASE + tasa·PESO_TASA + volumen·PESO_VOLUMEN + ajusteEdad + ajusteZona + ajusteGama + ajusteAutonomia
+// Puntaje 0..100 (mayor = más digital). Solo cuenta CÓMO USA el cliente sus canales, nunca quién es:
+// edad, zona y ocupación no entran (no se discrimina por perfil; solo hay dos vistas y el cliente siempre elige).
+// La señal principal es la TASA DIGITAL (digitales / (digitales + presenciales)); gama del celular y pagos sin ayuda ajustan.
+//   puntaje = BASE + tasa·PESO_TASA + volumen·PESO_VOLUMEN + ajusteGama + ajusteAutonomia
 // puntaje < UMBRAL_ASISTIDA → vista ASISTIDA.
 import type { Recomendacion, Sugerencia, Tono } from "@cp/shared";
 
@@ -24,8 +25,6 @@ export const PESOS = {
   PESO_TASA: 60, // señal principal
   PESO_VOLUMEN: 10, // operaciones digitales al mes (tope 15)
   TOPE_VOLUMEN: 15,
-  EDAD: { menos35: 10, de35a54: 5, de55a64: 0, desde65: -5 },
-  RURAL: -8,
   GAMA: { BAJA: -7, MEDIA: 0, ALTA: 5 },
   POR_PAGO_SIN_AYUDA: 1.5, // tope 10 pagos → +15
   TOPE_PAGOS: 10,
@@ -37,13 +36,6 @@ export function tasaDigital(p: Pick<PerfilMotor, "opsDigitalesMes" | "opsPresenc
   return total > 0 ? p.opsDigitalesMes / total : 0;
 }
 
-function ajusteEdad(edad: number) {
-  if (edad < 35) return PESOS.EDAD.menos35;
-  if (edad < 55) return PESOS.EDAD.de35a54;
-  if (edad < 65) return PESOS.EDAD.de55a64;
-  return PESOS.EDAD.desde65;
-}
-
 export function puntajeDigital(p: PerfilMotor) {
   const tasa = tasaDigital(p);
   const volumen = Math.min(p.opsDigitalesMes, PESOS.TOPE_VOLUMEN) / PESOS.TOPE_VOLUMEN;
@@ -51,8 +43,6 @@ export function puntajeDigital(p: PerfilMotor) {
     PESOS.BASE +
     tasa * PESOS.PESO_TASA +
     volumen * PESOS.PESO_VOLUMEN +
-    ajusteEdad(p.edad) +
-    (p.zona === "RURAL" ? PESOS.RURAL : 0) +
     PESOS.GAMA[p.gamaDispositivo] +
     Math.min(p.pagosSinAyuda, PESOS.TOPE_PAGOS) * PESOS.POR_PAGO_SIN_AYUDA;
   return Math.round(Math.max(0, Math.min(100, crudo)));
@@ -70,9 +60,7 @@ function razonesPara(p: PerfilMotor, asistida: boolean): string[] {
   // 2. Ajustes, en orden de peso.
   if (p.pagosSinAyuda >= 3) r.push(`Ya hiciste ${p.pagosSinAyuda} pagos sin ayuda`);
   if (asistida) {
-    if (p.zona === "RURAL") r.push("Vives lejos de la agencia: pagar desde aquí te ahorra el viaje");
     if (p.gamaDispositivo === "BAJA") r.push("Tu celular funciona mejor con pantallas simples");
-    if (p.edad >= 55) r.push("Con letra y botones grandes todo se lee mejor");
     r.push("Te guiamos paso a paso en cada pago");
   } else {
     if (p.gamaDispositivo !== "BAJA") r.push("Tu celular muestra bien más opciones a la vez");
@@ -100,7 +88,8 @@ function sugerenciasPara(p: PerfilMotor, asistida: boolean): Sugerencia[] {
 export function recomendar(p: PerfilMotor): Recomendacion {
   const puntaje = puntajeDigital(p);
   const asistida = puntaje < PESOS.UMBRAL_ASISTIDA;
-  const tono: Tono = !asistida ? "DIRECTO" : p.edad >= 55 ? "CALIDO" : "CORTO";
+  // El tono sigue a la vista, no a la edad.
+  const tono: Tono = asistida ? "CALIDO" : "DIRECTO";
   return {
     vista: asistida ? "ASISTIDA" : "ESTANDAR",
     tono,

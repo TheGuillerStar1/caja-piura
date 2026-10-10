@@ -32,6 +32,18 @@ const PASOS = [
 ] as const;
 type Paso = (typeof PASOS)[number]["id"];
 
+/** Cuántas veces se muestra el saldo sin volver solo al cancelar: da confianza las primeras veces. */
+const CANCELACIONES_CON_SALDO = 3;
+function contarCancelacion() {
+  try {
+    const n = Number(localStorage.getItem("cp_cancelaciones") ?? 0) + 1;
+    localStorage.setItem("cp_cancelaciones", String(n));
+    return n;
+  } catch {
+    return 1;
+  }
+}
+
 const empresaDe = (destinatario: string) => destinatario.split(" · ")[0];
 
 export function Confirmar() {
@@ -155,15 +167,18 @@ export function Confirmar() {
     [pago, tipo, ref, fallar, asistida, router, flujo, preparar],
   );
 
+  const salirDeCancelado = useCallback(() => {
+    if (window.history.length > 1) router.back();
+    else router.replace("/inicio");
+  }, [router]);
+
   const cancelar = useCallback(() => {
     callar();
     track("confirmar", "abandonar", { flujo });
     setEstado({ fase: "cancelado" });
-    setTimeout(() => {
-      if (window.history.length > 1) router.back();
-      else router.replace("/inicio");
-    }, 1400);
-  }, [router, flujo]);
+    // Las primeras veces el cliente se queda a comprobar que su saldo no cambió; luego vuelve solo.
+    if (contarCancelacion() > CANCELACIONES_CON_SALDO) setTimeout(salirDeCancelado, 1400);
+  }, [flujo, salirDeCancelado]);
 
   const empezarGuia = () => {
     marcarAyuda();
@@ -194,6 +209,18 @@ export function Confirmar() {
           <p className="text-2xl font-bold">Cancelaste el pago</p>
           <p className="mt-2 text-lg">No se movió dinero de tu cuenta.</p>
         </Tarjeta>
+        {pago && (
+          <Tarjeta className="anim-aparece text-center">
+            <p className="text-tenue">Tu saldo sigue igual</p>
+            <p className="text-3xl font-bold">{soles(pago.cuenta.saldo)}</p>
+            <p className="text-sm text-tenue">
+              {pago.cuenta.tipo} {pago.cuenta.numeroOculto}
+            </p>
+          </Tarjeta>
+        )}
+        <Boton guia={asistida} onClick={salirDeCancelado}>
+          Volver
+        </Boton>
       </Pantalla>
     );
   }

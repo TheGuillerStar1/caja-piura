@@ -15,7 +15,7 @@ const SALUDOS: Record<Tono, (n: string) => string> = {
   CORTO: (n) => `Hola, ${n}. ¿Qué necesitas?`,
   DIRECTO: (n) => `Hola, ${n}. ¿En qué te ayudo?`,
 };
-const EXTRAS = ["¿Cuánto debo?", "Pagar la luz"];
+const EXTRAS = ["¿Cuánto debo?", "Pagar la luz", "¿Se hizo mi pago?", "Me cobraron dos veces"];
 /** Si el asistente no responde, estos accesos siempre funcionan. */
 const OPCIONES_RESPALDO = [
   { texto: "Pagar mi cuota", ruta: "/pagar/cuota" },

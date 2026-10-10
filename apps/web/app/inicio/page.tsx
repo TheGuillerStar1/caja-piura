@@ -4,7 +4,9 @@ import type { Aviso, Cuenta, InicioRes, MeRes, Sugerencia } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { BarraInferior } from "@/components/BarraInferior";
 import { rutaConfirmar } from "@/components/pago/almacen";
+import { filtrarAvisos, leerRecordatorios } from "@/components/retencion/recordatorios";
 import { EstilosPago } from "@/components/pago/EstilosPago";
 import {
   IconoAjustes,
@@ -45,7 +47,7 @@ function ordenar(ids: IdAcceso[], sugeridos: Sugerencia[]) {
   return [...ids].sort((a, b) => pos(a) - pos(b));
 }
 
-const ANUNCIO = "cp_anuncio_nuevo_v1";
+const ANUNCIO = "cp_anuncio_pia_v2";
 const FLUJO_ACCESO: Partial<Record<IdAcceso, "CUOTA" | "FRECUENTE" | "RECIBO">> = {
   PAGAR_CUOTA: "CUOTA",
   FRECUENTES: "FRECUENTE",
@@ -143,11 +145,12 @@ export default function Inicio() {
     );
   }
 
+  const avisos = filtrarAvisos(datos.avisos, leerRecordatorios());
   const ids = ordenar(asistida ? BASICOS : ESTANDAR, datos.accesos);
   const accesos = ids.map((id) => ACCESOS[id]);
-  const fraseMascota = datos.avisos.length
-    ? "Tienes un pago cerca. Toca Pagar y listo."
-    : "¿Qué quieres hacer hoy? Toca un botón.";
+  const fraseMascota = avisos.length
+    ? "Tienes un pago cerca. Toca el botón azul «Pagar» y listo."
+    : "¿Qué quieres hacer hoy? Toca el botón de lo que quieres pagar. Por ejemplo: «Pagar mi cuota».";
 
   return (
     <Pantalla>
@@ -157,7 +160,7 @@ export default function Inicio() {
         {!asistida && <span className="text-sm text-tenue">Caja Piura</span>}
       </header>
 
-      {datos.avisos.map((a, i) => (
+      {avisos.map((a, i) => (
         <Tarjeta key={`${a.tipo}-${a.referenciaId}`} tono="aviso" className="flex flex-col gap-3">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-aviso">{cuando(a)}</p>
@@ -174,12 +177,12 @@ export default function Inicio() {
 
       {asistida ? (
         <nav className="grid grid-cols-2 gap-3" aria-label="Qué quieres hacer">
-          {accesos.map((a) => (
+          {accesos.map((a, i) => (
             <Link
               key={a.id}
               href={a.ruta!}
               onClick={() => tocarAcceso(a)}
-              className="flex min-h-36 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-marca/30 bg-superficie p-3 text-center text-xl font-bold leading-tight text-marca active:bg-marca-claro"
+              className={`${!avisos.length && i === 0 ? "guia-toca guia-etiqueta " : ""}flex min-h-36 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-marca/30 bg-superficie p-3 text-center text-xl font-bold leading-tight text-marca active:bg-marca-claro`}
             >
               <a.Icono className="h-12 w-12" />
               {a.texto}
@@ -232,15 +235,24 @@ export default function Inicio() {
             <h2 id="anuncio-titulo" className="text-2xl font-bold">
               Te damos la bienvenida al nuevo Caja Piura
             </h2>
+            <p className="text-lg">
+              Tu app es la misma de siempre: abajo están <b>Mis productos, Transferencias, Pagos, Frecuentes</b> y <b>Para ti</b>.
+            </p>
+            <p className="text-lg">
+              Lo nuevo es <b>Pía</b>, el botón del centro. Sirve para:
+            </p>
             <ul className="flex flex-col gap-2 text-lg">
-              <li>• Tus pagos ahora toman 2 toques.</li>
-              <li>• Te avisamos antes de que venza tu cuota.</li>
-              <li>• Siempre confirmas tú. Nunca te pediremos tu clave por mensaje.</li>
+              <li>• Pagar tu cuota y tus recibos en 2 toques.</li>
+              <li>• Avisarte antes de que venza un pago.</li>
+              <li>• Resolver dudas: “¿cuánto debo?”, “¿se hizo mi pago?”.</li>
+              <li>• Siempre confirmas tú. Nunca te pediremos tu clave.</li>
             </ul>
+            <p className="text-center text-lg font-bold text-marca">👇 Búscala abajo, al centro</p>
             <Boton onClick={cerrarAnuncio}>Entendido</Boton>
           </div>
         </div>
       )}
+      <BarraInferior />
     </Pantalla>
   );
 }

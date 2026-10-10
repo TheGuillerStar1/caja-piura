@@ -7,6 +7,13 @@ import { Boton, Cargando, MensajeError, Pantalla, Tarjeta } from "@/components/u
 import { api, esSinSesion } from "@/lib/api";
 import { track } from "@/lib/track";
 import { useVista } from "@/lib/vista";
+import {
+  guardarRecordatorios,
+  leerRecordatorios,
+  OPCIONES_DIAS,
+  RECORDATORIOS_INICIALES,
+  type Recordatorios,
+} from "@/components/retencion/recordatorios";
 import { TarjetaVista } from "../_entrada/TarjetaVista";
 
 const P = "ajustes";
@@ -17,6 +24,16 @@ export default function Ajustes() {
   const [me, setMe] = useState<MeRes | null>(null);
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
+  const [rec, setRec] = useState<Recordatorios>(RECORDATORIOS_INICIALES);
+
+  useEffect(() => setRec(leerRecordatorios()), []);
+
+  function cambiarRecordatorios(cambio: Partial<Recordatorios>) {
+    track(P, "tocar");
+    const nuevo = { ...rec, ...cambio };
+    setRec(nuevo);
+    guardarRecordatorios(nuevo);
+  }
 
   useEffect(() => {
     track(P, "ver");
@@ -70,6 +87,38 @@ export default function Ajustes() {
                 {aviso}
               </p>
             )}
+          </section>
+          <section className="flex flex-col gap-3" aria-labelledby="titulo-recordatorios">
+            <h2 id="titulo-recordatorios" className="text-xl font-bold">
+              Mis recordatorios
+            </h2>
+            <p className="text-tenue">¿Cuándo quieres que te avisemos de un pago?</p>
+            <div role="radiogroup" aria-label="Cuándo avisarme" className="grid grid-cols-2 gap-2">
+              {OPCIONES_DIAS.map((o) => (
+                <button
+                  key={o.dias}
+                  type="button"
+                  role="radio"
+                  aria-checked={rec.dias === o.dias}
+                  onClick={() => cambiarRecordatorios({ dias: o.dias })}
+                  className={`min-h-14 rounded-2xl border-2 px-2 text-lg font-bold ${rec.dias === o.dias ? "border-marca bg-marca-claro text-marca" : "border-linea bg-superficie"}`}
+                >
+                  {o.texto}
+                </button>
+              ))}
+            </div>
+            {(
+              [
+                ["cuota", "Mi cuota del crédito"],
+                ["servicios", "Mis recibos (luz, agua, celular…)"],
+              ] as const
+            ).map(([clave, texto]) => (
+              <label key={clave} className="flex min-h-14 items-center gap-3 rounded-2xl border-2 border-linea bg-superficie px-4 text-lg">
+                <input type="checkbox" className="h-6 w-6 accent-marca" checked={rec[clave]} onChange={(e) => cambiarRecordatorios({ [clave]: e.target.checked })} />
+                {texto}
+              </label>
+            ))}
+            <p className="text-sm text-tenue">Si un pago ya venció, siempre te lo mostramos.</p>
           </section>
           <Tarjeta>
             <p className="font-bold">{me.nombre}</p>

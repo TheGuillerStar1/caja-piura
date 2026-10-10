@@ -126,4 +126,17 @@ describe("lectura de recibos", () => {
     expect(identificarServicio("Enosa", "1234", servicios)).toMatchObject({ ok: false });
     expect(identificarServicio("", "", servicios)).toMatchObject({ ok: false });
   });
+  it("problemas con un pago: duplicado, no procesado y errado", () => {
+    expect(interpretar("me cobraron dos veces la cuota", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "DUPLICADO" });
+    expect(interpretar("creo que pagué doble", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "DUPLICADO" });
+    expect(interpretar("mi pago no se procesó", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "NO_PROCESADO" });
+    expect(interpretar("el pago de la luz no pasó", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "NO_PROCESADO" });
+    expect(interpretar("se quedó cargando y no sé si pagué", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "NO_PROCESADO" });
+    expect(interpretar("¿Se hizo mi pago?", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "NO_PROCESADO" });
+    expect(interpretar("me equivoqué de recibo", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "ERRADO" });
+    expect(interpretar("pagué otro recibo", rosa)).toEqual({ tipo: "PROBLEMA_PAGO", problema: "ERRADO" });
+    // Sin problema: siguen funcionando las intenciones normales.
+    expect(interpretar("pagar la luz de mi mamá", rosa).tipo).toBe("FRECUENTE");
+    expect(interpretar("cuánto debo", rosa).tipo).toBe("DEUDA");
+  });
 });

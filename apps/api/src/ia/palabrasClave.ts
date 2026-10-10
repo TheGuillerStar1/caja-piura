@@ -4,6 +4,7 @@ import { contienePalabra, normalizar } from "./texto.js";
 
 export type Rubro = "LUZ" | "AGUA" | "TELEFONIA" | "INTERNET";
 export type FrecuenteCtx = { id: number; alias: string; rubro: Rubro | string };
+export type ProblemaPago = "DUPLICADO" | "NO_PROCESADO" | "ERRADO";
 export type Pantalla = "inicio" | "pagar_cuota" | "frecuentes" | "pagar_recibo" | "progreso" | "ajustes";
 
 /** Intención reconocida. La ejecutan las mismas funciones que las herramientas del LLM (asistente.ts). */
@@ -18,6 +19,7 @@ export type Intencion =
   | { tipo: "CLAVE_CAMBIAR" }
   | { tipo: "CLAVE_PEDIDA" }
   | { tipo: "FUERA_DE_ALCANCE" }
+  | { tipo: "PROBLEMA_PAGO"; problema: ProblemaPago }
   | { tipo: "NADA" };
 
 const RUBROS: Record<Rubro, string[]> = {
@@ -31,6 +33,14 @@ const PALABRAS_RUBRO = new Set(Object.values(RUBROS).flat());
 const VACIAS = new Set(["de", "del", "la", "el", "los", "las", "mi", "mis", "su", "a", "y", "en", "para"]);
 
 const algun = (t: string, claves: string[]) => claves.some((c) => contienePalabra(t, c));
+/** Coincidencia exacta de frase (sin tolerancia a errores): para frases cortas que no deben confundirse. */
+const frase = (t: string, claves: string[]) => claves.some((c) => t.includes(c));
+
+const PROBLEMAS: [ProblemaPago, string[]][] = [
+  ["DUPLICADO", ["dos veces", "doble", "duplicad", "duplicaron", "cobraron de mas", "cobro de mas", "pague de mas", "pague 2 veces"]],
+  ["ERRADO", ["me equivoque", "equivocad", "pague mal", "pague otro", "pague a otro", "pago errado", "pago erroneo", "otro recibo", "monto equivocado", "no era ese", "no era el"]],
+  ["NO_PROCESADO", ["se hizo mi pago", "se realizo mi pago", "paso mi pago", "se pago o no", "no se proceso", "no proceso", "no paso", "no se hizo", "no salio", "no se pago", "no se realizo", "no se completo", "fallo", "rechaz", "se colgo", "se quedo cargando", "no llego"]],
+];
 
 /** Busca frecuentes cuyo alias aparece en el mensaje ("la luz de mi mamá" ↔ "Luz de mamá"). */
 export function buscarPorAlias(t: string, frecuentes: FrecuenteCtx[]): number[] {
@@ -61,6 +71,11 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
   // 2. Mover dinero fuera de lo que la app prepara: no se hace desde el asistente.
   if (algun(t, ["transferir", "transferencia", "transfiere", "yapear", "yape", "plin", "prestame plata", "prestame dinero", "retirar", "depositar a", "enviar plata", "mandar plata", "enviar dinero", "mandar dinero"])) {
     return { tipo: "FUERA_DE_ALCANCE" };
+  }
+
+  // 2b. Problemas con un pago (duplicado, no procesado, errado): antes que "cuota" para "me cobraron la cuota dos veces".
+  for (const [problema, claves] of PROBLEMAS) {
+    if (frase(t, claves)) return { tipo: "PROBLEMA_PAGO", problema };
   }
 
   // 3. Pagos frecuentes por alias ("luz de mamá", "mi celular").

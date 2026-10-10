@@ -12,7 +12,7 @@ Clientes emprendedores con poca experiencia digital y celulares de gama baja **a
 
 | Tipo | Variable | Respuesta en el flujo |
 |---|---|---|
-| Barrera | Desconfianza | Asesor y folleto en agencia, titular enmascarado, "Confirmar pago" obligatorio, la IA nunca pide claves |
+| Barrera | Desconfianza | Práctica guiada en agencia (o sola desde su celular), titular enmascarado, "Confirmar pago" obligatorio, la IA nunca pide claves |
 | Barrera | Fricción | 2 toques por pago, frecuentes guardados, foto del recibo en vez de digitar |
 | Barrera | Desorientación | Mascota "toca aquí", vista asistida, "Enséñame paso a paso" |
 | Perfil | Edad, ocupación, zona, ops presenciales vs. digitales, día de pago, gama del celular | Entradas del motor de reglas y de los avisos |
@@ -35,6 +35,10 @@ Clientes emprendedores con poca experiencia digital y celulares de gama baja **a
 5. La autenticación al confirmar reutiliza la biometría simulada.
 6. "Adelantar 30 días" mueve `fechaSimulada` del cliente; no se toca el reloj real.
 7. Datos ficticios propios con el esquema del Excel de Caja Piura; se reemplazan si llega.
+8. (Obs. F3) Se entra con el usuario y la clave reales de la app de Caja Piura (DNI + PIN de 6 dígitos); no hay usuario alterno. En la agencia se practica con esas credenciales.
+9. (Obs. F3) Adopción progresiva: el cliente puede activarlo en agencia o solo desde su celular, sin hacer cola. La app es la misma de siempre (misma barra inferior) con un botón nuevo, Pía.
+10. (Obs. F3) Solo dos vistas, asistida y estándar. El motor recomienda por uso (canales, pagos sin ayuda, gama del celular), nunca por edad, zona u ocupación; el cliente elige. La pregunta aparece solo en el primer ingreso.
+11. (Obs. F3) Recordatorios configurables en Ajustes (días antes y tipo de pago). Al cancelar un pago se muestra que el saldo no cambió. Pía resuelve consultas de pago duplicado, no procesado y errado con los pagos reales del cliente. Sin folleto impreso.
 
 ---
 
@@ -167,7 +171,6 @@ Commit "demo-2". Después de esto **no se agregan funciones**.
 | Pedir a Caja Piura el Excel, el video y los datos de abandono | Ya |
 | Grabar el flujo actual de la app de Caja Piura contando toques y tiempo | h5 |
 | Fotos de 3–4 recibos reales de luz/agua (con datos tapados) para la demo de visión | h3 |
-| Folleto imprimible (3 pasos, QR, "Caja Piura nunca te pedirá tu clave…") | h8 |
 | Presentación: problema, solución, demo, límites de la IA, indicadores, siguiente paso | h9 |
 | Guion de demo con Rosa, Elena y Carlos | h9 |
 

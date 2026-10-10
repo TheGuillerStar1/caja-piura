@@ -1,5 +1,5 @@
 // F0. Botón base. Variantes: primario (acción principal, 1 por pantalla), secundario, fantasma, peligro.
-// guia = true muestra el anillo pulsante "toca aquí".
+// guia = true muestra el anillo pulsante y la etiqueta "Toca aquí" encima: la acción a tocar se ve, no se deduce.
 import Link from "next/link";
 
 type Variante = "primario" | "secundario" | "fantasma" | "peligro";
@@ -22,7 +22,7 @@ const estilos: Record<Variante, string> = {
 export function Boton({ variante = "primario", guia, bloque = true, href, className = "", children, ...resto }: Props) {
   const clases = `inline-flex items-center justify-center gap-2 rounded-boton px-5 py-3 text-lg font-bold transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-marca ${
     bloque ? "w-full" : ""
-  } ${estilos[variante]} ${guia ? "guia-toca" : ""} ${className}`;
+  } ${estilos[variante]} ${guia ? "guia-toca guia-etiqueta" : ""} ${className}`;
   if (href) {
     return (
       <Link href={href} className={clases}>

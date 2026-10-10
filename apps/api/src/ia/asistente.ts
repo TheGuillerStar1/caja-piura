@@ -8,7 +8,7 @@ import { groq, hayGroq, MODELO_TEXTO } from "../lib/groq.js";
 import { aNumero, cuandoVence, soles } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { perfilDeCliente, recomendar } from "../motor/index.js";
-import { interpretar, type FrecuenteCtx, type Intencion, type Pantalla, type Rubro } from "./palabrasClave.js";
+import { interpretar, type FrecuenteCtx, type Intencion, type Pantalla, type ProblemaPago, type Rubro } from "./palabrasClave.js";
 import { herramientaAceptable, textoLibreAceptable } from "./guardas.js";
 import { quitarThink } from "./texto.js";
 
@@ -226,6 +226,79 @@ function opcionesNoEntendi(ctx: Ctx): Resultado {
   };
 }
 
+// ── Problemas con un pago: se responde con los pagos reales del cliente (nunca con lo que diga el LLM) ──
+const fechaCorta = (d: Date) => d.toLocaleDateString("es-PE", { day: "numeric", month: "long", timeZone: "America/Lima" });
+
+async function problemaPago(ctx: Ctx, problema: ProblemaPago): Promise<Resultado> {
+  const pagos = await prisma.pago.findMany({ where: { clienteId: ctx.clienteId }, orderBy: { creadoEn: "desc" }, take: 20 });
+  const cuentas = await prisma.cuenta.findMany({ where: { clienteId: ctx.clienteId } });
+  const saldo = soles(cuentas.reduce((s, k) => s + aNumero(k.saldo), 0));
+  const ultimo = pagos[0];
+  const detalle = (p: (typeof pagos)[number]) => `${p.descripcion}, ${soles(aNumero(p.monto))}, el ${fechaCorta(p.creadoEn)}`;
+
+  if (!ultimo) {
+    return {
+      respuesta: t(ctx, {
+        calido: `${ctx.nombre}, revisé y todavía no tienes pagos desde la app. No se cobró nada de tu cuenta: tienes ${saldo}.`,
+        corto: `No tienes pagos desde la app. Tu saldo: ${saldo}.`,
+        directo: `Sin pagos registrados en la app. Saldo: ${saldo}.`,
+      }),
+      accion: ninguna,
+    };
+  }
+
+  if (problema === "DUPLICADO") {
+    const exitosos = pagos.filter((p) => p.estado === "EXITOSO");
+    const repetido = exitosos.find((p, i) => exitosos.findIndex((q) => q.tipo === p.tipo && q.referenciaId === p.referenciaId) !== i);
+    if (repetido) {
+      return {
+        respuesta: `Veo dos pagos de ${repetido.descripcion}. Acércate a una agencia o llama a Caja Piura con tu n.º de operación ${repetido.operacion} y te devuelven lo cobrado de más.`,
+        accion: ninguna,
+      };
+    }
+    return {
+      respuesta: t(ctx, {
+        calido: `${ctx.nombre}, revisé tus pagos y cada uno se cobró una sola vez. Aunque toques dos veces, la app no cobra doble. Tu último pago: ${detalle(exitosos[0] ?? ultimo)}.`,
+        corto: `Cada pago se cobró una sola vez. La app no cobra doble. Último: ${detalle(exitosos[0] ?? ultimo)}.`,
+        directo: `Sin cobros duplicados. Cada pago tiene un código único. Último: ${detalle(exitosos[0] ?? ultimo)}.`,
+      }),
+      accion: ninguna,
+    };
+  }
+
+  if (problema === "NO_PROCESADO") {
+    if (ultimo.estado === "FALLIDO") {
+      return {
+        respuesta: t(ctx, {
+          calido: `${ctx.nombre}, tu pago de ${ultimo.descripcion} no se realizó y no se cobró nada: tu saldo sigue en ${saldo}. ¿Lo intentamos de nuevo?`,
+          corto: `Ese pago no se hizo y no se cobró nada. Tu saldo sigue en ${saldo}. ¿Lo intentamos de nuevo?`,
+          directo: `Pago no realizado, sin cobro. Saldo: ${saldo}. Puedes reintentarlo.`,
+        }),
+        accion: { tipo: "OPCIONES", opciones: [{ texto: "Intentar de nuevo", ruta: `/pagar/confirmar?tipo=${ultimo.tipo}&ref=${ultimo.referenciaId}` }] },
+      };
+    }
+    return {
+      respuesta: t(ctx, {
+        calido: `${ctx.nombre}, tu último pago sí se realizó: ${detalle(ultimo)}. Tu n.º de operación es ${ultimo.operacion}.`,
+        corto: `Tu último pago sí se hizo: ${detalle(ultimo)}. Operación ${ultimo.operacion}.`,
+        directo: `Último pago realizado: ${detalle(ultimo)}. Operación ${ultimo.operacion}.`,
+      }),
+      accion: ninguna,
+    };
+  }
+
+  // ERRADO: la app no revierte pagos; se orienta con el n.º de operación.
+  const ref = pagos.find((p) => p.estado === "EXITOSO") ?? ultimo;
+  return {
+    respuesta: t(ctx, {
+      calido: `No te preocupes, ${ctx.nombre}. Yo no puedo devolver un pago, pero en una agencia o llamando a Caja Piura lo revisan con tu n.º de operación ${ref.operacion} (${detalle(ref)}).`,
+      corto: `Yo no puedo devolverlo. En la agencia o por teléfono lo revisan con tu operación ${ref.operacion} (${detalle(ref)}).`,
+      directo: `La app no revierte pagos. Reclama en agencia o por teléfono con la operación ${ref.operacion} (${detalle(ref)}).`,
+    }),
+    accion: ninguna,
+  };
+}
+
 export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resultado> {
   switch (i.tipo) {
     case "CUOTA":
@@ -248,6 +321,8 @@ export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resulta
       return respuestaSegura();
     case "FUERA_DE_ALCANCE":
       return fueraDeAlcance(ctx);
+    case "PROBLEMA_PAGO":
+      return problemaPago(ctx, i.problema);
     default:
       return opcionesNoEntendi(ctx);
   }
@@ -393,8 +468,8 @@ export async function responder(clienteId: number, mensaje: string): Promise<Asi
 async function responderSinRespaldo(clienteId: number, mensaje: string): Promise<AsistenteRes> {
   const ctx = await cargarContexto(clienteId);
   const intencion = interpretar(mensaje, ctx.frecuentes);
-  // Seguridad determinista: la clave y mover dinero nunca pasan por el LLM.
-  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE") {
+  // Seguridad determinista: la clave, mover dinero y los reclamos de pagos nunca pasan por el LLM.
+  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "PROBLEMA_PAGO") {
     return { ...(await ejecutarIntencion(ctx, intencion)), fuente: "PALABRAS_CLAVE" };
   }
   if (hayGroq) {

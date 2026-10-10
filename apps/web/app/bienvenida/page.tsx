@@ -1,5 +1,6 @@
 "use client";
-// Dueño: Agente A. Bienvenida y elección de vista (fase 3). El motor recomienda; el cliente decide.
+// Dueño: Agente A. Bienvenida y elección de vista (fase 3), solo en el primer ingreso. El motor recomienda según el uso
+// (nunca por edad ni zona); el cliente decide entre las dos vistas.
 import type { MeRes, Vista } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -89,7 +90,7 @@ export default function Bienvenida() {
       />
       {error && <MensajeError mensaje={error} />}
       <Tarjeta tono="marca">
-        <p className="text-lg font-bold">Por tu perfil te recomendamos {textoVista}</p>
+        <p className="text-lg font-bold">Por cómo usas Caja Piura te recomendamos {textoVista}</p>
         <ul className="mt-2 flex flex-col gap-1">
           {me.recomendacion.razones.map((r) => (
             <li key={r} className="flex gap-2">

@@ -14,10 +14,10 @@ describe("motor de personalización", () => {
     expect(r.razones[0]).toMatch(/agencia/);
     expect(r.sugerencias.map((s) => s.id)).toEqual(["PAGAR_CUOTA", "FRECUENTES", "PAGAR_RECIBO", "AYUDA"]);
   });
-  it("Elena → asistida, tono corto, sin frecuentes", () => {
+  it("Elena → asistida, tono cálido, sin frecuentes", () => {
     const r = recomendar(elena);
     expect(r.vista).toBe("ASISTIDA");
-    expect(r.tono).toBe("CORTO");
+    expect(r.tono).toBe("CALIDO");
     expect(r.sugerencias.some((s) => s.id === "FRECUENTES")).toBe(false);
   });
   it("Carlos → estándar, tono directo", () => {
@@ -38,13 +38,17 @@ describe("motor de personalización", () => {
       expect(r.puntaje).toBeLessThanOrEqual(100);
     }
   });
-  it("no decide solo por edad: un mayor muy digital va a estándar", () => {
-    const r = recomendar({ ...carlos, edad: 68 });
-    expect(r.vista).toBe("ESTANDAR");
+  it("no discrimina: edad, zona y ocupación no cambian la recomendación", () => {
+    for (const p of [rosa, elena, carlos, pedro]) {
+      const base = recomendar(p);
+      const otro = recomendar({ ...p, edad: p.edad > 50 ? 25 : 70, zona: p.zona === "RURAL" ? "URBANA" : "RURAL", ocupacion: "OTRO" });
+      expect(otro).toEqual(base);
+    }
   });
-  it("no decide solo por zona: rural muy digital va a estándar", () => {
-    const r = recomendar({ ...carlos, zona: "RURAL" });
-    expect(r.vista).toBe("ESTANDAR");
+  it("las razones nunca mencionan edad ni zona", () => {
+    for (const p of [rosa, elena, carlos, pedro]) {
+      expect(recomendar(p).razones.join(" ")).not.toMatch(/edad|años|rural|lejos|vives/i);
+    }
   });
   it("pagos sin ayuda suben el puntaje", () => {
     expect(recomendar({ ...pedro, pagosSinAyuda: 8 }).puntaje).toBeGreaterThan(recomendar(pedro).puntaje);
