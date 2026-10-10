@@ -1,35 +1,15 @@
 "use client";
-// Celular de muestra para la bienvenida: marco realista (isla, barra de estado) recortado a la altura de "Pagar mi cuota",
+// Celular de muestra para la bienvenida: marco de celular recortado a la altura de "Pagar mi cuota",
 // como un recorte de pantalla que se desvanece abajo. Es interactivo: tocar "Pagar" avanza a "Confirmar pago" y a
 // "¡Pago realizado!", y vuelve solo al inicio. Así el cliente prueba la vista antes de elegirla, sin mover dinero.
-// Medidas en px a propósito: la muestra no crece con la vista asistida (lo que crece es la app de verdad).
+// Medidas en px a propósito: la muestra se agranda en proporción al ancho de la columna, no con la vista asistida.
 import type { Vista } from "@cp/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { IcChevronArriba, IcCreditos, IcCuentas, IcTarjeta } from "./IconosApp";
 import { Mascota } from "@/components/ui/Mascota";
 
 type Paso = "inicio" | "confirmar" | "listo";
-
-function BarraEstado() {
-  return (
-    <div className="flex h-7 items-center justify-between bg-marca px-5 text-[10px] font-semibold text-white">
-      <span>9:41</span>
-      <span className="flex items-center gap-1">
-        <svg width="14" height="9" viewBox="0 0 14 9" fill="currentColor" aria-hidden>
-          <rect x="0" y="6" width="2.4" height="3" rx=".6" />
-          <rect x="3.8" y="4" width="2.4" height="5" rx=".6" />
-          <rect x="7.6" y="2" width="2.4" height="7" rx=".6" />
-          <rect x="11.4" y="0" width="2.4" height="9" rx=".6" />
-        </svg>
-        <svg width="20" height="10" viewBox="0 0 20 10" fill="none" stroke="currentColor" aria-hidden>
-          <rect x=".5" y=".5" width="16" height="9" rx="2.2" opacity=".6" />
-          <rect x="2" y="2" width="10" height="6" rx="1.2" fill="currentColor" stroke="none" />
-          <path d="M18.3 3.5v3" strokeLinecap="round" opacity=".6" />
-        </svg>
-      </span>
-    </div>
-  );
-}
+const ANCHO = 248;
 
 function Manito({ className }: { className: string }) {
   return (
@@ -141,30 +121,44 @@ export function CelularPrevia({ vista }: { vista: Vista }) {
     return () => clearTimeout(t);
   }, [paso]);
 
+  // La muestra se diseña a 248 px y se agranda en proporción hasta llenar el ancho de la columna (sin espacios a los costados).
+  const caja = useRef<HTMLDivElement>(null);
+  const [escala, setEscala] = useState(1);
+  useEffect(() => {
+    const el = caja.current;
+    if (!el) return;
+    const medir = () => setEscala(Math.max(1, el.clientWidth / ANCHO));
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <figure className="mx-auto flex flex-col items-center gap-1.5">
-      <div
-        role="group"
-        aria-label={`Prueba de la vista ${asistida ? "asistida" : "estándar"}: toca Pagar. Es de muestra, no mueve dinero.`}
-        className="w-[248px] rounded-t-[2.6rem] bg-[#0a0b0d] px-[7px] pt-[7px] ring-1 ring-white/15 [mask-image:linear-gradient(to_bottom,#000_82%,transparent)]"
-      >
-        <div className="relative flex h-[300px] flex-col overflow-hidden rounded-t-[2.1rem] bg-fondo">
-          <span aria-hidden className="absolute left-1/2 top-1.5 z-30 h-[18px] w-[72px] -translate-x-1/2 rounded-full bg-[#0a0b0d]" />
-          <BarraEstado />
-          <div className="bg-marca px-3 pb-2 text-white">
-            <div className="flex items-center gap-2 text-[13px] font-medium">
-              <span className="text-[15px] leading-none" aria-hidden>
-                {paso === "inicio" ? "☰" : "‹"}
-              </span>
-              {paso === "inicio" ? "Hola, Rosa" : paso === "confirmar" ? "Confirmar pago" : "Pago realizado"}
+    <figure className="flex w-full flex-col items-center gap-1.5">
+      <div ref={caja} className="w-full">
+        <div
+          role="group"
+          aria-label={`Prueba de la vista ${asistida ? "asistida" : "estándar"}: toca Pagar. Es de muestra, no mueve dinero.`}
+          style={{ zoom: escala }}
+          className="mx-auto w-[248px] rounded-t-[1.6rem] bg-[#0a0b0d] px-[5px] pt-[5px] ring-1 ring-white/15 [mask-image:linear-gradient(to_bottom,#000_82%,transparent)]"
+        >
+          <div className="relative flex h-[262px] flex-col overflow-hidden rounded-t-[1.25rem] bg-fondo">
+            <div className="bg-marca px-3 pb-2 pt-2.5 text-white">
+              <div className="flex items-center gap-2 text-[13px] font-medium">
+                <span className="text-[15px] leading-none" aria-hidden>
+                  {paso === "inicio" ? "☰" : "‹"}
+                </span>
+                {paso === "inicio" ? "Hola, Rosa" : paso === "confirmar" ? "Confirmar pago" : "Pago realizado"}
+              </div>
+              {paso === "inicio" && <p className="mt-0.5 text-center text-[8px] opacity-90">Tipo de cambio ref. Compra: 3.30 Venta: 3.60</p>}
             </div>
-            {paso === "inicio" && <p className="mt-0.5 text-center text-[8px] opacity-90">Tipo de cambio ref. Compra: 3.30 Venta: 3.60</p>}
-          </div>
-          <div key={`${vista}-${paso}`} className="anim-previa flex-1">
-            {paso === "inicio" &&
-              (asistida ? <InicioAsistida pagar={() => setPaso("confirmar")} /> : <InicioEstandar pagar={() => setPaso("confirmar")} />)}
-            {paso === "confirmar" && <Confirmar asistida={asistida} confirmar={() => setPaso("listo")} volver={() => setPaso("inicio")} />}
-            {paso === "listo" && <Listo />}
+            <div key={`${vista}-${paso}`} className="anim-previa flex-1">
+              {paso === "inicio" &&
+                (asistida ? <InicioAsistida pagar={() => setPaso("confirmar")} /> : <InicioEstandar pagar={() => setPaso("confirmar")} />)}
+              {paso === "confirmar" && <Confirmar asistida={asistida} confirmar={() => setPaso("listo")} volver={() => setPaso("inicio")} />}
+              {paso === "listo" && <Listo />}
+            </div>
           </div>
         </div>
       </div>
