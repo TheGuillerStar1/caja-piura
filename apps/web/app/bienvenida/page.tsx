@@ -6,6 +6,7 @@
 import type { MeRes, Vista } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { CelularPrevia } from "@/components/app/CelularPrevia";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla } from "@/components/ui";
 import { api, esSinSesion } from "@/lib/api";
 import { track } from "@/lib/track";
@@ -26,41 +27,6 @@ const CHIPS: Record<Vista, { icono: string; texto: string }[]> = {
     { icono: "🔤", texto: "Letra normal" },
   ],
 };
-
-/** Celular en miniatura con la pantalla de inicio de cada vista. Solo decorativo: lo importante se dice en los chips. */
-function VistaPrevia({ vista }: { vista: Vista }) {
-  const asistida = vista === "ASISTIDA";
-  return (
-    <div aria-hidden className="mx-auto w-56 rounded-[1.75rem] border-[6px] border-linea-fuerte bg-fondo p-2 shadow-lg">
-      <div className="mb-2 flex items-center gap-1.5 rounded-t-2xl bg-marca px-3 py-2 text-[11px] font-medium text-white">
-        <span className="text-sm leading-none">☰</span> Hola, Rosa
-      </div>
-      <div key={vista} className="anim-previa flex h-48 flex-col gap-2 px-1">
-        {asistida ? (
-          <>
-            <div className="relative mt-3 flex h-14 items-center justify-center rounded-xl bg-marca text-[15px] font-bold text-white guia-toca">
-              Pagar mi cuota
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-acento px-2 text-[10px] font-bold leading-5 text-white">👇 Toca aquí</span>
-            </div>
-            <div className="flex h-12 items-center gap-2 rounded-xl border border-linea bg-superficie px-3 text-[13px] font-bold">
-              <span className="text-lg">📷</span> Pagar un recibo
-            </div>
-            <div className="flex h-12 items-center gap-2 rounded-xl border border-linea bg-superficie px-3 text-[13px] font-bold">
-              <span className="text-lg">⭐</span> Mis pagos
-            </div>
-          </>
-        ) : (
-          ["Cuentas (1)", "Tarjetas (1)", "Créditos (1)", "Pagar cuota · S/ 350", "Frecuentes", "Transferencias"].map((t) => (
-            <div key={t} className="flex h-6 items-center justify-between border-b border-linea/70 px-1 text-[11px]">
-              <span>{t}</span>
-              <span className="text-marca">›</span>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function Bienvenida() {
   const router = useRouter();
@@ -169,7 +135,7 @@ export default function Bienvenida() {
         ))}
       </div>
 
-      <VistaPrevia vista={previa} />
+      <CelularPrevia vista={previa} />
 
       <ul key={previa} className="anim-previa grid grid-cols-3 gap-2" aria-live="polite">
         {CHIPS[previa].map((c) => (

@@ -137,6 +137,10 @@ body {
 @keyframes previa { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
 .anim-previa { animation: previa .35s ease-out; }
 
+/* Manito de la vista previa: baja, toca y vuelve. */
+@keyframes tap { 0%, 100% { transform: translate(6px, 8px); } 45% { transform: translate(0, 0) scale(1); } 55% { transform: translate(0, 0) scale(.88); } 70% { transform: translate(0, 0) scale(1); } }
+.anim-tap { animation: tap 1.8s ease-in-out infinite; transform-origin: 30% 20%; }
+
 /* Puntitos de "Pía está respondiendo". */
 @keyframes punto { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
 .anim-punto { animation: punto 1s ease-in-out infinite; }
