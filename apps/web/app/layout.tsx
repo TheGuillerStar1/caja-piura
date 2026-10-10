@@ -10,7 +10,8 @@ const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"], varia
 
 // Fija <html data-vista> desde localStorage ANTES de pintar: la vista asistida no "salta" desde la estándar al recargar,
 // y VistaProvider (lib/vista.tsx) arranca ya con el valor correcto.
-const SCRIPT_VISTA = `try{var v=localStorage.getItem("cp_vista");if(v==="ASISTIDA"||v==="ESTANDAR")document.documentElement.dataset.vista=v}catch(e){}`;
+// Igual con el modo claro u oscuro (lib/tema.ts).
+const SCRIPT_VISTA = `try{var d=document.documentElement,v=localStorage.getItem("cp_vista"),t=localStorage.getItem("cp_tema");if(v==="ASISTIDA"||v==="ESTANDAR")d.dataset.vista=v;if(t==="claro"||t==="oscuro")d.dataset.tema=t}catch(e){}`;
 
 export const metadata: Metadata = {
   title: "Caja Piura",
@@ -23,7 +24,7 @@ export const viewport: Viewport = { themeColor: "#0b4ed4", width: "device-width"
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     // suppressHydrationWarning: SCRIPT_VISTA cambia data-vista antes de que React hidrate.
-    <html lang="es" data-vista="ESTANDAR" className={roboto.variable} suppressHydrationWarning>
+    <html lang="es" data-vista="ESTANDAR" data-tema="oscuro" className={roboto.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_VISTA }} />
       </head>

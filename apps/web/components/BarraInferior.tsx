@@ -38,7 +38,7 @@ export function BarraInferior({ activa, sinPia }: { activa?: Pestana; sinPia?: b
       )}
       <nav
         aria-label="Menú principal"
-        className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-md items-stretch border-t border-white/5 bg-fondo-hondo pb-[env(safe-area-inset-bottom)]"
+        className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-md items-stretch border-t border-linea bg-fondo-hondo pb-[env(safe-area-inset-bottom)]"
       >
         {PESTANAS.map(({ id, texto, ruta, Icono }) => {
           const on = id === activa;
@@ -49,10 +49,10 @@ export function BarraInferior({ activa, sinPia }: { activa?: Pestana; sinPia?: b
               aria-current={on ? "page" : undefined}
               onClick={() => track(`barra-${id}`, "tocar")}
               className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-center text-[0.68rem] leading-tight ${
-                on ? "font-medium text-marca" : "text-white/90"
+                on ? "font-medium text-marca" : "text-tinta/90"
               }`}
             >
-              <Icono className={`h-6 w-6 ${on ? "" : "text-white"}`} />
+              <Icono className={`h-6 w-6 ${on ? "" : "text-tinta"}`} />
               {texto}
             </Link>
           );

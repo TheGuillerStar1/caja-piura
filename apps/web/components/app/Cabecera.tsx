@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { olvidarCliente, useCliente } from "@/lib/cliente";
+import { useTema } from "@/lib/tema";
 import { track } from "@/lib/track";
 import {
   IcAtras,
@@ -68,6 +69,7 @@ function MenuLateral({ cerrar }: { cerrar: () => void }) {
   const ruta = usePathname();
   const router = useRouter();
   const [saliendo, setSaliendo] = useState(false);
+  const { tema, setTema } = useTema();
 
   useEffect(() => {
     const esc = (e: KeyboardEvent) => e.key === "Escape" && cerrar();
@@ -113,7 +115,7 @@ function MenuLateral({ cerrar }: { cerrar: () => void }) {
                     track(`menu-${texto}`, "tocar");
                     cerrar();
                   }}
-                  className={`flex min-h-13 items-center gap-4 rounded-r-full pl-6 pr-4 text-[0.95rem] font-medium ${activo ? "bg-fondo" : ""}`}
+                  className={`flex min-h-13 items-center gap-4 rounded-r-full pl-6 pr-4 text-[0.95rem] font-medium ${activo ? "bg-black/25" : ""}`}
                 >
                   <Icono className="h-6 w-6 shrink-0 text-white/90" />
                   {texto}
@@ -122,6 +124,14 @@ function MenuLateral({ cerrar }: { cerrar: () => void }) {
             );
           })}
         </ul>
+        <button
+          type="button"
+          onClick={() => (track("menu-tema", "tocar"), setTema(tema === "claro" ? "oscuro" : "claro"))}
+          className="flex min-h-14 items-center gap-4 border-t border-white/25 px-6 text-[0.95rem] font-medium"
+        >
+          <span aria-hidden className="w-6 text-center text-xl">{tema === "claro" ? "🌙" : "☀️"}</span>
+          {tema === "claro" ? "Pantalla oscura" : "Pantalla clara"}
+        </button>
         <button type="button" onClick={salir} disabled={saliendo} className="flex min-h-14 items-center gap-4 border-t border-white/25 px-6 text-[0.95rem] font-medium">
           <IcSalir className="h-6 w-6" />
           {saliendo ? "Cerrando sesión…" : "Cerrar sesión"}
