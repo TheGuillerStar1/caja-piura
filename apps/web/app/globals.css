@@ -128,6 +128,10 @@ body {
   70%, 100% { transform: scale(1.04, 1.12); opacity: 0; }
 }
 
+/* Vista previa de la bienvenida: aparece con un leve zoom al cambiar de vista. */
+@keyframes previa { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
+.anim-previa { animation: previa .35s ease-out; }
+
 /* Puntitos de "Pía está respondiendo". */
 @keyframes punto { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
 .anim-punto { animation: punto 1s ease-in-out infinite; }
