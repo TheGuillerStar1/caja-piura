@@ -29,7 +29,7 @@ export default function PagarCuota() {
       setCuota(await api<CuotaRes | null>("/cuotas/proxima"));
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
-      setError(e instanceof ApiFallo ? e.message : "Ocurrió un error. Inténtalo de nuevo.");
+      setError(e instanceof ApiFallo ? e.message : "No pudimos cargar tus datos. Vuelve a intentar.");
       track("pagar-cuota", "error", { flujo: "CUOTA" });
     }
   }, [router]);
@@ -61,7 +61,7 @@ export default function PagarCuota() {
         </>
       ) : (
         <>
-          {asistida && <Mascota mensaje="Esta es tu próxima cuota. Toca el botón para pagarla." />}
+          {asistida && <Mascota mensaje="Esta es tu cuota de este mes." />}
           <Tarjeta tono={cuota.diasRestantes <= 3 ? "aviso" : "normal"} className="flex flex-col gap-2 text-center">
             <p className="text-lg text-tenue">
               Cuota {cuota.numero} de {cuota.totalCuotas}
@@ -77,7 +77,7 @@ export default function PagarCuota() {
               router.push(rutaConfirmar("CUOTA", cuota.id));
             }}
           >
-            Pagar esta cuota
+            Pagar {soles(cuota.monto)}
           </Boton>
         </>
       )}

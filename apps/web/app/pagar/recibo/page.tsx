@@ -48,7 +48,7 @@ export default function PagarRecibo() {
 
   function fallo(e: unknown) {
     if (esSinSesion(e)) return router.replace("/entrar");
-    setError(e instanceof ApiFallo ? e.message : "Ocurrió un error. Inténtalo de nuevo.");
+    setError(e instanceof ApiFallo ? e.message : "No pudimos cargar tus datos. Vuelve a intentar.");
     setEstado({ paso: "inicio" });
   }
 
@@ -242,7 +242,7 @@ export default function PagarRecibo() {
               mensaje={
                 escribirPrimero
                   ? asistida
-                    ? "No te preocupes. Escribe el código y yo te ayudo."
+                    ? "Escribe el código del recibo. Está arriba, cerca de tu nombre."
                     : "Escribe el código del recibo."
                   : asistida
                     ? "No pude leerlo. Prueba con más luz y el recibo derecho."

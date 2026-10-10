@@ -67,7 +67,7 @@ export default function Entrar() {
       recordarUsuario({ dni: cuerpo.dni, nombre: r.nombre });
       await despuesDeEntrar();
     } catch (e) {
-      const f = e instanceof ApiFallo ? e : new ApiFallo(0, "INTERNO", "Ocurrió un error. Inténtalo de nuevo.");
+      const f = e instanceof ApiFallo ? e : new ApiFallo(0, "INTERNO", "No pudimos entrar. Vuelve a intentar.");
       track(P, f.codigo === "BLOQUEADO" ? "abandonar" : "error", { flujo: "LOGIN" });
       setClave("");
       if (f.codigo === "BLOQUEADO") setPaso("bloqueado");
@@ -95,7 +95,7 @@ export default function Entrar() {
     return (
       <Pantalla titulo="Recupera tu clave" volver="/">
         <div className="rounded-lg bg-superficie p-4">
-          <Mascota mensaje="No te preocupes, esto pasa. Por tu seguridad pausamos el ingreso con clave." />
+          <Mascota mensaje="Por tu seguridad pausamos el ingreso con clave. Entra con tu cara o tu huella, o llámanos." />
         </div>
         <Tarjeta tono="aviso">
           <p className="text-lg">

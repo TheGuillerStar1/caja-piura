@@ -78,7 +78,7 @@ export default function ProgresoPage() {
 
           {datos.sugerirVistaEstandar && sugerencia !== "oculta" && (
             <Tarjeta tono="aviso" className="flex flex-col gap-3">
-              <p className="text-lg font-bold">Ya pagas solo, ¡muy bien!</p>
+              <p className="text-lg font-bold">Ya pagas sin ayuda. ¡Muy bien!</p>
               <p>¿Quieres probar la vista estándar? Tiene más opciones en una sola pantalla. Puedes volver cuando quieras desde Ajustes.</p>
               <Boton onClick={probarEstandar} disabled={sugerencia === "cambiando"}>
                 {sugerencia === "cambiando" ? "Cambiando…" : "Probar"}

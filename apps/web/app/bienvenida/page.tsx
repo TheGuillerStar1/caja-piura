@@ -54,7 +54,7 @@ export default function Bienvenida() {
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
       track(P, "error");
-      setError(e instanceof Error ? e.message : "Ocurrió un error. Inténtalo de nuevo.");
+      setError(e instanceof Error ? e.message : "No pudimos cargar tus datos. Vuelve a intentar.");
       setGuardando(false);
     }
   }
