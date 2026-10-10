@@ -5,7 +5,7 @@ import { Router } from "express";
 import { sembrarDemo } from "../../prisma/demo.js";
 import { HttpError } from "../lib/errores.js";
 import { aNumero } from "../lib/formato.js";
-import { prisma } from "../lib/prisma.js";
+import { prisma, prismaBase } from "../lib/prisma.js";
 import { cerrarSesion, requiereSesion } from "../lib/sesion.js";
 import { calcularNotificaciones, type Pendiente, siguienteRecibo, sumarDias } from "../retencion/logica.js";
 
@@ -55,7 +55,7 @@ router.post("/demo/adelantar", requiereSesion, async (req, res) => {
 
 router.post("/demo/reset", requiereSesion, async (req, res) => {
   await clienteDemo(req.clienteId!);
-  await sembrarDemo(prisma);
+  await sembrarDemo(prismaBase);
   cerrarSesion(res);
   res.json({ ok: true });
 });

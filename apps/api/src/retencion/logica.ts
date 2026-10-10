@@ -71,6 +71,9 @@ export function diasHastaDiaHabitual(hoy: Date, diaPagoHabitual: number) {
  * - si no queda ninguno, el más próximo (para que la demo siempre muestre algo).
  * Ordenados por vencimiento; la cuota primero en empate.
  */
+/** Días antes del vencimiento en que se avisa (igual que /inicio). */
+export const DIAS_AVISO = 5;
+
 /** Con cuántos días de anticipación al día de pago habitual se avisa todo lo del mes. */
 export const DIAS_ANTES_DEL_HABITUAL = 7;
 
@@ -81,7 +84,7 @@ export function calcularNotificaciones(hoy: Date, diaPagoHabitual: number, pendi
   const cercaDelHabitual = diasHastaDiaHabitual(hoy, diaPagoHabitual) <= DIAS_ANTES_DEL_HABITUAL;
   const elegidos = orden.filter((p) => {
     const d = diasEntre(hoy, p.vencimiento);
-    return d <= 3 || (cercaDelHabitual && d <= 31);
+    return d <= DIAS_AVISO || (cercaDelHabitual && d <= 31);
   });
   const lista = elegidos.length ? elegidos : orden.slice(0, 1);
   return lista.map((p) => redactarNotificacion(hoy, p));

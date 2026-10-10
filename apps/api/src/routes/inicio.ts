@@ -11,7 +11,8 @@ import { perfilDeCliente, recomendar } from "../motor/index.js";
 
 export const router = Router();
 
-const DIAS_AVISO = 3;
+// Misma ventana que las notificaciones de "Adelantar 30 días" (retencion/logica.ts DIAS_AVISO).
+const DIAS_AVISO = 5;
 
 router.get("/inicio", requiereSesion, async (req, res) => {
   const c = await prisma.cliente.findUnique({
