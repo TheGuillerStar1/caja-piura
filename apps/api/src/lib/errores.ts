@@ -29,6 +29,10 @@ export const manejadorErrores: ErrorRequestHandler = (err, _req, res, _next) => 
     res.status(err.status).json({ error: { codigo: err.codigo, mensaje: err.message, ...err.extra } });
     return;
   }
+  if ((err as { type?: string })?.type === "entity.parse.failed") {
+    res.status(400).json({ error: { codigo: "VALIDACION", mensaje: "JSON inválido" } });
+    return;
+  }
   if (err instanceof ZodError) {
     res.status(400).json({ error: { codigo: "VALIDACION", mensaje: err.message } });
     return;

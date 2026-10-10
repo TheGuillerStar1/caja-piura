@@ -1,8 +1,14 @@
 // Dueño: Agente C. Contratos de request/response en @cp/shared.
+import { AsistenteReq } from "@cp/shared";
 import { Router } from "express";
-import { noImplementado } from "../lib/errores.js";
+import { validar } from "../lib/errores.js";
 import { requiereSesion } from "../lib/sesion.js";
+import { responder } from "../ia/asistente.js";
 
 export const router = Router();
 
-router.post("/asistente", requiereSesion, noImplementado);
+/** Pía: prepara (nunca paga). Responde 1-2 líneas + AccionUI. */
+router.post("/asistente", requiereSesion, async (req, res) => {
+  const { mensaje } = validar(AsistenteReq, req.body);
+  res.json(await responder(req.clienteId!, mensaje));
+});
