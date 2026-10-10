@@ -26,7 +26,7 @@ import {
   IcTransferencias,
 } from "./IconosApp";
 
-type Props = { titulo?: string; volver?: string; subtitulo?: React.ReactNode };
+type Props = { titulo?: React.ReactNode; volver?: string; subtitulo?: React.ReactNode };
 
 export function Cabecera({ titulo, volver, subtitulo }: Props) {
   const [abierto, setAbierto] = useState(false);

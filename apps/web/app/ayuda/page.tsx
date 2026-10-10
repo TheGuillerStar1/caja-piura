@@ -92,6 +92,10 @@ export default function Ayuda() {
   const fin = useRef<HTMLDivElement>(null);
   const sigId = useRef(1);
 
+  const [hayVoz, setHayVoz] = useState(false);
+  const [escuchando, setEscuchando] = useState(false);
+  const reconocedor = useRef<{ stop: () => void } | null>(null);
+
   const tono: Tono = me?.recomendacion.tono ?? "CALIDO";
   const autoNavegar = tono === "CALIDO" || tono === "CORTO";
 
@@ -109,6 +113,12 @@ export default function Ayuda() {
       });
     return () => clearTimeout(timer.current);
   }, [router]);
+
+  useEffect(() => {
+    const w = window as unknown as Record<string, unknown>;
+    setHayVoz(Boolean(w.SpeechRecognition || w.webkitSpeechRecognition));
+    return () => reconocedor.current?.stop();
+  }, []);
 
   useEffect(() => {
     if (mensajes.length > 1 || pensando) fin.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -158,6 +168,30 @@ export default function Ayuda() {
     }
   }
 
+  function hablarAPia() {
+    if (escuchando) return reconocedor.current?.stop();
+    const w = window as unknown as Record<string, new () => {
+      lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void;
+      onresult: (e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void; onend: () => void; onerror: () => void;
+    }>;
+    const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!SR) return;
+    const r = new SR();
+    r.lang = "es-PE";
+    r.interimResults = false;
+    r.maxAlternatives = 1;
+    r.onresult = (e) => {
+      const dicho = e.results[0]?.[0]?.transcript ?? "";
+      if (dicho.trim()) enviar(dicho);
+    };
+    r.onend = () => setEscuchando(false);
+    r.onerror = () => setEscuchando(false);
+    reconocedor.current = r;
+    track("ayuda", "tocar", { flujo: "ASISTENTE" });
+    setEscuchando(true);
+    r.start();
+  }
+
   const inicio = mensajes.length <= 1;
   const sugeridos = (me?.recomendacion.sugerencias ?? []).map((s) => s.id).filter((id) => ACCESOS[id]);
   const accesos = [...new Set([...sugeridos, ...ACCESOS_BASE])].slice(0, 3);
@@ -166,8 +200,20 @@ export default function Ayuda() {
 
   return (
     <Pantalla
-      titulo="Pía · Ayuda"
-      subtitulo="Asistente virtual de Caja Piura · no es una persona"
+      titulo={
+        <span className="flex items-center gap-2.5">
+          <span className="shrink-0 rounded-full bg-white p-0.5">
+            <Mascota tamano={30} />
+          </span>
+          <span className="flex flex-col leading-tight">
+            <span className="text-lg font-bold">Pía</span>
+            <span className="flex items-center gap-1.5 text-xs font-normal text-white/85">
+              <span aria-hidden className="h-2 w-2 rounded-full bg-[#4cc77f]" />
+              En línea · asistente virtual, no es una persona
+            </span>
+          </span>
+        </span>
+      }
       volver="/inicio"
       pie={
         <form
@@ -196,28 +242,63 @@ export default function Ayuda() {
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
               maxLength={500}
-              placeholder="Escribe tu pregunta"
+              placeholder={escuchando ? "Te escucho… habla ahora" : hayVoz ? "Escribe o toca el micrófono" : "Escribe tu pregunta"}
               aria-label="Escribe tu pregunta para Pía"
               enterKeyHint="send"
               className="min-h-14 min-w-0 flex-1 rounded-full border-2 border-linea bg-superficie px-5 text-lg focus:border-marca focus:outline-none"
             />
-            <button
-              type="submit"
-              disabled={!texto.trim() || pensando}
-              aria-label="Enviar"
-              className="flex min-h-14 w-14 shrink-0 items-center justify-center rounded-full bg-marca text-white disabled:bg-linea disabled:text-tenue"
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                <path d="M3 20.5 21 12 3 3.5 3 10l12 2-12 2z" />
-              </svg>
-            </button>
+            {!texto.trim() && hayVoz ? (
+              <button
+                type="button"
+                onClick={hablarAPia}
+                disabled={pensando}
+                aria-label={escuchando ? "Dejar de escuchar" : "Hablarle a Pía"}
+                aria-pressed={escuchando}
+                className={`relative flex min-h-14 w-14 shrink-0 items-center justify-center rounded-full text-white disabled:bg-linea ${escuchando ? "bg-error guia-toca" : "bg-marca"}`}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                  <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
+                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!texto.trim() || pensando}
+                aria-label="Enviar"
+                className="flex min-h-14 w-14 shrink-0 items-center justify-center rounded-full bg-marca text-white disabled:bg-linea disabled:text-tenue"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                  <path d="M3 20.5 21 12 3 3.5 3 10l12 2-12 2z" />
+                </svg>
+              </button>
+            )}
           </div>
           <p className="text-center text-sm text-tenue">🔒 Pía nunca te pide tu clave.</p>
         </form>
       }
     >
       <div className="flex flex-col gap-4" aria-live="polite">
-        {mensajes.map((m) =>
+        {inicio && me ? (
+          <section className="flex flex-col items-center gap-2 pt-2 text-center">
+            <span className="rounded-full bg-white p-1 shadow-lg">
+              <Mascota tamano={72} animada />
+            </span>
+            <p className="text-2xl font-bold">Hola, {me.nombre.split(" ")[0]} 👋</p>
+            <p className="flex items-center gap-1 text-lg text-tenue">
+              ¿En qué te ayudo?
+              <button
+                type="button"
+                onClick={() => hablar(mensajes[0]?.texto ?? "")}
+                aria-label="Escuchar"
+                className="flex min-h-10! w-10 items-center justify-center rounded-full text-marca active:bg-marca-claro"
+              >
+                <IcParlante />
+              </button>
+            </p>
+          </section>
+        ) : (
+          mensajes.map((m) =>
           m.de === "yo" ? (
             <p key={m.id} className="ml-12 self-end rounded-2xl rounded-tr-sm bg-marca px-4 py-3 text-lg text-white">
               {m.texto}
@@ -250,41 +331,48 @@ export default function Ayuda() {
               {m.accion?.tipo === "OPCIONES" && (
                 <div className="ml-10 flex flex-col gap-2">
                   {m.accion.opciones.map((o) => (
-                    <Boton key={o.ruta + o.texto} variante="secundario" onClick={() => ir(o.ruta)}>
+                    <button
+                      key={o.ruta + o.texto}
+                      type="button"
+                      onClick={() => ir(o.ruta)}
+                      className="flex min-h-14 items-center justify-between gap-2 rounded-xl border-2 border-marca bg-superficie px-4 text-left text-lg font-bold text-marca active:bg-marca-claro"
+                    >
                       {o.texto}
-                    </Boton>
+                      <span aria-hidden className="text-2xl leading-none">›</span>
+                    </button>
                   ))}
                 </div>
               )}
             </div>
           ),
+          )
         )}
 
         {inicio && me && (
           <>
-            <section aria-label="Lo más pedido" className="ml-10 flex flex-col gap-2">
+            <section aria-label="Lo más pedido" className="grid grid-cols-3 gap-2">
               {accesos.map((id, i) => {
-                const a = ACCESOS[id]!;
+                const acc = ACCESOS[id]!;
                 return (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => enviar(a.texto)}
-                    className={`${i === 0 ? "guia-toca " : ""}flex min-h-16 items-center gap-3 rounded-xl border border-linea-fuerte bg-superficie px-3 text-left active:bg-superficie-2`}
+                    onClick={() => enviar(acc.texto)}
+                    className={`${i === 0 ? "guia-toca " : ""}flex min-h-28 flex-col items-center justify-center gap-2 rounded-2xl border border-linea-fuerte bg-superficie px-2 py-3 text-center active:bg-superficie-2`}
                   >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-marca text-white">
-                      <a.Icono className="h-6 w-6" />
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-marca text-white">
+                      <acc.Icono className="h-6 w-6" />
                     </span>
-                    <span className="flex-1 text-lg font-bold">{a.texto}</span>
+                    <span className="text-base font-bold leading-tight">{acc.texto}</span>
                   </button>
                 );
               })}
             </section>
-            <section aria-labelledby="preguntas" className="ml-10 flex flex-col gap-2">
+            <section aria-labelledby="preguntas" className="flex flex-col items-center gap-2">
               <h2 id="preguntas" className="text-sm font-bold tracking-wide text-tenue uppercase">
                 Preguntas rápidas
               </h2>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap justify-center gap-2">
                 {PREGUNTAS.map((p) => (
                   <button
                     key={p}

@@ -4,7 +4,7 @@ import { Cabecera } from "@/components/app/Cabecera";
 import { BarraInferior, type Pestana } from "@/components/BarraInferior";
 
 type Props = {
-  titulo?: string;
+  titulo?: React.ReactNode;
   volver?: string;
   subtitulo?: React.ReactNode;
   pestana?: Pestana;
