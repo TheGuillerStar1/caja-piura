@@ -9,7 +9,11 @@ import { aNumero, cuandoVence, soles } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { perfilDeCliente, recomendar } from "../motor/index.js";
 import { interpretar, type FrecuenteCtx, type Intencion, type Pantalla, type Rubro } from "./palabrasClave.js";
+import { herramientaAceptable, textoLibreAceptable } from "./guardas.js";
 import { quitarThink } from "./texto.js";
+
+/** Límite de espera al LLM: pasado este tiempo responde el respaldo por palabras clave (la demo no se queda colgada). */
+export const LIMITE_LLM_MS = 6_000;
 
 // ── Contexto ─────────────────────────────────────────
 type Ctx = {
@@ -197,7 +201,7 @@ function irA(ctx: Ctx, p: Pantalla): Resultado {
 
 function cambiarClave(): Resultado {
   return {
-    respuesta: "Por tu seguridad, el cambio de clave se hace en Ajustes con tu token o en agencia. Nunca te pediré tu clave.",
+    respuesta: "Por tu seguridad, tu clave se cambia en Ajustes o en una agencia. Yo nunca te pediré tu clave.",
     accion: { tipo: "OPCIONES", opciones: [{ texto: "Ir a Ajustes", ruta: "/ajustes" }] },
   };
 }
@@ -209,7 +213,7 @@ function fueraDeAlcance(ctx: Ctx): Resultado {
     respuesta: t(ctx, {
       calido: `${ctx.nombre}, eso todavía no lo puedo hacer. Puedo ayudarte con tu cuota, tus pagos frecuentes y recibos.`,
       corto: "Eso no lo puedo hacer. Te ayudo con tu cuota, frecuentes o recibos.",
-      directo: "Fuera de alcance. Puedo ayudarte con cuota, frecuentes y recibos.",
+      directo: "Eso no lo hago desde aquí. Te ayudo con cuota, frecuentes y recibos.",
     }),
     accion: { tipo: "OPCIONES", opciones: OPCIONES_BASE.slice(0, 3) },
   };
@@ -217,7 +221,7 @@ function fueraDeAlcance(ctx: Ctx): Resultado {
 
 function opcionesNoEntendi(ctx: Ctx): Resultado {
   return {
-    respuesta: t(ctx, { calido: `Perdona, ${ctx.nombre}, no te entendí bien. ¿Quisiste decir…?`, corto: "¿Quisiste decir…?", directo: "¿Quisiste decir…?" }),
+    respuesta: t(ctx, { calido: `Perdona, ${ctx.nombre}, no te entendí bien. ¿Quisiste decir…?`, corto: "No te entendí. ¿Quisiste decir…?", directo: "¿Quisiste decir…?" }),
     accion: { tipo: "OPCIONES", opciones: OPCIONES_BASE },
   };
 }
@@ -307,7 +311,7 @@ Reglas:
 
 async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<Resultado | null> {
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 8_000);
+  const timer = setTimeout(() => ctrl.abort(), LIMITE_LLM_MS);
   try {
     const r = await groq.chat.completions.create(
       {
@@ -321,7 +325,7 @@ async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<
         tools: HERRAMIENTAS,
         tool_choice: "auto",
       },
-      { signal: ctrl.signal },
+      { signal: ctrl.signal, maxRetries: 0, timeout: LIMITE_LLM_MS },
     );
     const msg = r.choices[0]?.message;
     const tc = msg?.tool_calls?.[0];
@@ -330,6 +334,8 @@ async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<
       try {
         args = JSON.parse(tc.function.arguments || "{}");
       } catch {}
+      // Guarda: si las palabras clave reconocieron otra cosa, manda la regla (respuesta predecible en la demo).
+      if (!herramientaAceptable(tc.function.name, args, intencion)) return null;
       switch (tc.function.name) {
         case "ver_saldo":
           return verSaldo(ctx);
@@ -358,13 +364,11 @@ async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<
           return null;
       }
     }
-    const texto = quitarThink(msg?.content).replace(/\s+/g, " ").trim();
+    // Sin herramienta: solo se acepta una frase normal y si las palabras clave no reconocieron nada.
+    // Texto raro, cifras (posibles montos inventados) o datos sensibles → respaldo por palabras clave.
+    const texto = textoLibreAceptable(quitarThink(msg?.content), intencion);
     if (!texto) return null;
-    // Salvaguarda: si el texto pidiera datos sensibles, se reemplaza por la respuesta segura.
-    if (/\b(dame|dime|env[ií]a|escribe|ingresa)\b.{0,30}\b(clave|contrase[nñ]a|pin|dni|tarjeta)\b/i.test(texto)) return respuestaSegura();
-    // Sin herramienta: si el mensaje no encaja con nada, se ofrecen los accesos principales.
-    const accion: AccionUI = intencion.tipo === "NADA" ? { tipo: "OPCIONES", opciones: OPCIONES_BASE } : ninguna;
-    return { respuesta: texto.length > 280 ? texto.slice(0, 277).replace(/\s\S*$/, "") + "…" : texto, accion };
+    return { respuesta: texto, accion: { tipo: "OPCIONES", opciones: OPCIONES_BASE } };
   } catch (e) {
     console.warn("[asistente] LLM:", (e as Error).message?.slice(0, 160));
     return null;
@@ -375,6 +379,18 @@ async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<
 
 /** Punto de entrada: mensaje del cliente → respuesta + acción para la UI. */
 export async function responder(clienteId: number, mensaje: string): Promise<AsistenteRes> {
+  try {
+    return await responderSinRespaldo(clienteId, mensaje);
+  } catch (e) {
+    // Último respaldo: nunca un error crudo en pantalla. Se ofrecen los accesos principales.
+    console.warn("[asistente] respaldo final:", (e as Error).message?.slice(0, 160));
+    const i = interpretar(mensaje, []);
+    if (i.tipo === "CLAVE_PEDIDA" || i.tipo === "CLAVE_CAMBIAR") return { respuesta: RESPUESTA_CLAVE, accion: ninguna, fuente: "PALABRAS_CLAVE" };
+    return { respuesta: "Ahora no pude revisar tus datos. Elige qué quieres hacer:", accion: { tipo: "OPCIONES", opciones: OPCIONES_BASE }, fuente: "PALABRAS_CLAVE" };
+  }
+}
+
+async function responderSinRespaldo(clienteId: number, mensaje: string): Promise<AsistenteRes> {
   const ctx = await cargarContexto(clienteId);
   const intencion = interpretar(mensaje, ctx.frecuentes);
   // Seguridad determinista: la clave y mover dinero nunca pasan por el LLM.

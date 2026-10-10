@@ -53,11 +53,12 @@ export function identificarServicio(empresaLeida: string, codigoLeido: string, s
   return { ok: false, razon: candidatos.length ? "AMBIGUO" : "FORMATO_NO_VALIDO" };
 }
 
-/** Imagen → { codigo, servicioId, empresa } o { ok:false }. Timeout de 12 s. */
-export async function leerRecibo(imagen: Buffer, mime: string, servicios: ServicioLectura[]): Promise<Lectura> {
+/** Imagen → { codigo, servicioId, empresa } o { ok:false }. Timeout corto (7 s por defecto) y sin reintentos:
+ * en la demo en vivo es mejor caer pronto al respaldo (recibo de demo conocido o "escribe el código"). */
+export async function leerRecibo(imagen: Buffer, mime: string, servicios: ServicioLectura[], timeoutMs = 7_000): Promise<Lectura> {
   if (!hayGroq) return { ok: false, razon: "SIN_GROQ" };
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 12_000);
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const r = await groq.chat.completions.create(
       {
@@ -74,7 +75,7 @@ export async function leerRecibo(imagen: Buffer, mime: string, servicios: Servic
           },
         ],
       },
-      { signal: ctrl.signal },
+      { signal: ctrl.signal, maxRetries: 0, timeout: timeoutMs },
     );
     const texto = quitarThink(r.choices[0]?.message?.content);
     if (process.env.DEBUG_IA) console.log("[leerRecibo] respuesta:", texto.slice(0, 300));

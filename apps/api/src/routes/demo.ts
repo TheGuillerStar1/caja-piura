@@ -2,12 +2,12 @@
 // Reloj simulado de la demo: "Adelantar 30 días" reemplaza al cron de recordatorios.
 import type { AdelantarRes } from "@cp/shared";
 import { Router } from "express";
-import { sembrarDemo } from "../../prisma/demo.js";
 import { HttpError } from "../lib/errores.js";
 import { aNumero } from "../lib/formato.js";
 import { prisma, prismaBase } from "../lib/prisma.js";
 import { cerrarSesion, requiereSesion } from "../lib/sesion.js";
 import { calcularNotificaciones, type Pendiente, siguienteRecibo, sumarDias } from "../retencion/logica.js";
+import { reiniciarDemo } from "../retencion/reinicio.js";
 
 export const router = Router();
 
@@ -53,9 +53,12 @@ router.post("/demo/adelantar", requiereSesion, async (req, res) => {
   res.json(r);
 });
 
+/** Vuelve a cero SOLO a los clientes de demo (cuotas, pagos, puntos, eventos, fecha, vista, frecuentes y recibos de demo).
+ * Rápido, idempotente y en el sitio (mismos ids). Cierra la sesión para volver a elegir personaje. */
 router.post("/demo/reset", requiereSesion, async (req, res) => {
   await clienteDemo(req.clienteId!);
-  await sembrarDemo(prismaBase);
+  const r = await reiniciarDemo(prismaBase);
+  console.log(`[demo/reset] ${r.modo} en ${r.ms} ms`);
   cerrarSesion(res);
-  res.json({ ok: true });
+  res.json(r);
 });

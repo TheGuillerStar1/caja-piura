@@ -22,7 +22,13 @@ export function borrarKey(tipo: string, ref: number | string) {
   } catch {}
 }
 
-export type ResultadoPago = ConfirmarPagoRes & { tipo: TipoPago; referenciaId: number; destinatario: string };
+export type ResultadoPago = ConfirmarPagoRes & {
+  tipo: TipoPago;
+  referenciaId: number;
+  destinatario: string;
+  /** true cuando la pantalla de éxito ya registró "completar" (evita contarlo dos veces al recargar). */
+  registrado?: boolean;
+};
 const RESULTADO = "cp_pago_resultado";
 
 export function guardarResultado(r: ResultadoPago) {

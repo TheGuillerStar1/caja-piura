@@ -29,7 +29,9 @@ async function calcularKpis(): Promise<KpisRes> {
       where: { accion: "completar", flujo: { in: ["CUOTA", "FRECUENTE", "RECIBO"] }, msDesdeInicio: { not: null } },
       _avg: { msDesdeInicio: true },
     }),
+    // Distribución sobre los 500 perfiles sintéticos (sin los clientes de demo).
     prisma.cliente.findMany({
+      where: { esDemo: false },
       select: {
         edad: true,
         ocupacion: true,

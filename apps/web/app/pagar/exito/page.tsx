@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { leerResultado, type ResultadoPago } from "@/components/pago/almacen";
+import { guardarResultado, leerResultado, type ResultadoPago } from "@/components/pago/almacen";
 import { EstilosPago } from "@/components/pago/EstilosPago";
 import { IconoCheck } from "@/components/pago/Iconos";
 import { Boton, Pantalla, Tarjeta } from "@/components/ui";
 import { fechaHora, soles } from "@/lib/formato";
-import { track } from "@/lib/track";
+import { iniciarFlujo, track } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 import { hablar, montoHablado } from "@/lib/voz";
 
@@ -40,7 +40,13 @@ export default function PagoExito() {
     if (registrado.current) return;
     registrado.current = true;
     track("exito", "ver", { flujo: res.tipo });
-    if (!res.repetido) track("exito", "completar", { flujo: res.tipo });
+    // "completar" una sola vez por pago (recargar esta pantalla no debe contar otra operación en el panel).
+    if (!res.repetido && !res.registrado) {
+      track("exito", "completar", { flujo: res.tipo });
+      guardarResultado({ ...res, registrado: true });
+    }
+    // Cierra la operación: la marca de ayuda no debe pasar al siguiente pago.
+    iniciarFlujo(res.tipo);
     if (asistida) hablar(`Listo. Pagaste ${montoHablado(res.monto)}. Te ahorraste una visita a la agencia.`);
   }, [router, asistida]);
 

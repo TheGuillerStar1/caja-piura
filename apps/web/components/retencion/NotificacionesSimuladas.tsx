@@ -46,7 +46,7 @@ export function NotificacionesSimuladas({ mensajes, alTocar, alCerrar }: Props) 
       ))}
       <div className="pointer-events-auto flex w-full max-w-md items-center justify-between px-1">
         <span className="rounded-full bg-tinta/80 px-2 py-0.5 text-xs text-white">Notificación simulada</span>
-        <button type="button" onClick={alCerrar} className="rounded-full bg-tinta/80 px-3 text-xs text-white" style={{ minHeight: 28 }}>
+        <button type="button" onClick={alCerrar} className="min-w-12 rounded-full bg-tinta/80 px-3 text-sm text-white">
           Cerrar
         </button>
       </div>

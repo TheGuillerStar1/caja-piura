@@ -51,6 +51,61 @@ describe("interpretar (respaldo sin LLM)", () => {
   });
 });
 
+// Frases del guion de la demo y de los botones de sugerencia: deben funcionar SIN LLM (Groq caído).
+describe("guion de la demo (respaldo sin LLM)", () => {
+  const elena: FrecuenteCtx[] = [];
+
+  it("Rosa: pagar la luz de mi mamá → su frecuente", () => {
+    for (const f of ["pagar la luz de mi mamá", "Quiero pagar la luz de mi mamá", "pagar luz de mamá", "la luz de mi mama", "PAGAR LA LUZ DE MI MAMÁ"]) {
+      expect(interpretar(f, rosa)).toEqual({ tipo: "FRECUENTE", ids: [1] });
+    }
+  });
+
+  it("¿cuánto debo? → deuda", () => {
+    for (const f of ["¿cuánto debo?", "cuanto debo", "¿Cuánto debo este mes?", "qué tengo pendiente", "¿Qué me falta pagar? ¿Cuánto debo?"]) {
+      expect(interpretar(f, rosa).tipo).toBe("DEUDA");
+    }
+  });
+
+  it("mi saldo → saldo", () => {
+    for (const f of ["mi saldo", "¿Cuál es mi saldo?", "ver saldo", "Ver mi saldo", "¿cuánto tengo?", "cuanta plata tengo"]) {
+      expect(interpretar(f, carlos).tipo).toBe("SALDO");
+    }
+  });
+
+  it("cuota y crédito", () => {
+    for (const f of ["pagar mi cuota", "Pagar cuota", "quiero pagar mi crédito", "mi préstamo"]) expect(interpretar(f, rosa).tipo).toBe("CUOTA");
+  });
+
+  it("Elena sin frecuentes: la luz va a pagar con foto", () => {
+    expect(interpretar("pagar la luz de mi mamá", elena)).toEqual({ tipo: "RUBRO_SIN_FRECUENTE", rubro: "LUZ" });
+    expect(interpretar("tengo mi recibo de agua", elena)).toEqual({ tipo: "RUBRO_SIN_FRECUENTE", rubro: "AGUA" });
+  });
+
+  it("Carlos: celular e internet guardados", () => {
+    expect(interpretar("pagar mi celular", carlos)).toEqual({ tipo: "FRECUENTE", ids: [2] });
+    expect(interpretar("pagar el internet de la casa", carlos)).toEqual({ tipo: "FRECUENTE", ids: [3] });
+  });
+
+  it("textos de los botones de sugerencia (motor y Ayuda)", () => {
+    expect(interpretar("Pagar mi cuota", rosa).tipo).toBe("CUOTA");
+    expect(interpretar("Mis pagos de siempre", rosa)).toEqual({ tipo: "PANTALLA", pantalla: "frecuentes" });
+    expect(interpretar("Pagos frecuentes", carlos)).toEqual({ tipo: "PANTALLA", pantalla: "frecuentes" });
+    expect(interpretar("Pagar un recibo con foto", rosa).tipo).toBe("RECIBO");
+    expect(interpretar("Pagar recibo", carlos).tipo).toBe("RECIBO");
+    expect(interpretar("Ver saldo", carlos).tipo).toBe("SALDO");
+    expect(interpretar("Mi progreso", carlos)).toEqual({ tipo: "PANTALLA", pantalla: "progreso" });
+    expect(interpretar("¿Cuánto debo?", rosa).tipo).toBe("DEUDA");
+    expect(interpretar("Pagar la luz", rosa)).toEqual({ tipo: "FRECUENTE", ids: [1] });
+  });
+
+  it("la IA nunca pide la clave", () => {
+    for (const f of ["¿me pides mi clave?", "te doy mi clave 123456", "mi pin es 1234", "necesitas mi contraseña?"]) {
+      expect(interpretar(f, rosa).tipo).toBe("CLAVE_PEDIDA");
+    }
+  });
+});
+
 describe("lectura de recibos", () => {
   const servicios = [
     { id: 1, empresa: "Enosa", formatoCodigo: "^\\d{8}$" },

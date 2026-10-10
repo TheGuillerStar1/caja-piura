@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { soles } from "@/lib/formato";
-import { marcarAyuda, track, usoAyuda } from "@/lib/track";
+import { iniciarFlujo, marcarAyuda, track, usoAyuda } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 import { callar, hablar, montoHablado } from "@/lib/voz";
 import { borrarKey, guardarKey, guardarResultado, leerKey } from "./almacen";
@@ -81,6 +81,12 @@ export function Confirmar() {
   }, [tipo, ref, router, flujo]);
 
   useEffect(() => {
+    // Llegó desde el asistente (Ayuda navega directo aquí): el tiempo se mide desde ahora, sin perder la marca de ayuda.
+    // Sin esto, "completar" usaría el inicio de una operación anterior y el panel mostraría tiempos inflados.
+    if (flujo && usoAyuda()) {
+      iniciarFlujo(flujo);
+      marcarAyuda();
+    }
     track("confirmar", "ver", { flujo });
     preparar();
     return () => callar();
@@ -297,6 +303,29 @@ export function Confirmar() {
         <p className="mt-1 text-lg">{pago.descripcion}</p>
       </section>
 
+      {/* Ayudas arriba: en un celular de 5" quedaban tapadas por el pie fijo con "Confirmar pago". */}
+      {!saldoInsuficiente && (asistida || guia === null) && (
+        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          {asistida && (
+            <Boton
+              variante="fantasma"
+              bloque={false}
+              onClick={() => {
+                track("confirmar", "tocar", { flujo });
+                leerEnVoz(pago);
+              }}
+            >
+              🔊 Escuchar de nuevo
+            </Boton>
+          )}
+          {guia === null && (
+            <Boton variante="fantasma" bloque={false} className="text-base" onClick={empezarGuia}>
+              Enséñame paso a paso
+            </Boton>
+          )}
+        </div>
+      )}
+
       <section ref={registrar("destinatario")} className={`rounded-2xl bg-superficie p-4 ${marcar("destinatario")}`}>
         <p className="text-tenue">A quién le pagas</p>
         <p className="text-2xl font-bold">{pago.destinatario}</p>
@@ -310,7 +339,7 @@ export function Confirmar() {
         <p className="text-tenue">Saldo disponible: {soles(pago.cuenta.saldo)}</p>
       </section>
 
-      {saldoInsuficiente ? (
+      {saldoInsuficiente && (
         <Tarjeta tono="aviso">
           <p className="text-xl font-bold">Tu cuenta no tiene saldo suficiente</p>
           <p className="mt-2 text-lg">
@@ -319,19 +348,6 @@ export function Confirmar() {
           </p>
           <p className="mt-2 text-tenue">No se movió dinero.</p>
         </Tarjeta>
-      ) : (
-        <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-          {asistida && (
-            <Boton variante="fantasma" bloque={false} onClick={() => leerEnVoz(pago)}>
-              🔊 Escuchar de nuevo
-            </Boton>
-          )}
-          {guia === null && (
-            <Boton variante="fantasma" bloque={false} className="text-base" onClick={empezarGuia}>
-              Enséñame paso a paso
-            </Boton>
-          )}
-        </div>
       )}
 
       {estado.fase === "autenticando" && <HojaAutenticacion asistida={asistida} onOk={enviar} onCancelar={cancelar} />}

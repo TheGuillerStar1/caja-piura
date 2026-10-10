@@ -16,6 +16,12 @@ const SALUDOS: Record<Tono, (n: string) => string> = {
   DIRECTO: (n) => `Hola, ${n}. ¿En qué te ayudo?`,
 };
 const EXTRAS = ["¿Cuánto debo?", "Pagar la luz"];
+/** Si el asistente no responde, estos accesos siempre funcionan. */
+const OPCIONES_RESPALDO = [
+  { texto: "Pagar mi cuota", ruta: "/pagar/cuota" },
+  { texto: "Mis pagos frecuentes", ruta: "/pagar/frecuentes" },
+  { texto: "Pagar un recibo", ruta: "/pagar/recibo" },
+];
 
 export default function Ayuda() {
   const router = useRouter();
@@ -78,9 +84,20 @@ export default function Ayuda() {
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
       track("ayuda", "error", { flujo: "ASISTENTE" });
+      // Nunca un error crudo: Pía ofrece los caminos principales, que funcionan sin asistente.
+      const sinConexion = e instanceof ApiFallo && e.codigo === "SIN_CONEXION";
       setMensajes((m) => [
         ...m,
-        { id: sigId.current++, de: "pia", texto: e instanceof ApiFallo ? e.message : "No pude responder. Inténtalo de nuevo." },
+        {
+          id: sigId.current++,
+          de: "pia",
+          texto: sinConexion
+            ? "No hay conexión. Revisa tu internet y vuelve a intentar."
+            : tono === "DIRECTO"
+              ? "No pude responder. Elige una opción:"
+              : "Perdona, ahora no pude responderte. ¿Te llevo a alguna de estas?",
+          accion: sinConexion ? undefined : { tipo: "OPCIONES", opciones: OPCIONES_RESPALDO },
+        },
       ]);
     } finally {
       setPensando(false);

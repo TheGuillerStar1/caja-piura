@@ -7,13 +7,15 @@ import multer from "multer";
 import { HttpError } from "../lib/errores.js";
 import { aNumero, ocultarNombre } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
-import { leerArchivo, PREFIJO_DEMO, PREFIJO_SUBIDAS, subirArchivo, urlDemo } from "../lib/r2.js";
+import { leerArchivo, PREFIJO_SUBIDAS, subirArchivo, urlDemo } from "../lib/r2.js";
 import { requiereSesion } from "../lib/sesion.js";
-import { leerRecibo } from "../ia/leerRecibo.js";
+import { type Lectura, leerRecibo } from "../ia/leerRecibo.js";
+import { demoPorCodigo, demoPorImagen, demoPorKey, demoPorNombreArchivo, NO_PUDE, type ReciboDemoConocido, resolverLectura } from "../ia/respaldoRecibos.js";
+import { RECIBOS_DEMO } from "../../prisma/demo.js";
 
 export const router = Router();
 
-const NO_PUDE = "No pude leer el código. Toma otra foto con buena luz o escribe el código.";
+
 const TIPOS = ["image/jpeg", "image/png", "image/webp"];
 
 const subida = multer({
@@ -38,24 +40,9 @@ const imagenOpcional: RequestHandler = (req, res, next) => {
   });
 };
 
-/** Recibos de ejemplo de respaldo si la base aún no tiene imagenKey. */
-const DEMO_RESPALDO = [
-  { key: "demo/recibo-enosa.jpg", empresa: "Enosa" },
-  { key: "demo/recibo-epsgrau.jpg", empresa: "EPS Grau" },
-  { key: "demo/recibo-movistar.jpg", empresa: "Movistar" },
-];
-
+/** Recibos de ejemplo de la ruta C. Salen de la lista fija de demo: no dependen de la base ni de un seed reciente. */
 router.get("/recibos/demo", requiereSesion, async (_req, res) => {
-  const recibos = await prisma.recibo.findMany({
-    where: { imagenKey: { not: null } },
-    include: { servicio: true },
-    orderBy: { id: "asc" },
-  });
-  const vistos = new Set<string>();
-  const lista = recibos
-    .filter((r) => r.imagenKey!.startsWith(PREFIJO_DEMO) && !vistos.has(r.imagenKey!) && vistos.add(r.imagenKey!))
-    .map((r) => ({ key: r.imagenKey!, empresa: r.servicio.empresa }));
-  res.json((lista.length ? lista : DEMO_RESPALDO).map((d) => ({ ...d, url: urlDemo(d.key) })));
+  res.json(RECIBOS_DEMO.map((r) => ({ key: r.imagenKey, empresa: r.empresa, url: urlDemo(r.imagenKey) })));
 });
 
 /** Servicios para "Escribir el código" (empresa, rubro, formato y ayuda). Fuera del contrato: tipo local en la web. */
@@ -65,11 +52,14 @@ router.get("/recibos/servicios", requiereSesion, async (_req, res) => {
 });
 
 router.post("/recibos/leer", requiereSesion, imagenOpcional, async (req, res) => {
-  let imagen: Buffer;
+  let imagen: Buffer | null = null;
   let mime = "image/jpeg";
+  /** Recibo de demo reconocido (por demoKey, huella de la imagen o nombre del archivo): respaldo si la IA falla. */
+  let demo: ReciboDemoConocido | null = null;
   if (req.file) {
     imagen = req.file.buffer;
     mime = req.file.mimetype;
+    demo = (await demoPorImagen(imagen)) ?? demoPorNombreArchivo(req.file.originalname);
   } else {
     const demoKey = typeof req.body?.demoKey === "string" ? req.body.demoKey : "";
     if (!/^demo\/[a-z0-9-]+\.(jpe?g|png|webp)$/.test(demoKey)) {
@@ -81,16 +71,19 @@ router.post("/recibos/leer", requiereSesion, imagenOpcional, async (req, res) =>
       }
       throw new HttpError(400, "VALIDACION", "Envía una foto (campo imagen) o un recibo de ejemplo (demoKey)");
     }
+    demo = demoPorKey(demoKey);
     try {
       imagen = await leerArchivo(demoKey);
-    } catch {
-      throw new HttpError(404, "NO_ENCONTRADO", "No encontramos ese recibo de ejemplo");
+    } catch (e) {
+      // Sin la imagen (R2 caído) un recibo de demo igual se resuelve con su código conocido.
+      if (!demo) throw new HttpError(404, "NO_ENCONTRADO", "No encontramos ese recibo de ejemplo");
+      console.warn("[recibos] R2 no respondió, uso el recibo de demo conocido:", (e as Error).message?.slice(0, 120));
     }
     if (demoKey.endsWith(".png")) mime = "image/png";
   }
 
   // La foto del cliente se guarda en privado (subidas/), nunca se expone por URL. No bloquea la lectura.
-  if (req.file) {
+  if (req.file && imagen) {
     const ext = mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "jpg";
     subirArchivo(`${PREFIJO_SUBIDAS}${req.clienteId}/${Date.now()}.${ext}`, imagen, mime).catch((e) =>
       console.warn("[recibos] no se pudo subir a R2:", (e as Error).message?.slice(0, 120)),
@@ -99,11 +92,12 @@ router.post("/recibos/leer", requiereSesion, imagenOpcional, async (req, res) =>
 
   const servicios = await prisma.servicio.findMany({ select: { id: true, empresa: true, formatoCodigo: true } });
   const t0 = Date.now();
-  const lectura = await leerRecibo(imagen, mime, servicios);
+  // Recibo de demo: límite más corto (hay respaldo seguro). Foto real: un poco más de margen.
+  const lectura: Lectura = imagen ? await leerRecibo(imagen, mime, servicios, demo ? 6_000 : 8_000) : { ok: false, razon: "SIN_IMAGEN" };
   console.log(`[recibos] lectura en ${Date.now() - t0} ms → ${lectura.ok ? `${lectura.empresa} ${lectura.codigo}` : lectura.razon}`);
-  const r: LeerReciboRes = lectura.ok
-    ? { ok: true, codigo: lectura.codigo, servicioId: lectura.servicioId, empresa: lectura.empresa }
-    : { ok: false, motivo: NO_PUDE };
+
+  const r = resolverLectura(lectura, demo, servicios);
+  if (demo && r.ok && (!lectura.ok || lectura.codigo !== r.codigo)) console.log(`[recibos] respaldo de demo → ${r.empresa} ${r.codigo}`);
   res.json(r);
 });
 
@@ -129,16 +123,45 @@ router.get("/recibos/:codigo", requiereSesion, async (req, res) => {
       throw new HttpError(400, "CODIGO_INVALIDO", `Revisa el código. ${s.ayudaCodigo}`);
     }
   }
-  const recibo = await prisma.recibo.findFirst({
-    where: { codigo, pagado: false, ...(servicioId !== undefined ? { servicioId } : {}) },
-    include: { servicio: true },
-    orderBy: { vencimiento: "asc" },
-  });
+  const buscar = () =>
+    prisma.recibo.findFirst({
+      where: { codigo, pagado: false, ...(servicioId !== undefined ? { servicioId } : {}) },
+      include: { servicio: true },
+      orderBy: { vencimiento: "asc" },
+    });
+  let recibo = await buscar();
+  if (!recibo && (await reponerReciboDemo(codigo, servicioId, req.clienteId!))) recibo = await buscar();
   if (!recibo) throw new HttpError(404, "NO_HAY_DEUDA", "Este recibo no tiene deuda pendiente");
   res.json(aReciboRes(recibo));
 });
 
-type ReciboConServicio = Prisma.ReciboGetPayload<{ include: { servicio: true } }>;
+/**
+ * Recibos de ejemplo de la ruta C que siempre funcionan: si ya lo pagó OTRO cliente de demo (p. ej. Rosa y luego Elena
+ * prueban el mismo recibo) o falta en la base, vuelve a quedar pendiente. Si lo pagó este mismo cliente, se respeta
+ * "no tiene deuda" (es lo real). "Reiniciar demo" también los restaura. Devuelve true si cambió algo.
+ */
+async function reponerReciboDemo(codigo: string, servicioId: number | undefined, clienteId: number): Promise<boolean> {
+  const servicio = servicioId !== undefined ? await prisma.servicio.findUnique({ where: { id: servicioId } }) : null;
+  const demo = demoPorCodigo(codigo, servicio?.empresa);
+  if (!demo) return false;
+  const s = servicio ?? (await prisma.servicio.findFirst({ where: { empresa: demo.empresa } }));
+  if (!s) return false;
+  const ultimo = await prisma.recibo.findFirst({ where: { servicioId: s.id, codigo }, orderBy: { vencimiento: "desc" } });
+  if (!ultimo) {
+    const c = await prisma.cliente.findUnique({ where: { id: clienteId }, select: { fechaSimulada: true } });
+    const hoy = c?.fechaSimulada ?? new Date();
+    await prisma.recibo.create({
+      data: { codigo, servicioId: s.id, titular: demo.titular, monto: demo.monto, vencimiento: new Date(hoy.getTime() + demo.dias * 86400000), imagenKey: demo.imagenKey },
+    });
+    return true;
+  }
+  const pagoPropio = await prisma.pago.findFirst({ where: { clienteId, tipo: "RECIBO", referenciaId: ultimo.id, estado: "EXITOSO" }, select: { id: true } });
+  if (pagoPropio) return false;
+  await prisma.recibo.update({ where: { id: ultimo.id }, data: { pagado: false } });
+  return true;
+}
+
+type ReciboConServicio =Prisma.ReciboGetPayload<{ include: { servicio: true } }>;
 function aReciboRes(recibo: ReciboConServicio): ReciboRes {
   return {
     id: recibo.id,

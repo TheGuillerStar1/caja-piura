@@ -10,10 +10,11 @@
   --color-superficie: #ffffff;
   --color-tinta: #14233a;
   --color-tenue: #55657d;
-  --color-linea: #c9d4e3;
-  --color-exito: #15803d;
+  --color-linea: #c9d4e3;        /* bordes decorativos (tarjetas) */
+  --color-linea-fuerte: #7a8ca6; /* borde de campos de texto: 3.4:1 sobre blanco (WCAG 1.4.11) */
+  --color-exito: #12753a;        /* AA 5.1:1 sobre exito-claro (antes 4.4:1) */
   --color-exito-claro: #e3f5ea;
-  --color-aviso: #a16207;
+  --color-aviso: #94580a;        /* AA 5.2:1 sobre aviso-claro */
   --color-aviso-claro: #fff4dc;
   --color-error: #b42318;
   --color-error-claro: #fdeceb;
@@ -33,20 +34,55 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Objetivos táctiles mínimos de 48px */
-button, a, [role="button"] { min-height: 48px; }
+@layer base {
+  /* Objetivos táctiles mínimos de 48px. En @layer base para que min-h-14, min-h-20, etc. puedan subirlo. */
+  button, a, [role="button"], summary, input:not([type="checkbox"], [type="radio"], [type="file"], [type="hidden"]), select {
+    min-height: 48px;
+  }
 
-/* Guía "toca aquí": anillo pulsante sobre el elemento a tocar */
-@keyframes pulso {
-  0% { box-shadow: 0 0 0 0 rgb(10 79 163 / 0.55); }
-  70% { box-shadow: 0 0 0 14px rgb(10 79 163 / 0); }
-  100% { box-shadow: 0 0 0 0 rgb(10 79 163 / 0); }
+  /* Foco visible para teclado/lectores: anillo azul con borde blanco, se ve sobre fondo claro y sobre la barra azul. */
+  :focus-visible {
+    outline: 3px solid var(--color-marca);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #fff;
+  }
 }
-.guia-toca { animation: pulso 1.6s infinite; position: relative; z-index: 10; }
+
+/* Campos de texto: borde con contraste suficiente sin oscurecer las tarjetas (border-linea sigue siendo suave). */
+@layer utilities {
+  :is(input, textarea, select).border-linea:not(:focus) { border-color: var(--color-linea-fuerte); }
+}
+
+/* Guía "toca aquí": anillo pulsante sobre el elemento a tocar.
+   Solo anima transform y opacity de un pseudo-elemento (lo hace la GPU): no repinta la pantalla en cada cuadro,
+   importante en celulares de gama baja. */
+.guia-toca { position: relative; z-index: 10; }
+.guia-toca::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 6px rgb(10 79 163 / 0.5);
+  pointer-events: none;
+  animation: pulso 1.6s ease-out infinite;
+  will-change: transform, opacity;
+}
+@keyframes pulso {
+  0% { transform: scale(1); opacity: 1; }
+  70%, 100% { transform: scale(1.04, 1.12); opacity: 0; }
+}
 
 @keyframes rebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .anim-rebote { animation: rebote 1.8s ease-in-out infinite; }
 
+/* Movimiento reducido: sin animaciones ni transiciones en toda la app (incluye spinners y avisos de otros componentes).
+   La guía "toca aquí" queda como un anillo fijo para no perder la indicación. */
 @media (prefers-reduced-motion: reduce) {
-  .guia-toca, .anim-rebote { animation: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .guia-toca::after { animation: none !important; opacity: 1; transform: none; }
 }

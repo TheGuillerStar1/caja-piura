@@ -9,7 +9,7 @@ import { IconoFrecuente, IconoRecibo } from "@/components/pago/Iconos";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { fechaCorta, soles } from "@/lib/formato";
-import { iniciarFlujo, track } from "@/lib/track";
+import { iniciarFlujo, marcarAyuda, track, usoAyuda } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 
 const RUBRO: Record<string, string> = { LUZ: "Luz", AGUA: "Agua", TELEFONIA: "Celular", INTERNET: "Internet" };
@@ -32,7 +32,10 @@ export default function PagarFrecuentes() {
   }, [router]);
 
   useEffect(() => {
+    // Si viene del asistente (Ayuda), la operación sigue contando como "con ayuda".
+    const conAyuda = usoAyuda();
     iniciarFlujo("FRECUENTE");
+    if (conAyuda) marcarAyuda();
     track("pagar-frecuentes", "ver", { flujo: "FRECUENTE" });
     cargar();
   }, [cargar]);

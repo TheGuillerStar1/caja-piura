@@ -1,5 +1,5 @@
 // Dueño: Agente C. Respaldo del asistente SIN LLM: interpreta el mensaje con palabras clave (sin tildes, tolera errores).
-// Se usa si no hay Groq, si falla o si tarda más de 8 s. También decide los casos de seguridad (clave) antes del LLM.
+// Se usa si no hay Groq, si falla, si tarda más de 6 s o si contradice a estas reglas. También decide los casos de seguridad (clave) antes del LLM.
 import { contienePalabra, normalizar } from "./texto.js";
 
 export type Rubro = "LUZ" | "AGUA" | "TELEFONIA" | "INTERNET";
@@ -59,7 +59,7 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
       : { tipo: "CLAVE_PEDIDA" };
   }
   // 2. Mover dinero fuera de lo que la app prepara: no se hace desde el asistente.
-  if (algun(t, ["transferir", "transferencia", "transfiere", "yapear", "yape", "plin", "prestame", "retirar", "depositar a", "enviar plata", "mandar plata", "enviar dinero", "mandar dinero"])) {
+  if (algun(t, ["transferir", "transferencia", "transfiere", "yapear", "yape", "plin", "prestame plata", "prestame dinero", "retirar", "depositar a", "enviar plata", "mandar plata", "enviar dinero", "mandar dinero"])) {
     return { tipo: "FUERA_DE_ALCANCE" };
   }
 
@@ -82,9 +82,9 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
 
   // 6. Resto de accesos.
   if (algun(t, ["recibo", "foto", "fotito", "boleta", "factura"])) return { tipo: "RECIBO" };
-  if (algun(t, ["saldo", "cuanto tengo", "mi plata", "mi dinero", "tengo plata"])) return { tipo: "SALDO" };
+  if (algun(t, ["saldo", "cuanto tengo", "mi plata", "mi dinero", "tengo plata", "plata tengo", "dinero tengo", "cuanto hay en mi cuenta"])) return { tipo: "SALDO" };
   if (algun(t, ["puntos", "progreso", "premio", "premios", "millas"])) return { tipo: "PANTALLA", pantalla: "progreso" };
-  if (algun(t, ["frecuente", "frecuentes", "guardados"])) return { tipo: "PANTALLA", pantalla: "frecuentes" };
+  if (algun(t, ["frecuente", "frecuentes", "guardados", "de siempre"])) return { tipo: "PANTALLA", pantalla: "frecuentes" };
   if (algun(t, ["ajustes", "configuracion", "vista", "letra"])) return { tipo: "PANTALLA", pantalla: "ajustes" };
   if (algun(t, ["inicio", "volver", "principal"])) return { tipo: "PANTALLA", pantalla: "inicio" };
   return { tipo: "NADA" };

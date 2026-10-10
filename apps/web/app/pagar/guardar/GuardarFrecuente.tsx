@@ -64,7 +64,7 @@ export function GuardarFrecuente({ reciboId }: { reciboId: number }) {
   if (listo) {
     return (
       <Pantalla titulo="Guardado">
-        <Mascota animada mensaje={`Listo. El próximo mes no necesitas foto.`} />
+        <Mascota animada mensaje={asistida ? "¡Listo! El próximo mes ya no necesitas foto." : "Guardado. La próxima vez, sin foto."} />
         <Tarjeta tono="exito" className="text-center">
           <p className="text-2xl font-bold">“{alias.trim()}”</p>
           <p className="mt-1 text-lg">Lo encuentras en Mis pagos frecuentes.</p>
@@ -80,9 +80,11 @@ export function GuardarFrecuente({ reciboId }: { reciboId: number }) {
     <Pantalla titulo="¿Lo guardo?" volver="/inicio">
       <Mascota
         mensaje={
-          recibo
-            ? `¿Guardo tu recibo de ${recibo.empresa} para la próxima? Así no necesitas foto.`
-            : "¿Guardo este recibo para la próxima? Así no necesitas foto."
+          asistida
+            ? recibo
+              ? `¿Guardo tu recibo de ${recibo.empresa} para la próxima? Así ya no necesitas foto.`
+              : "¿Guardo este recibo para la próxima? Así ya no necesitas foto."
+            : `¿Guardar${recibo ? ` ${recibo.empresa}` : ""} en tus pagos frecuentes?`
         }
       />
       {error && <MensajeError mensaje={error} />}

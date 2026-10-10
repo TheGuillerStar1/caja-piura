@@ -7,15 +7,16 @@ import { createContext, useCallback, useContext, useEffect, useState } from "rea
 type Ctx = { vista: Vista; asistida: boolean; setVista: (v: Vista) => void };
 const VistaCtx = createContext<Ctx>({ vista: "ESTANDAR", asistida: false, setVista: () => {} });
 
-export function VistaProvider({ children }: { children: React.ReactNode }) {
-  const [vista, setVistaState] = useState<Vista>("ESTANDAR");
+/** Vista ya conocida en el navegador (el script en línea de app/layout.tsx la pone en <html data-vista> antes de pintar). En el servidor: ESTANDAR. */
+function vistaInicial(): Vista {
+  if (typeof document === "undefined") return "ESTANDAR";
+  return document.documentElement.dataset.vista === "ASISTIDA" ? "ASISTIDA" : "ESTANDAR";
+}
 
-  useEffect(() => {
-    try {
-      const v = localStorage.getItem("cp_vista");
-      if (v === "ASISTIDA" || v === "ESTANDAR") setVistaState(v);
-    } catch {}
-  }, []);
+export function VistaProvider({ children }: { children: React.ReactNode }) {
+  // Se lee en el primer render del cliente: los efectos de las pantallas (p. ej. leer el monto en voz alta
+  // en la pantalla de éxito) ya ven el valor correcto de `asistida` desde el inicio.
+  const [vista, setVistaState] = useState<Vista>(vistaInicial);
 
   useEffect(() => {
     document.documentElement.dataset.vista = vista;

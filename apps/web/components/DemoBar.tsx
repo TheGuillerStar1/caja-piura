@@ -1,5 +1,5 @@
 "use client";
-// Dueño: Agente D. Barra flotante de demo: "Adelantar 30 días", "Reiniciar demo", simular fallo y enlace al panel.
+// Dueño: Agente D (F3: Agente G). Barra flotante de demo: "Adelantar 30 días", "Reiniciar demo", simular fallo y enlace al panel.
 // Tras adelantar, muestra notificaciones simuladas estilo celular; al tocarlas lleva a /inicio (donde ya está el aviso).
 import type { AdelantarRes } from "@cp/shared";
 import Link from "next/link";
@@ -16,6 +16,7 @@ export default function DemoBar() {
   const [abierta, setAbierta] = useState(false);
   const [sesion, setSesion] = useState<boolean | null>(null);
   const [ocupado, setOcupado] = useState<null | "adelantar" | "reset">(null);
+  const [confirmando, setConfirmando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [notis, setNotis] = useState<string[]>([]);
 
@@ -58,20 +59,24 @@ export default function DemoBar() {
     }
   }
 
+  // Confirmación en el mismo panel (sin confirm() del navegador): un toque para pedir, otro para confirmar.
   async function reiniciar() {
-    if (!confirm("¿Reiniciar la demo? Se borran los pagos y puntos de los clientes de demostración.")) return;
+    setConfirmando(false);
     setOcupado("reset");
     setMensaje(null);
     try {
       await api("/demo/reset", { metodo: "POST" });
       try {
-        localStorage.removeItem("cp_vista");
+        // Vista elegida, anuncio de bienvenida y datos del pago en curso: todo vuelve a cero en este celular.
+        Object.keys(localStorage)
+          .filter((k) => k.startsWith("cp_"))
+          .forEach((k) => localStorage.removeItem(k));
         sessionStorage.clear();
       } catch {}
       window.location.assign("/");
     } catch (e) {
       if (esSinSesion(e)) setSesion(false);
-      setMensaje(e instanceof ApiFallo ? e.message : "No se pudo reiniciar.");
+      setMensaje(e instanceof ApiFallo ? e.message : "No se pudo reiniciar. Inténtalo de nuevo.");
       setOcupado(null);
     }
   }
@@ -96,16 +101,28 @@ export default function DemoBar() {
       <NotificacionesSimuladas mensajes={notis} alTocar={irAInicio} alCerrar={() => setNotis([])} />
 
       {abierta && (
-        <div className="fixed inset-0 z-50 bg-black/30" onClick={() => setAbierta(false)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/30"
+          onClick={() => {
+            setAbierta(false);
+            setConfirmando(false);
+          }}
+        >
           <div
             role="dialog"
             aria-label="Opciones de demostración"
-            className="absolute bottom-36 right-2 flex w-72 max-w-[calc(100vw-1rem)] flex-col gap-2 rounded-2xl border-2 border-linea bg-superficie p-3 text-base shadow-xl"
+            className="absolute left-2 top-1/2 flex -translate-y-1/2 w-72 max-w-[calc(100vw-1rem)] flex-col gap-2 rounded-2xl border-2 border-linea bg-superficie p-3 text-base shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="flex items-center justify-between text-sm font-bold text-tenue">
               <span>Modo demostración</span>
-              <button type="button" onClick={() => setAbierta(false)} aria-label="Cerrar" className="px-2 text-xl" style={{ minHeight: 32 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAbierta(false);
+                  setConfirmando(false);
+                }}
+                aria-label="Cerrar" className="min-w-12 px-2 text-xl">
                 ×
               </button>
             </p>
@@ -122,14 +139,29 @@ export default function DemoBar() {
                 >
                   {ocupado === "adelantar" ? "Adelantando…" : "Adelantar 30 días"}
                 </button>
-                <button
-                  type="button"
-                  onClick={reiniciar}
-                  disabled={!!ocupado}
-                  className="rounded-boton border-2 border-marca px-3 py-2 font-bold text-marca disabled:opacity-60"
-                >
-                  {ocupado === "reset" ? "Reiniciando…" : "Reiniciar demo"}
-                </button>
+                {confirmando ? (
+                  <div className="flex flex-col gap-2 rounded-xl border-2 border-error bg-error-claro p-2">
+                    <p className="text-sm font-bold">¿Reiniciar la demo?</p>
+                    <p className="text-sm">
+                      Rosa, Elena y Carlos vuelven al primer día: sin pagos, puntos ni frecuentes nuevos. Los demás clientes no cambian.
+                    </p>
+                    <button type="button" onClick={reiniciar} className="rounded-boton bg-error px-3 py-2 font-bold text-white">
+                      Sí, reiniciar
+                    </button>
+                    <button type="button" onClick={() => setConfirmando(false)} className="rounded-boton px-3 py-2 font-bold text-tinta underline">
+                      No, volver
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmando(true)}
+                    disabled={!!ocupado}
+                    className="rounded-boton border-2 border-marca px-3 py-2 font-bold text-marca disabled:opacity-60"
+                  >
+                    {ocupado === "reset" ? "Reiniciando… (unos segundos)" : "Reiniciar demo"}
+                  </button>
+                )}
               </>
             )}
 
@@ -159,8 +191,9 @@ export default function DemoBar() {
         type="button"
         onClick={() => setAbierta((v) => !v)}
         aria-label="Abrir opciones de demostración"
-        className="fixed bottom-24 right-2 z-40 rounded-full border border-linea bg-tinta/75 px-3 text-xs font-bold text-white shadow"
-        style={{ minHeight: 32 }}
+        // A media altura del borde izquierdo: no tapa el encabezado ni los botones del pie (Confirmar pago, Continuar…).
+        className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-full border border-l-0 border-linea bg-tinta/75 px-2 text-xs font-bold text-white shadow [writing-mode:vertical-rl]"
+        style={{ minHeight: 56, minWidth: 28 }}
       >
         Demo
       </button>

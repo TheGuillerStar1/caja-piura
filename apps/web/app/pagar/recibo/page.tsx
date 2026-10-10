@@ -9,7 +9,7 @@ import { ICONO_RUBRO, largoCodigo, type ServicioOpcion } from "@/components/ia/t
 import { Boton, Cargando, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { fechaCorta, soles } from "@/lib/formato";
-import { iniciarFlujo, track } from "@/lib/track";
+import { iniciarFlujo, marcarAyuda, track, usoAyuda } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 import { hablar, montoHablado } from "@/lib/voz";
 
@@ -31,11 +31,15 @@ export default function PagarRecibo() {
   const [estado, setEstado] = useState<Estado>({ paso: "inicio" });
   const [demos, setDemos] = useState<Demo[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [fallos, setFallos] = useState(0);
   const camara = useRef<HTMLInputElement>(null);
   const galeria = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Si viene del asistente (Ayuda), la operación sigue contando como "con ayuda".
+    const conAyuda = usoAyuda();
     iniciarFlujo("RECIBO");
+    if (conAyuda) marcarAyuda();
     track("pagar-recibo", "ver", FLUJO);
     api<Demo[]>("/recibos/demo")
       .then(setDemos)
@@ -79,6 +83,7 @@ export default function PagarRecibo() {
       const r = await api<LeerReciboRes>("/recibos/leer", cuerpo instanceof FormData ? { formData: cuerpo } : { cuerpo });
       if (!r.ok) {
         track("leer-recibo", "error", FLUJO);
+        setFallos((n) => n + 1);
         setEstado({ paso: "nolei", motivo: r.motivo });
         return;
       }
@@ -87,7 +92,12 @@ export default function PagarRecibo() {
     } catch (e) {
       track("leer-recibo", "error", FLUJO);
       if (esSinSesion(e)) return router.replace("/entrar");
-      setEstado({ paso: "nolei", motivo: e instanceof ApiFallo ? e.message : "No pude leer el código." });
+      setFallos((n) => n + 1);
+      // Nunca un error técnico en pantalla: siempre queda el camino de escribir el código con guía.
+      setEstado({
+        paso: "nolei",
+        motivo: e instanceof ApiFallo && e.codigo === "SIN_CONEXION" ? e.message : "No pude leer la foto ahora. Escribe el código del recibo: yo te guío.",
+      });
     }
   }
 
@@ -103,7 +113,8 @@ export default function PagarRecibo() {
       /* si no se puede comprimir, se intenta con la original */
     }
     const fd = new FormData();
-    fd.append("imagen", blob, "recibo.jpg");
+    // El nombre original ayuda a reconocer los recibos de demo si la IA no responde.
+    fd.append("imagen", blob, file.name || "recibo.jpg");
     leer(fd);
   }
 
@@ -131,7 +142,7 @@ export default function PagarRecibo() {
 
       {estado.paso === "inicio" && (
         <>
-          <Mascota mensaje="Toma una foto de tu recibo. Solo necesito leer el código." />
+          <Mascota mensaje={asistida ? "Toma una foto de tu recibo. Solo leo el código, nada más." : "Foto del recibo o código: tú eliges."} />
           <Boton guia={asistida} onClick={() => tomarFoto("camara")} className="py-5 text-xl">
             <IconoCamara /> Tomar foto
           </Boton>
@@ -150,7 +161,7 @@ export default function PagarRecibo() {
           {demos.length > 0 && (
             <section className="mt-2 flex flex-col gap-2">
               <h2 className="text-lg font-bold">Recibos de ejemplo (demo)</h2>
-              <p className="text-tenue">Toca uno para probar sin cámara.</p>
+              <p className="text-tenue">{asistida ? "Toca uno para probar sin cámara." : "Prueba sin cámara."}</p>
               <div className="grid grid-cols-3 gap-2">
                 {demos.map((d) => (
                   <button
@@ -212,20 +223,39 @@ export default function PagarRecibo() {
         </>
       )}
 
-      {estado.paso === "nolei" && (
-        <>
-          <Mascota mensaje="No pude leerlo. Prueba con más luz y el recibo derecho, o escribe el código." />
-          <Tarjeta tono="aviso">
-            <p className="text-lg">{estado.motivo}</p>
-          </Tarjeta>
-          <Boton guia={asistida} onClick={() => tomarFoto("camara")}>
+      {estado.paso === "nolei" && (() => {
+        // Si la IA no está disponible o ya falló 2 veces, lo primero es escribir el código (siempre funciona).
+        const escribirPrimero = fallos >= 2 || !estado.motivo.startsWith("No pude leer el código");
+        const botonFoto = (
+          <Boton key="foto" guia={asistida && !escribirPrimero} variante={escribirPrimero ? "secundario" : undefined} onClick={() => tomarFoto("camara")}>
             <IconoCamara /> Tomar otra foto
           </Boton>
-          <Boton variante="secundario" onClick={() => setEstado({ paso: "escribir" })}>
+        );
+        const botonEscribir = (
+          <Boton key="escribir" guia={asistida && escribirPrimero} variante={escribirPrimero ? undefined : "secundario"} onClick={() => setEstado({ paso: "escribir" })}>
             Escribir el código
           </Boton>
-        </>
-      )}
+        );
+        return (
+          <>
+            <Mascota
+              mensaje={
+                escribirPrimero
+                  ? asistida
+                    ? "No te preocupes. Escribe el código y yo te ayudo."
+                    : "Escribe el código del recibo."
+                  : asistida
+                    ? "No pude leerlo. Prueba con más luz y el recibo derecho."
+                    : "No se pudo leer. Toma otra foto o escribe el código."
+              }
+            />
+            <Tarjeta tono="aviso">
+              <p className="text-lg">{estado.motivo}</p>
+            </Tarjeta>
+            {escribirPrimero ? [botonEscribir, botonFoto] : [botonFoto, botonEscribir]}
+          </>
+        );
+      })()}
 
       {estado.paso === "sindeuda" && (
         <>

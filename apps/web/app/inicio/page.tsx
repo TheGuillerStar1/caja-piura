@@ -52,6 +52,11 @@ const FLUJO_ACCESO: Partial<Record<IdAcceso, "CUOTA" | "FRECUENTE" | "RECIBO">> 
   PAGAR_RECIBO: "RECIBO",
 };
 
+/** Qué se paga, sin repetir monto ni fecha (ya se muestran aparte en la tarjeta). */
+function nombreAviso(a: Aviso) {
+  return a.tipo === "CUOTA" ? "Tu cuota del crédito" : a.titulo.split(" · ")[0];
+}
+
 function cuando(a: Aviso) {
   if (a.diasRestantes < 0) return "Ya venció";
   if (a.diasRestantes === 0) return "Vence hoy";
@@ -152,14 +157,14 @@ export default function Inicio() {
         {!asistida && <span className="text-sm text-tenue">Caja Piura</span>}
       </header>
 
-      {datos.avisos.map((a) => (
+      {datos.avisos.map((a, i) => (
         <Tarjeta key={`${a.tipo}-${a.referenciaId}`} tono="aviso" className="flex flex-col gap-3">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-aviso">{cuando(a)}</p>
-            <p className="text-xl font-bold leading-snug">{a.titulo}</p>
+            <p className="text-xl font-bold leading-snug">{nombreAviso(a)}</p>
             <p className="mt-1 text-3xl font-bold">{soles(a.monto)}</p>
           </div>
-          <Boton guia={asistida} onClick={() => pagarAviso(a)}>
+          <Boton guia={asistida && i === 0} onClick={() => pagarAviso(a)}>
             Pagar
           </Boton>
         </Tarjeta>

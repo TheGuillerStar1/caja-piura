@@ -7,7 +7,7 @@ import { rutaConfirmar } from "@/components/pago/almacen";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { fechaCorta, soles } from "@/lib/formato";
-import { iniciarFlujo, track } from "@/lib/track";
+import { iniciarFlujo, marcarAyuda, track, usoAyuda } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 
 function textoVence(dias: number, iso: string) {
@@ -35,7 +35,10 @@ export default function PagarCuota() {
   }, [router]);
 
   useEffect(() => {
+    // Si viene del asistente (Ayuda), la operación sigue contando como "con ayuda".
+    const conAyuda = usoAyuda();
     iniciarFlujo("CUOTA");
+    if (conAyuda) marcarAyuda();
     track("pagar-cuota", "ver", { flujo: "CUOTA" });
     cargar();
   }, [cargar]);
