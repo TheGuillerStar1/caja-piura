@@ -88,7 +88,7 @@ function MenuLateral({ cerrar }: { cerrar: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-40 mx-auto max-w-md" role="dialog" aria-modal="true" aria-label="Menú">
+    <div className="fixed inset-0 z-40 mx-auto max-w-app" role="dialog" aria-modal="true" aria-label="Menú">
       <button type="button" aria-label="Cerrar menú" onClick={cerrar} className="absolute inset-0 h-full w-full bg-black/55" />
       <nav className="anim-menu absolute inset-y-0 left-0 flex w-[82%] max-w-xs flex-col bg-marca text-white shadow-2xl">
         <div className="flex items-center gap-3 px-4 pb-4 pt-6">
