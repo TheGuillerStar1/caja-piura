@@ -1,9 +1,9 @@
 "use client";
 // Guía paso a paso de Pía («Guíame»). Lee el paso actual (lib/guiaPasos.ts), oscurece la pantalla y resalta el elemento
 // real con data-paso="…" de la app de siempre. Cuando el cliente lo toca (o elige una opción), pasa al siguiente.
-import { CircleCheck, X } from "lucide-react";
+import { CircleCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Foco } from "@/components/ui/Foco";
 import { GUIAS, irAPaso, leerGuia, terminarGuia } from "@/lib/guiaPasos";
 import { track } from "@/lib/track";
@@ -33,6 +33,20 @@ export function GuiaPasos() {
   }
   const paso = g ? pasos[i] : undefined;
   const enPantalla = Boolean(paso && paso.ruta === ruta);
+
+  // Si el cliente se va a otra parte de la app (fuera de los pasos), la guía se cierra sola: nada de avisos «en pausa».
+  // Se espera un momento porque, al tocar un paso, la guía avanza antes de que cambie la pantalla.
+  // Al empezar desde el chat la primera pantalla todavía está cargando: si la guía aún no se mostró, se espera más.
+  const mostrada = useRef(false);
+  useEffect(() => {
+    if (!g) mostrada.current = false;
+    else if (enPantalla) mostrada.current = true;
+  }, [g, enPantalla]);
+  useEffect(() => {
+    if (!g || !paso || enPantalla) return;
+    const t = setTimeout(terminarGuia, mostrada.current ? 1500 : 5000);
+    return () => clearTimeout(t);
+  }, [g, paso, enPantalla]);
 
   useEffect(() => {
     if (!g || !paso || !enPantalla) return;
@@ -69,17 +83,7 @@ export function GuiaPasos() {
     );
   }
   if (!g || !paso) return null;
-  if (!enPantalla) {
-    return (
-      <button
-        type="button"
-        onClick={terminarGuia}
-        className="fixed inset-x-0 bottom-24 z-[72] mx-auto flex min-h-11 w-max items-center gap-2 rounded-full bg-black/80 px-4 text-sm font-bold text-white"
-      >
-        Guía de Pía en pausa · <X className="h-4 w-4" aria-hidden /> Salir
-      </button>
-    );
-  }
+  if (!enPantalla) return null;
   return (
     <Foco
       selector={`[data-paso="${paso.sel}"]`}
