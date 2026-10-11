@@ -2,6 +2,7 @@
 // "Mis productos": réplica de la pantalla principal de la app oficial (saludo, tipo de cambio, Cuentas / Tarjetas /
 // Créditos desplegables y Mis servicios). Lo único nuevo son los recordatorios de Pía arriba y, en la vista
 // asistida, los accesos grandes "¿Qué necesitas hacer hoy?".
+import { X } from "lucide-react";
 import type { Aviso, CuotaRes, InicioRes, MeRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -167,7 +168,7 @@ export default function Inicio() {
               aria-label="Cerrar el aviso de Pía"
               className="flex min-h-12 shrink-0 items-center gap-1 rounded-xl border-2 border-linea-fuerte bg-superficie px-3 text-base font-bold"
             >
-              <span aria-hidden className="text-xl leading-none">✕</span> Cerrar
+              <X className="h-5 w-5" aria-hidden /> Cerrar
             </button>
           </div>
           <Boton href="/ayuda" onClick={cerrarAnuncio}>

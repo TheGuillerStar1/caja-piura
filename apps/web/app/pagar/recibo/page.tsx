@@ -1,11 +1,13 @@
 "use client";
 // Dueño: Agente C. Ruta C: foto del recibo → la IA lee SOLO el código → Caja Piura da el monto real → confirmar.
+import { Camera } from "lucide-react";
 import type { LeerReciboRes, ReciboRes } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { comprimirFoto } from "@/components/ia/comprimir";
 import { TecladoCodigo } from "@/components/ia/TecladoCodigo";
-import { ICONO_RUBRO, largoCodigo, type ServicioOpcion } from "@/components/ia/tipos";
+import { IconoRubro } from "@/components/ia/IconoRubro";
+import { largoCodigo, type ServicioOpcion } from "@/components/ia/tipos";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { fechaCorta, soles } from "@/lib/formato";
@@ -197,7 +199,7 @@ export default function PagarRecibo() {
           <Tarjeta className="flex flex-col gap-3">
             <div className="flex items-center gap-3">
               <span className="text-3xl" aria-hidden>
-                {ICONO_RUBRO[estado.recibo.rubro] ?? "🧾"}
+                <IconoRubro rubro={estado.recibo.rubro} className="h-7 w-7" />
               </span>
               <div>
                 <p className="text-xl font-bold">{estado.recibo.empresa}</p>
@@ -325,7 +327,7 @@ function EscribirCodigo({
               className={`flex min-h-24 flex-col items-center justify-center gap-1 rounded-2xl border-2 border-marca bg-superficie p-3 text-lg font-bold text-marca active:bg-marca-claro ${asistida && i === 0 ? "guia-toca" : ""}`}
             >
               <span className="text-3xl" aria-hidden>
-                {ICONO_RUBRO[s.rubro] ?? "🧾"}
+                <IconoRubro rubro={s.rubro} className="h-7 w-7" />
               </span>
               {s.empresa}
             </button>
@@ -358,10 +360,5 @@ function EscribirCodigo({
 }
 
 function IconoCamara() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <path d="M4 8h3l2-3h6l2 3h3v11H4z" strokeLinejoin="round" />
-      <circle cx="12" cy="13" r="3.5" />
-    </svg>
-  );
+  return <Camera className="h-6 w-6" aria-hidden />;
 }

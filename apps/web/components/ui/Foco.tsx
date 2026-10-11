@@ -2,6 +2,7 @@
 // Foco: la pantalla se oscurece y queda resaltado (y tocable) solo el elemento que hay que tocar.
 // Se usa en la vista asistida (resalta «¿Necesitas ayuda?») y en la guía paso a paso de Pía («Guíame»).
 // Las 4 franjas oscuras bloquean el resto de la pantalla; el hueco deja tocar el elemento real.
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 
 type Rect = { top: number; left: number; width: number; height: number; radio: number };
@@ -100,9 +101,7 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir, 
           onClick={alSalir}
           className="flex min-h-12 items-center justify-center gap-2 self-start rounded-xl border-2 border-linea-fuerte px-4 text-base font-bold"
         >
-          <span aria-hidden className="text-xl leading-none">
-            ✕
-          </span>
+          <X className="h-5 w-5" aria-hidden />
           {textoSalir}
         </button>
       </div>

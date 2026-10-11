@@ -30,7 +30,7 @@ export default function Principal() {
       </header>
 
       <main className="flex flex-1 flex-col justify-center gap-2 px-6 pb-10">
-        <span className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#3d3a8c]">
+        <span className="mb-2 flex h-16 w-16 items-center justify-center rounded-full bg-white text-[var(--cp-brand)]">
           <IcUsuario />
         </span>
         <h1 className={`text-4xl font-medium ${sombra}`}>{usuario ? `Hola ${usuario.nombre.split(" ")[0]}` : "Hola"}</h1>
@@ -38,7 +38,7 @@ export default function Principal() {
         <Link
           href="/entrar"
           onClick={() => track("principal", "tocar")}
-          className="mt-5 flex min-h-13 items-center justify-center rounded-lg bg-[#1c1f24] text-lg font-medium text-[#5b93ff] shadow-lg active:bg-black"
+          className="mt-5 flex min-h-13 items-center justify-center rounded-lg bg-[var(--cp-surface-dark)] text-lg font-medium text-[color-mix(in_srgb,var(--cp-app-blue)_55%,white)] shadow-lg active:bg-black"
         >
           Ingresar
         </Link>

@@ -23,14 +23,14 @@ export function Teclado({ onDigito, onBorrar, onListo, listoActivo = true, desha
 
   const tecla = "flex h-14 items-center justify-center rounded-md text-xl font-medium text-white disabled:opacity-50";
   const digito = (d: string) => (
-    <button key={d} type="button" disabled={deshabilitado} onClick={() => onDigito(d)} className={`${tecla} bg-[#1c1f24] active:bg-[#30353d]`}>
+    <button key={d} type="button" disabled={deshabilitado} onClick={() => onDigito(d)} className={`${tecla} bg-[var(--cp-surface-dark)] active:bg-[color-mix(in_srgb,var(--cp-surface-dark)_80%,white)]`}>
       {d}
     </button>
   );
   return (
-    <div className="grid grid-cols-3 gap-1.5 bg-[#4a4d55] p-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]" role="group" aria-label="Teclado numérico">
+    <div className="grid grid-cols-3 gap-1.5 bg-[color-mix(in_srgb,var(--cp-surface-dark)_70%,white)] p-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]" role="group" aria-label="Teclado numérico">
       {orden.slice(0, 9).map(digito)}
-      <button type="button" disabled={deshabilitado} onClick={onBorrar} className={`${tecla} bg-[#6b6e75] active:bg-[#7c7f86]`}>
+      <button type="button" disabled={deshabilitado} onClick={onBorrar} className={`${tecla} bg-[color-mix(in_srgb,var(--cp-surface-dark)_55%,white)] active:bg-[color-mix(in_srgb,var(--cp-surface-dark)_45%,white)]`}>
         Borrar
       </button>
       {digito(orden[9])}
@@ -38,7 +38,7 @@ export function Teclado({ onDigito, onBorrar, onListo, listoActivo = true, desha
         type="button"
         disabled={deshabilitado || !listoActivo}
         onClick={onListo}
-        className={`${tecla} bg-acento active:bg-[#c95414] disabled:bg-acento/50`}
+        className={`${tecla} bg-acento active:bg-[color-mix(in_srgb,var(--cp-action-focus)_80%,black)] disabled:bg-acento/50`}
       >
         Listo
       </button>
@@ -49,7 +49,7 @@ export function Teclado({ onDigito, onBorrar, onListo, listoActivo = true, desha
 /** Barra negra con candado y círculos de la clave (se rellenan sin mostrar los números). */
 export function BarraClave({ largo, total = 6, error }: { largo: number; total?: number; error?: boolean }) {
   return (
-    <div className={`flex h-14 items-center rounded-lg bg-[#1c1f24] px-4 ${error ? "ring-2 ring-error" : ""}`} aria-label={`${largo} de ${total} números escritos`}>
+    <div className={`flex h-14 items-center rounded-lg bg-[var(--cp-surface-dark)] px-4 ${error ? "ring-2 ring-error" : ""}`} aria-label={`${largo} de ${total} números escritos`}>
       <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" fill="none" stroke="#fff" strokeWidth="2" aria-hidden="true">
         <rect x="5" y="10.5" width="14" height="10" rx="2" />
         <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />

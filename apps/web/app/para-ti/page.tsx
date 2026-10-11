@@ -27,7 +27,7 @@ function IcCelularYape({ className = "h-7 w-7" }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true" className={className}>
       <rect x="3" y="3" width="18" height="18" rx="4" fill="#fff" />
-      <text x="12" y="15.5" textAnchor="middle" fontSize="8" fontWeight="700" fontStyle="italic" fill="#6c1d8f">yape</text>
+      <text x="12" y="15.5" textAnchor="middle" fontSize="8" fontWeight="700" fontStyle="italic" fill="#00549f">yape</text>
     </svg>
   );
 }

@@ -2,11 +2,13 @@
 // "Pago de servicios" igual que la app oficial (fotos del 10 oct), en 4 pasos:
 // 1) rubro y empresa · 2) código del recibo · 3) monto y cuenta origen · 4) confirmar (pantalla de confirmación).
 // Lo nuevo es un atajo dentro del flujo de siempre: si no encuentra el código, le toma una foto al recibo.
+import { Camera, ChevronRight, X } from "lucide-react";
 import type { MeRes, ReciboRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ICONO_RUBRO, largoCodigo, type ServicioOpcion } from "@/components/ia/tipos";
+import { IconoRubro } from "@/components/ia/IconoRubro";
+import { largoCodigo, type ServicioOpcion } from "@/components/ia/tipos";
 import { TecladoCodigo } from "@/components/ia/TecladoCodigo";
 import { ElegirOpcion } from "@/components/pago/ElegirOpcion";
 import { CampoApp, claseSelect, PasosApp } from "@/components/pago/PasosApp";
@@ -108,7 +110,7 @@ export default function PagoServicios() {
                       className={`flex min-h-13 cursor-pointer items-center gap-2 rounded-xl border-2 px-3 font-bold ${rubro === r ? "border-marca bg-marca-claro" : "border-linea bg-superficie"}`}
                     >
                       <input type="radio" name="rubro" checked={rubro === r} onChange={() => setRubro(r)} className="sr-only" />
-                      <span aria-hidden>{ICONO_RUBRO[r] ?? "🧾"}</span>
+                      <IconoRubro rubro={r} className="h-5 w-5 text-marca" />
                       {RUBROS[r] ?? r}
                     </label>
                   ))}
@@ -127,7 +129,7 @@ export default function PagoServicios() {
                       className="flex min-h-14 w-full items-center gap-3 rounded-lg border-2 border-linea bg-superficie px-3 text-left text-lg font-bold active:bg-marca-claro"
                     >
                       <span aria-hidden className="text-2xl">
-                        {ICONO_RUBRO[s.rubro] ?? "🧾"}
+                        <IconoRubro rubro={s.rubro} className="h-6 w-6 text-marca" />
                       </span>
                       <span className="flex-1">{s.empresa}</span>
                       <span aria-hidden className="text-2xl text-marca">
@@ -146,7 +148,7 @@ export default function PagoServicios() {
                         Elige un servicio
                       </h3>
                       <button type="button" onClick={() => setEligiendo(null)} className="flex min-h-11 items-center gap-1 rounded-lg px-2 font-bold text-tenue">
-                        <span aria-hidden className="text-xl">✕</span> Cerrar
+                        <X className="h-5 w-5" aria-hidden /> Cerrar
                       </button>
                     </div>
                     <p className="text-sm text-tenue">{eligiendo.empresa}</p>
@@ -163,7 +165,7 @@ export default function PagoServicios() {
                       className="flex min-h-14 items-center justify-between rounded-lg border-2 border-linea px-3 text-left text-lg font-bold uppercase active:bg-marca-claro"
                     >
                       {SERVICIO_DE[eligiendo.rubro] ?? "Pago de recibo"}
-                      <span aria-hidden className="text-2xl text-marca">›</span>
+                      <ChevronRight className="h-6 w-6 shrink-0 text-marca" aria-hidden />
                     </button>
                   </div>
                 </div>
@@ -184,7 +186,7 @@ export default function PagoServicios() {
                 </Boton>
               </form>
               <Link href="/pagar/recibo" className="flex min-h-12 items-center justify-center gap-2 font-bold text-marca underline underline-offset-4">
-                📷 ¿No encuentras el código? Tómale una foto al recibo
+                <Camera className="h-5 w-5 shrink-0" aria-hidden /> ¿No encuentras el código? Tómale una foto al recibo
               </Link>
               <button type="button" onClick={() => setPaso(1)} className="min-h-11 font-bold text-tenue underline underline-offset-4">
                 Elegir otra empresa

@@ -13,16 +13,16 @@ export function Mascota({ mensaje, tamano = 72, animada, className = "" }: Props
         className={`shrink-0 ${animada ? "anim-rebote" : ""}`}
       >
         <circle cx="40" cy="42" r="32" fill="#0b4ed4" />
-        <circle cx="40" cy="40" r="25" fill="#eef3ff" />
-        <circle cx="31" cy="37" r="4" fill="#14233a" />
-        <circle cx="49" cy="37" r="4" fill="#14233a" />
+        <circle cx="40" cy="40" r="25" fill="#ffffff" />
+        <circle cx="31" cy="37" r="4" fill="#1c1f24" />
+        <circle cx="49" cy="37" r="4" fill="#1c1f24" />
         <circle cx="32.5" cy="35.5" r="1.3" fill="#fff" />
         <circle cx="50.5" cy="35.5" r="1.3" fill="#fff" />
-        <path d="M31 48c5 5 13 5 18 0" stroke="#14233a" strokeWidth="3" fill="none" strokeLinecap="round" />
-        <circle cx="25" cy="46" r="3.5" fill="#f9a8b8" opacity=".7" />
-        <circle cx="55" cy="46" r="3.5" fill="#f9a8b8" opacity=".7" />
-        <path d="M40 10v-6" stroke="#5b93ff" strokeWidth="3" strokeLinecap="round" />
-        <circle cx="40" cy="4" r="3.5" fill="#e5631b" />
+        <path d="M31 48c5 5 13 5 18 0" stroke="#1c1f24" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <circle cx="25" cy="46" r="3.5" fill="#d97706" opacity=".28" />
+        <circle cx="55" cy="46" r="3.5" fill="#d97706" opacity=".28" />
+        <path d="M40 10v-6" stroke="#00549f" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="40" cy="4" r="3.5" fill="#d97706" />
       </svg>
       {mensaje && (
         <div className="relative mb-3 flex-1 rounded-2xl rounded-bl-sm border-2 border-linea bg-superficie px-4 py-3 text-lg leading-snug">

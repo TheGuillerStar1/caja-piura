@@ -1,61 +1,78 @@
 @import "tailwindcss";
 
-/* Tokens de diseño de la app oficial de Caja Piura (Manual visual «Caja Piura Contigo»).
-   Tema oscuro: barra azul app (#0B4ED4), fondo #1C1F24, tarjetas oscuras, acentos en azul claro.
+/* Colores SOLO del Manual visual «Caja Piura Contigo» (§02 y §08):
+     azul del logo #00549F · azul de la app #0B4ED4 · fondo oscuro #1C1F24 · lila de ingreso #EAE1F4
+     blanco #FFFFFF · naranja de acción #D97706 · éxito #157347 · error #B42318
+   Los tonos de apoyo (grises, fondos suaves) no son colores nuevos: salen de mezclar esos mismos (color-mix).
    Usar las clases de Tailwind: bg-marca, text-tinta, border-linea, etc. */
-@theme {
-  --color-marca: #0b4ed4;        /* azul app: barras, botones primarios */
-  --color-marca-oscuro: #083da8;
-  --color-marca-claro: #1a2c52;  /* fondo de realce azul sobre tema oscuro */
-  --color-marca-texto: #5b93ff;  /* azul de iconos y textos de acción (5.6:1 sobre el fondo) */
-  --color-institucional: #00549f;/* azul del logo */
-  --color-acento: #d97706;       /* naranja de acción (Manual visual: --cp-action-focus) */
-  --color-lila: #eae1f4;         /* pantallas de acceso */
-  --color-fondo: #1c1f24;
-  --color-fondo-hondo: #121417;  /* barra inferior */
-  --color-superficie: #262a31;   /* tarjetas y filas */
-  --color-superficie-2: #30353d;
-  --color-tinta: #ffffff;
-  --color-tenue: #aab2bf;
-  --color-linea: #3a4049;
-  --color-linea-fuerte: #6b7380;
-  --color-exito: #4cc77f;
-  --color-exito-claro: #16301f;
-  --color-aviso: #f5b84a;
-  --color-aviso-claro: #352914;
-  --color-error: #ff7a6e;
-  --color-error-claro: #3a1a18;
+@layer base {
+  :root {
+    --cp-brand: #00549f;
+    --cp-app-blue: #0b4ed4;
+    --cp-surface-dark: #1c1f24;
+    --cp-login-light: #eae1f4;
+    --cp-text-on-dark: #ffffff;
+    --cp-action-focus: #d97706;
+    --cp-success: #157347;
+    --cp-error: #b42318;
+  }
+}
 
-  --color-afuera: #0b0d10;       /* costados en pantallas anchas (fuera de la app) */
+@theme {
+  --color-marca: var(--cp-app-blue);
+  --color-marca-oscuro: var(--cp-brand);
+  --color-institucional: var(--cp-brand);
+  --color-acento: var(--cp-action-focus);
+  --color-lila: var(--cp-login-light);
+
+  /* Tema oscuro (el de la app oficial) */
+  --color-marca-claro: color-mix(in srgb, var(--cp-app-blue) 28%, var(--cp-surface-dark));
+  --color-marca-texto: color-mix(in srgb, var(--cp-app-blue) 55%, var(--cp-text-on-dark));
+  --color-fondo: var(--cp-surface-dark);
+  --color-fondo-hondo: color-mix(in srgb, var(--cp-surface-dark) 75%, black);
+  --color-superficie: color-mix(in srgb, var(--cp-surface-dark) 92%, var(--cp-text-on-dark));
+  --color-superficie-2: color-mix(in srgb, var(--cp-surface-dark) 86%, var(--cp-text-on-dark));
+  --color-tinta: var(--cp-text-on-dark);
+  --color-tenue: color-mix(in srgb, var(--cp-text-on-dark) 68%, var(--cp-surface-dark));
+  --color-linea: color-mix(in srgb, var(--cp-text-on-dark) 16%, var(--cp-surface-dark));
+  --color-linea-fuerte: color-mix(in srgb, var(--cp-text-on-dark) 38%, var(--cp-surface-dark));
+  --color-exito: color-mix(in srgb, var(--cp-success) 55%, var(--cp-text-on-dark));
+  --color-exito-claro: color-mix(in srgb, var(--cp-success) 25%, var(--cp-surface-dark));
+  --color-aviso: color-mix(in srgb, var(--cp-action-focus) 70%, var(--cp-text-on-dark));
+  --color-aviso-claro: color-mix(in srgb, var(--cp-action-focus) 22%, var(--cp-surface-dark));
+  --color-error: color-mix(in srgb, var(--cp-error) 55%, var(--cp-text-on-dark));
+  --color-error-claro: color-mix(in srgb, var(--cp-error) 25%, var(--cp-surface-dark));
+
+  --color-afuera: color-mix(in srgb, var(--cp-surface-dark) 70%, black);
   --container-app: 35rem;        /* ancho de la columna de la app: max-w-app */
 
   --font-sans: var(--font-roboto), Roboto, "Segoe UI", system-ui, sans-serif;
   --radius-boton: 10px;
 }
 
-/* Modo claro (Ajustes › Apariencia): mismos nombres de color, otros valores. Se activa con <html data-tema="claro">.
-   El azul de la barra superior y de los botones no cambia: es la marca. */
+/* Modo claro (por defecto, como la app oficial en las capturas): los mismos colores del manual sobre blanco.
+   Se activa con <html data-tema="claro">. El azul de la barra superior y de los botones no cambia: es la marca. */
 @layer base {
   html { color-scheme: dark; }
   html[data-tema="claro"] {
     color-scheme: light;
-    --color-marca-claro: #e6edfd;
-    --color-marca-texto: #0b4ed4;
-    --color-fondo: #f3f5f9;
-    --color-fondo-hondo: #ffffff;
-    --color-superficie: #ffffff;
-    --color-superficie-2: #eef1f6;
-    --color-tinta: #14202e;
-    --color-tenue: #556070;
-    --color-linea: #d6dce5;
-    --color-linea-fuerte: #8e98a6;
-    --color-exito: #157347;
-    --color-exito-claro: #e6f4ec;
-    --color-aviso: #8a5300;
-    --color-aviso-claro: #fff3dc;
-    --color-error: #b42318;
-    --color-error-claro: #fdecea;
-    --color-afuera: #c9cfd8;
+    --color-marca-claro: color-mix(in srgb, var(--cp-app-blue) 10%, var(--cp-text-on-dark));
+    --color-marca-texto: var(--cp-app-blue);
+    --color-fondo: color-mix(in srgb, var(--cp-surface-dark) 4%, var(--cp-text-on-dark));
+    --color-fondo-hondo: var(--cp-text-on-dark);
+    --color-superficie: var(--cp-text-on-dark);
+    --color-superficie-2: color-mix(in srgb, var(--cp-surface-dark) 7%, var(--cp-text-on-dark));
+    --color-tinta: var(--cp-surface-dark);
+    --color-tenue: color-mix(in srgb, var(--cp-surface-dark) 72%, var(--cp-text-on-dark));
+    --color-linea: color-mix(in srgb, var(--cp-surface-dark) 15%, var(--cp-text-on-dark));
+    --color-linea-fuerte: color-mix(in srgb, var(--cp-surface-dark) 45%, var(--cp-text-on-dark));
+    --color-exito: var(--cp-success);
+    --color-exito-claro: color-mix(in srgb, var(--cp-success) 10%, var(--cp-text-on-dark));
+    --color-aviso: color-mix(in srgb, var(--cp-action-focus) 70%, var(--cp-surface-dark));
+    --color-aviso-claro: color-mix(in srgb, var(--cp-action-focus) 12%, var(--cp-text-on-dark));
+    --color-error: var(--cp-error);
+    --color-error-claro: color-mix(in srgb, var(--cp-error) 9%, var(--cp-text-on-dark));
+    --color-afuera: color-mix(in srgb, var(--cp-surface-dark) 22%, var(--cp-text-on-dark));
   }
 }
 
@@ -105,7 +122,7 @@ body {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: 0 0 0 6px rgb(91 147 255 / 0.55);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-marca-texto) 55%, transparent);
   pointer-events: none;
   animation: pulso 1.6s ease-out infinite;
   will-change: transform, opacity;
@@ -113,14 +130,16 @@ body {
 /* Etiqueta explícita sobre el botón guía (solo Boton guia; los bloques resaltados en "Enséñame" no la llevan). */
 .guia-etiqueta { margin-top: 2.25rem; overflow: visible; }
 .guia-etiqueta::before {
-  content: "👇 Toca aquí";
+  content: "Toca aquí";
   position: absolute;
   bottom: calc(100% + 6px);
   left: 50%;
   transform: translateX(-50%);
-  padding: 2px 12px;
+  padding: 2px 12px 2px 32px;
   border-radius: 999px;
-  background: var(--color-acento);
+  /* Flecha hacia abajo de Lucide (arrow-down), en blanco */
+  background: var(--color-acento) no-repeat 9px 50% / 18px
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14'/%3E%3Cpath d='m19 12-7 7-7-7'/%3E%3C/svg%3E");
   color: #fff;
   font-size: 1rem;
   font-weight: 700;
@@ -143,8 +162,8 @@ body {
 
 /* Foco de la guía: el borde naranja late (crece y brilla) para que se vea dónde tocar. */
 @keyframes foco {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgb(217 119 6 / 0.85), 0 0 14px 2px rgb(255 196 90 / 0.7); }
-  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgb(217 119 6 / 0), 0 0 30px 10px rgb(255 196 90 / 0.95); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 color-mix(in srgb, var(--cp-action-focus) 85%, transparent), 0 0 14px 2px color-mix(in srgb, var(--cp-action-focus) 55%, transparent); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 10px color-mix(in srgb, var(--cp-action-focus) 0%, transparent), 0 0 30px 10px color-mix(in srgb, var(--cp-action-focus) 85%, transparent); }
 }
 .anim-foco { animation: foco 1.2s ease-in-out infinite; will-change: transform, box-shadow; }
 

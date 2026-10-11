@@ -3,14 +3,14 @@ export function FondoAcceso({ children }: { children: React.ReactNode }) {
   return (
     <div
       className="relative mx-auto flex min-h-dvh w-full max-w-app flex-col overflow-hidden text-white"
-      style={{ background: "linear-gradient(180deg,#b4a2ec 0%,#c6b8f1 45%,#d9cff6 100%)" }}
+      style={{ background: "linear-gradient(180deg, color-mix(in srgb, var(--cp-login-light) 58%, var(--cp-app-blue)) 0%, color-mix(in srgb, var(--cp-login-light) 70%, var(--cp-app-blue)) 45%, color-mix(in srgb, var(--cp-login-light) 82%, var(--cp-app-blue)) 100%)" }}
     >
       <svg
         viewBox="0 0 300 420"
         aria-hidden="true"
         className="pointer-events-none absolute bottom-0 left-1/2 w-[110%] -translate-x-1/2 opacity-60"
         fill="none"
-        stroke="#8f9cf0"
+        stroke="color-mix(in srgb, var(--cp-login-light) 45%, var(--cp-app-blue))"
         strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -27,7 +27,7 @@ export function FondoAcceso({ children }: { children: React.ReactNode }) {
         <rect x="112" y="210" width="62" height="22" rx="11" />
         {/* moneda y pulgar */}
         <circle cx="52" cy="70" r="20" />
-        <text x="52" y="77" fontSize="18" fill="#8f9cf0" stroke="none" textAnchor="middle" fontWeight="700">S/</text>
+        <text x="52" y="77" fontSize="18" fill="color-mix(in srgb, var(--cp-login-light) 45%, var(--cp-app-blue))" stroke="none" textAnchor="middle" fontWeight="700">S/</text>
         <circle cx="262" cy="150" r="22" />
         <path d="M252 158v-14h5l6-10c3 0 4 2 3 5l-2 5h8c3 0 4 3 3 5l-3 9h-20z" />
         {/* mano */}

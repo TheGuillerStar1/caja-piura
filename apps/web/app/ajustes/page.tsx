@@ -1,5 +1,6 @@
 "use client";
 // Dueño: Agente A. Ajustes: cambiar la vista y cerrar sesión.
+import { Moon, Sun } from "lucide-react";
 import type { MeRes, Vista } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -99,10 +100,10 @@ export default function Ajustes() {
             <div role="radiogroup" aria-label="Colores de la pantalla" className="grid grid-cols-2 gap-2">
               {(
                 [
-                  ["oscuro", "Oscuro", "🌙"],
-                  ["claro", "Claro", "☀️"],
+                  ["oscuro", "Oscuro", Moon],
+                  ["claro", "Claro", Sun],
                 ] as const
-              ).map(([t, texto, icono]) => (
+              ).map(([t, texto, Icono]) => (
                 <button
                   key={t}
                   type="button"
@@ -111,7 +112,7 @@ export default function Ajustes() {
                   onClick={() => (track(P, "tocar"), setTema(t))}
                   className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 px-2 text-lg font-bold ${tema === t ? "border-marca bg-marca-claro text-marca" : "border-linea bg-superficie"}`}
                 >
-                  <span aria-hidden>{icono}</span>
+                  <Icono className="h-5 w-5" aria-hidden />
                   {texto}
                 </button>
               ))}
@@ -160,7 +161,7 @@ export default function Ajustes() {
           </section>
           <label className="flex min-h-14 items-center gap-3 rounded-2xl border-2 border-linea bg-superficie px-4 text-lg">
             <input type="checkbox" className="h-6 w-6 accent-marca" checked={guia.activa} onChange={(e) => (track(P, "tocar"), guia.setActiva(e.target.checked))} />
-            Mostrar la guía «👇 Toca aquí»
+            Mostrar la guía «Toca aquí»
           </label>
           <Tarjeta>
             <p className="font-bold">{me.nombre}</p>

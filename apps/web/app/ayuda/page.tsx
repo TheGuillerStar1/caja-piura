@@ -2,12 +2,15 @@
 // Dueño: Agente C. Ayuda con Pía: chat simple. Pía prepara y lleva a la pantalla; nunca paga ni pide la clave.
 // Al abrir: saludo corto + 3 accesos grandes con ícono + preguntas rápidas. Cada botón dice lo que hace ("Revisar y pagar"),
 // nunca "Ir ahora". Pía a la izquierda, tú a la derecha.
+import { ChevronRight, Mic, SendHorizontal, Volume2 } from "lucide-react";
+import { Lock, MessageCircle } from "lucide-react";
 import type { AccionUI, AsistenteRes, MeRes, ReciboRes, Sugerencia, TipoPago, Tono } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { IconoCuota, IconoFrecuente, IconoProgreso, IconoRecibo, IconoSaldo } from "@/components/pago/Iconos";
 import { ReciboEnChat } from "@/components/ia/ReciboEnChat";
 import { guardarResultado, type ResultadoPago } from "@/components/pago/almacen";
+import { BotonConstanciaWhatsApp } from "@/components/pago/ConstanciaWhatsApp";
 import { PagoEnChat } from "@/components/pago/PagoEnChat";
 import { Boton, Mascota, Pantalla } from "@/components/ui";
 import { fechaCorta, soles } from "@/lib/formato";
@@ -82,12 +85,7 @@ function guiaDe(ruta: string): IdGuia | null {
 }
 
 function IcParlante({ className = "h-5 w-5" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M4 9v6h4l5 4V5L8 9H4z" />
-      <path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" />
-    </svg>
-  );
+  return <Volume2 className={className} aria-hidden />;
 }
 
 function Burbuja({ texto, escuchar }: { texto: React.ReactNode; escuchar?: () => void }) {
@@ -238,7 +236,7 @@ export default function Ayuda() {
           <span className="flex flex-col leading-tight">
             <span className="text-lg font-bold">Pía</span>
             <span className="flex items-center gap-1.5 text-xs font-normal text-white/85">
-              <span aria-hidden className="h-2 w-2 rounded-full bg-[#4cc77f]" />
+              <span aria-hidden className="h-2 w-2 rounded-full bg-[var(--cp-success)] ring-2 ring-white" />
               En línea · asistente virtual
             </span>
           </span>
@@ -286,10 +284,7 @@ export default function Ayuda() {
                 aria-pressed={escuchando}
                 className={`relative flex min-h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl text-white disabled:bg-linea ${escuchando ? "bg-error guia-toca" : "bg-marca"}`}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                  <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
-                  <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-                </svg>
+                <Mic className="h-[22px] w-[22px]" aria-hidden />
                 <span className="text-[0.7rem] font-bold leading-none">{escuchando ? "Parar" : "Hablar"}</span>
               </button>
             ) : (
@@ -299,14 +294,12 @@ export default function Ayuda() {
                 aria-label="Enviar"
                 className="flex min-h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-marca text-white disabled:bg-linea disabled:text-tenue"
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                  <path d="M3 20.5 21 12 3 3.5 3 10l12 2-12 2z" />
-                </svg>
+                <SendHorizontal className="h-[22px] w-[22px]" aria-hidden />
                 <span className="text-[0.7rem] font-bold leading-none">Enviar</span>
               </button>
             )}
           </div>
-          <p className="text-center text-sm text-tenue">🔒 Pía nunca te pide tu clave.</p>
+          <p className="flex items-center justify-center gap-1.5 text-sm text-tenue"><Lock className="h-4 w-4" aria-hidden /> Pía nunca te pide tu clave.</p>
         </form>
       }
     >
@@ -316,7 +309,7 @@ export default function Ayuda() {
             <span className="rounded-full bg-white p-1 shadow-lg">
               <Mascota tamano={72} animada />
             </span>
-            <p className="text-2xl font-bold">Hola, {me.nombre.split(" ")[0]} 👋</p>
+            <p className="text-2xl font-bold">Hola, {me.nombre.split(" ")[0]}</p>
             <p className="flex items-center gap-1 text-lg text-tenue">
               ¿En qué te ayudo?
               <button
@@ -363,7 +356,7 @@ export default function Ayuda() {
                   refId={m.accion.ref}
                   asistida={asistida}
                   alPagar={(r) =>
-                    decirPia(`¡Pago realizado! ${r.descripcion}: ${soles(r.monto)}. N.º de operación ${r.operacion}. Hoy no hiciste cola. 🙌`, {
+                    decirPia(`¡Pago realizado! ${r.descripcion}: ${soles(r.monto)}. N.º de operación ${r.operacion}. Hoy no hiciste cola.`, {
                       tipo: "CONSTANCIA",
                       resultado: r,
                     })
@@ -381,19 +374,7 @@ export default function Ayuda() {
                   >
                     Ver mi constancia
                   </Boton>
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(
-                      (() => {
-                        const r = (m.accion as { resultado: ResultadoPago }).resultado;
-                        return `Constancia de pago · Caja Piura\n${r.descripcion}\nMonto: ${soles(r.monto)}\nN.º de operación: ${r.operacion}`;
-                      })(),
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 flex min-h-13 items-center justify-center gap-2 rounded-boton bg-[#1f8f4e] px-5 text-lg font-bold text-white"
-                  >
-                    <span aria-hidden>💬</span> Enviar por WhatsApp
-                  </a>
+                  <BotonConstanciaWhatsApp className="mt-2" datos={(m.accion as { resultado: ResultadoPago }).resultado} />
                 </div>
               )}
               {m.accion?.tipo === "NAVEGAR" && (() => {
@@ -436,7 +417,7 @@ export default function Ayuda() {
                       className="flex min-h-14 items-center justify-between gap-2 rounded-xl border-2 border-marca bg-superficie px-4 text-left text-lg font-bold text-marca active:bg-marca-claro"
                     >
                       {o.texto}
-                      <span aria-hidden className="text-2xl leading-none">›</span>
+                      <ChevronRight className="h-6 w-6 shrink-0" aria-hidden />
                     </button>
                   ))}
                   {guiaDe(m.accion.opciones[0]?.ruta ?? "") && (

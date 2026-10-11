@@ -3,6 +3,7 @@
 // - Vista estándar: tal cual.
 // - Vista asistida: el mismo inicio, con letra más grande, la pantalla oscurecida y solo «¿Necesitas ayuda?» resaltado.
 // Medidas en px: la muestra se agranda en proporción al ancho de la columna, no con la vista asistida.
+import { Menu } from "lucide-react";
 import type { Vista } from "@cp/shared";
 import { useEffect, useRef, useState } from "react";
 import { IcChevronArriba, IcCreditos, IcCuentas, IcEstrella, IcPagos, IcParaTi, IcProductos, IcTarjeta, IcTransferencias } from "./IconosApp";
@@ -44,12 +45,12 @@ export function CelularPrevia({ vista }: { vista: Vista }) {
     <div ref={caja} className="w-full" aria-hidden>
       <div
         style={{ zoom: escala }}
-        className="pointer-events-none mx-auto w-[248px] select-none rounded-[1.6rem] bg-[#0a0b0d] p-[5px] ring-1 ring-white/15"
+        className="pointer-events-none mx-auto w-[248px] select-none rounded-[1.6rem] bg-[var(--cp-surface-dark)] p-[5px] ring-1 ring-white/15"
       >
         <div key={vista} className="anim-previa relative isolate flex h-[250px] flex-col overflow-hidden rounded-[1.25rem] bg-fondo">
           <div className="bg-marca px-3 pb-2 pt-2.5 text-white">
             <div className="flex items-center gap-2 text-[13px] font-medium">
-              <span className="text-[15px] leading-none">☰</span> Hola, Rosa
+              <Menu className="h-4 w-4" aria-hidden /> Hola, Rosa
             </div>
             <p className="mt-0.5 text-center text-[8px] opacity-90">Tipo de cambio ref. Compra: 3.30 Venta: 3.60</p>
           </div>
@@ -67,7 +68,7 @@ export function CelularPrevia({ vista }: { vista: Vista }) {
             <>
               <div className="absolute inset-0 z-10 bg-black/60" />
               <div className="absolute inset-x-3 bottom-[86px] z-20 rounded-lg bg-superficie p-2 text-[10.5px] font-bold leading-snug text-tinta shadow-lg">
-                ¿Necesitas ayuda? Toca aquí para que te acompañemos. 👇
+                ¿Necesitas ayuda? Toca aquí para que te acompañemos.
               </div>
             </>
           )}

@@ -1,6 +1,7 @@
 "use client";
 // «Omitir ayuda» (Manual visual, guía contextual): apaga el "👇 Toca aquí" en toda la app. Solo aparece en la vista
 // asistida y mientras la guía está encendida; se vuelve a prender en Ajustes.
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useGuia } from "@/lib/guia";
 import { track } from "@/lib/track";
@@ -17,9 +18,9 @@ export function OmitirAyuda() {
     <button
       type="button"
       onClick={() => (track("omitir-ayuda", "tocar"), setActiva(false))}
-      className="-mb-2 min-h-10! self-end rounded-full border border-linea px-3 text-sm font-bold text-tenue active:bg-superficie-2"
+      className="-mb-2 flex min-h-10! items-center gap-1 self-end rounded-full border border-linea px-3 text-sm font-bold text-tenue active:bg-superficie-2"
     >
-      ✕ Omitir ayuda
+      <X className="h-4 w-4" aria-hidden /> Omitir ayuda
     </button>
   );
 }

@@ -1,4 +1,6 @@
 // Indicador de pasos de la app oficial (1 · 2 · 3 con línea, el paso hecho con ✓) y la tarjeta blanca de "Ingresa tus datos".
+import { Check } from "lucide-react";
+
 export function PasosApp({ total, actual }: { total: number; actual: number }) {
   return (
     <ol aria-label={`Paso ${actual} de ${total}`} className="mx-auto flex w-full max-w-64 items-center">
@@ -11,12 +13,12 @@ export function PasosApp({ total, actual }: { total: number; actual: number }) {
             <span
               aria-current={activo ? "step" : undefined}
               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold ${
-                hecho || activo ? "border-[#f5a623] bg-[#f5a623] text-[#14202e]" : "border-[#f5a623] bg-superficie text-tinta"
+                hecho || activo ? "border-[var(--cp-action-focus)] bg-[var(--cp-action-focus)] text-[var(--cp-surface-dark)]" : "border-[var(--cp-action-focus)] bg-superficie text-tinta"
               }`}
             >
-              {hecho ? "✓" : n}
+              {hecho ? <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> : n}
             </span>
-            {n < total && <span aria-hidden className="h-0.5 flex-1 bg-[#f5a623]" />}
+            {n < total && <span aria-hidden className="h-0.5 flex-1 bg-[var(--cp-action-focus)]" />}
           </li>
         );
       })}
@@ -31,7 +33,7 @@ export function CampoApp({ etiqueta, ayuda, children }: { etiqueta: string; ayud
       <span className="flex items-center gap-1.5 text-sm font-bold text-marca">
         {etiqueta}
         {ayuda && (
-          <span title={ayuda} aria-label={ayuda} className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f5a623] text-xs text-[#14202e]">
+          <span title={ayuda} aria-label={ayuda} className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--cp-action-focus)] text-xs text-[var(--cp-surface-dark)]">
             ?
           </span>
         )}

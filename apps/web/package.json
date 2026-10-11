@@ -11,12 +11,14 @@
     "analyze": "ANALYZE=true next build"
   },
   "dependencies": {
+    "@cp/shared": "*",
+    "lucide-react": "^0.468.0",
     "next": "16.4.0",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "@cp/shared": "*"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "16.4.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -24,7 +26,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "@next/bundle-analyzer": "16.4.0"
+    "typescript": "^5"
   }
 }

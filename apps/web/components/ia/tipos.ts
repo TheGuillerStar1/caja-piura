@@ -9,4 +9,3 @@ export function largoCodigo(formato: string): number {
   return m ? Number(m[2] ?? m[1]) : 12;
 }
 
-export const ICONO_RUBRO: Record<string, string> = { LUZ: "💡", AGUA: "💧", TELEFONIA: "📱", INTERNET: "🌐" };

@@ -1,5 +1,6 @@
 "use client";
 // Dueño: Agente B. Ruta B: mis pagos frecuentes.
+import { ChevronRight } from "lucide-react";
 import type { FrecuenteRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -88,7 +89,7 @@ export default function PagarFrecuentes() {
                       <span className="mt-1 text-lg text-exito">Sin deuda pendiente</span>
                     )}
                   </span>
-                  {f.deuda && <span className="text-2xl text-marca">›</span>}
+                  {f.deuda && <ChevronRight className="h-6 w-6 shrink-0 text-marca" aria-hidden />}
                 </button>
               </li>
             ))}

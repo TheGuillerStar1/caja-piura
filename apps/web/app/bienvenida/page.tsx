@@ -3,6 +3,7 @@
 // (nunca por edad ni zona); el cliente decide entre las dos vistas.
 // Interactiva: un interruptor Asistida | Estándar y una vista previa en vivo que cambia al tocar (además, toda la pantalla
 // crece o se achica porque setVista cambia <html data-vista>). Poco texto: el "por qué" va plegado.
+import { Check, Star, Volume2 } from "lucide-react";
 import type { MeRes, Vista } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -100,7 +101,7 @@ export default function Bienvenida() {
           aria-label="Escuchar"
           className="flex w-12 shrink-0 items-center justify-center rounded-full text-2xl text-marca active:bg-marca-claro"
         >
-          🔊
+          <Volume2 className="h-6 w-6" aria-hidden />
         </button>
       </div>
 
@@ -123,7 +124,7 @@ export default function Bienvenida() {
           >
             <span className="text-lg">{v === "ASISTIDA" ? "Asistida" : "Estándar"}</span>
             {v === rec && (
-              <span className={`text-xs font-bold ${previa === v ? "text-white/90" : "text-exito"}`}>★ Recomendada</span>
+              <span className={`text-xs font-bold ${previa === v ? "text-white/90" : "text-exito"}`}><Star className="inline h-3.5 w-3.5 -translate-y-px fill-current" aria-hidden /> Recomendada</span>
             )}
           </button>
         ))}
@@ -153,7 +154,7 @@ export default function Bienvenida() {
         <ul className="flex flex-col gap-1 pb-3">
           {me.recomendacion.razones.map((r) => (
             <li key={r} className="flex gap-2">
-              <span aria-hidden className="text-exito">✓</span>
+              <Check aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-exito" />
               {r}
             </li>
           ))}

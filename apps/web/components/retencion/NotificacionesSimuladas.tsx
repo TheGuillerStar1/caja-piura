@@ -10,9 +10,9 @@ const ESTILOS = `
 function IconoCaja() {
   return (
     <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden className="shrink-0">
-      <rect width="36" height="36" rx="9" fill="#0a4fa3" />
+      <rect width="36" height="36" rx="9" fill="#00549f" />
       <path d="M9 18a9 9 0 0 1 15.6-6.1" stroke="#fff" strokeWidth="3.4" fill="none" strokeLinecap="round" />
-      <path d="M24.6 24.1A9 9 0 0 1 9 18" stroke="#e30613" strokeWidth="3.4" fill="none" strokeLinecap="round" />
+      <path d="M24.6 24.1A9 9 0 0 1 9 18" stroke="#d97706" strokeWidth="3.4" fill="none" strokeLinecap="round" />
       <circle cx="18" cy="18" r="3" fill="#fff" />
     </svg>
   );
@@ -30,7 +30,7 @@ export function NotificacionesSimuladas({ mensajes, alTocar, alCerrar }: Props) 
           key={m + i}
           type="button"
           onClick={alTocar}
-          className="cp-noti pointer-events-auto flex w-full max-w-app items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#14233a] shadow-lg ring-1 ring-black/10 backdrop-blur"
+          className="cp-noti pointer-events-auto flex w-full max-w-app items-start gap-3 rounded-2xl bg-white/95 p-3 text-left text-[#1c1f24] shadow-lg ring-1 ring-black/10 backdrop-blur"
           style={{ animationDelay: `${i * 350}ms` }}
         >
           <IconoCaja />

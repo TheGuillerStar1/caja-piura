@@ -22,7 +22,7 @@ export function AvisoSinConexion() {
   return (
     <div
       role="alert"
-      className="fixed inset-x-0 top-16 z-30 mx-auto max-w-app rounded-b-2xl bg-[#2b2f36] px-4 py-3 shadow-lg text-center text-lg font-bold text-white"
+      className="fixed inset-x-0 top-16 z-30 mx-auto max-w-app rounded-b-2xl bg-[var(--cp-surface-dark)] px-4 py-3 shadow-lg text-center text-lg font-bold text-white"
     >
       Sin conexión. No se cobró nada. Cuando vuelva la señal, inténtalo de nuevo.
     </div>

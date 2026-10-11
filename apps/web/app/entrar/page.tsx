@@ -1,6 +1,7 @@
 "use client";
 // Ingreso, réplica de la app oficial: DNI (solo la primera vez o con "otra cuenta") → PIN de 6 dígitos con teclado
 // aleatorio → /bienvenida (primer ingreso) o /inicio. La clave NUNCA se muestra; 2 errores → salida a agencia.
+import { IdCard } from "lucide-react";
 import type { ClienteDemo, LoginReq, LoginRes, MeRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -159,19 +160,15 @@ export default function Entrar() {
       </header>
 
       <main className="flex flex-1 flex-col justify-end gap-3 px-6 pb-6">
-        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-[#3d3a8c]">
+        <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-[var(--cp-brand)]">
           <IcUsuario />
         </span>
         <h1 className={`text-center text-4xl font-medium ${sombra}`}>{enDni ? "Hola" : primerNombre || "Hola"}</h1>
         <p className={`text-center text-white/95 ${sombra}`}>{enDni ? "Ingresa tu número de DNI" : "Ingresa tu pin de 6 dígitos"}</p>
 
         {enDni ? (
-          <div className="flex h-14 items-center rounded-lg bg-[#1c1f24] px-4" aria-live="polite">
-            <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" fill="none" stroke="#fff" strokeWidth="1.8" aria-hidden="true">
-              <rect x="3" y="5" width="18" height="14" rx="2" />
-              <circle cx="9" cy="11" r="2" />
-              <path d="M6 16c.6-1.5 1.7-2.2 3-2.2s2.4.7 3 2.2M14 10h4M14 13.5h3" />
-            </svg>
+          <div className="flex h-14 items-center rounded-lg bg-[var(--cp-surface-dark)] px-4" aria-live="polite">
+            <IdCard className="h-7 w-7 shrink-0 text-white" strokeWidth={1.8} aria-hidden />
             <span className={`flex-1 text-center text-2xl font-medium tracking-[0.3em] ${dni ? "text-white" : "text-white/40"}`}>{dni || "DNI"}</span>
           </div>
         ) : (
@@ -179,7 +176,7 @@ export default function Entrar() {
         )}
 
         {error && (
-          <p role="alert" className="rounded-md bg-[#1c1f24]/85 px-3 py-2 text-center font-medium text-white">
+          <p role="alert" className="rounded-md bg-[var(--cp-surface-dark)]/85 px-3 py-2 text-center font-medium text-white">
             {error}
           </p>
         )}
@@ -194,7 +191,7 @@ export default function Entrar() {
                     key={c.dni}
                     type="button"
                     onClick={() => elegirDni(c.dni, c.nombre)}
-                    className="min-h-10! rounded-full bg-white/90 px-3 text-sm font-medium text-[#2d2a6e] active:bg-white"
+                    className="min-h-10! rounded-full bg-white/90 px-3 text-sm font-medium text-[var(--cp-brand)] active:bg-white"
                     title={c.descripcion}
                   >
                     {c.nombre.split(" ")[0]}

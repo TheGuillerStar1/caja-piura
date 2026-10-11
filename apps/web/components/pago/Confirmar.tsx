@@ -1,5 +1,6 @@
 "use client";
 // Dueño: Agente B. Confirmación común de pagos: /pagar/confirmar?tipo=CUOTA|FRECUENTE|RECIBO&ref=<id>[&fallar=1]
+import { Volume2 } from "lucide-react";
 import type { ConfirmarPagoRes, Cuenta, PrepararPagoRes, TipoPago } from "@cp/shared";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -373,7 +374,7 @@ export function Confirmar() {
                 leerEnVoz(pago);
               }}
             >
-              🔊 Escuchar de nuevo
+              <Volume2 className="h-5 w-5" aria-hidden /> Escuchar de nuevo
             </Boton>
           )}
           {guia === null && (

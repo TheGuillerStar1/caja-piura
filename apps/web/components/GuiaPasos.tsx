@@ -1,6 +1,7 @@
 "use client";
 // Guía paso a paso de Pía («Guíame»). Lee el paso actual (lib/guiaPasos.ts), oscurece la pantalla y resalta el elemento
 // real con data-paso="…" de la app de siempre. Cuando el cliente lo toca (o elige una opción), pasa al siguiente.
+import { CircleCheck, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Foco } from "@/components/ui/Foco";
@@ -63,7 +64,7 @@ export function GuiaPasos() {
   if (listo) {
     return (
       <div role="status" className="fixed inset-x-0 top-20 z-[72] mx-auto w-[min(92vw,26rem)] rounded-2xl bg-exito p-4 text-center text-lg font-bold text-white shadow-2xl">
-        ¡Listo! Ya sabes hacerlo tú solo en la app. 🙌
+        <CircleCheck className="mr-1 inline h-6 w-6 -translate-y-0.5" aria-hidden /> ¡Listo! Ya sabes hacerlo en la app.
       </div>
     );
   }
@@ -75,7 +76,7 @@ export function GuiaPasos() {
         onClick={terminarGuia}
         className="fixed inset-x-0 bottom-24 z-[72] mx-auto flex min-h-11 w-max items-center gap-2 rounded-full bg-black/80 px-4 text-sm font-bold text-white"
       >
-        Guía de Pía en pausa · <span aria-hidden>✕</span> Salir
+        Guía de Pía en pausa · <X className="h-4 w-4" aria-hidden /> Salir
       </button>
     );
   }

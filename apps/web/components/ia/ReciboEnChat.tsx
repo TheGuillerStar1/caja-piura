@@ -1,6 +1,7 @@
 "use client";
 // Recibo con foto DENTRO del chat de Pía: tomar foto, elegir de la galería o tocar un recibo de ejemplo.
 // Pía lee solo el código y consulta el monto real a Caja Piura (nunca usa el monto de la foto).
+import { Camera } from "lucide-react";
 import type { LeerReciboRes, ReciboRes } from "@cp/shared";
 import { useEffect, useRef, useState } from "react";
 import { comprimirFoto } from "@/components/ia/comprimir";
@@ -59,7 +60,7 @@ export function ReciboEnChat({ alLeer, alSinDeuda, alNoLeer }: Props) {
   if (leyendo) {
     return (
       <p role="status" className="ml-10 rounded-xl bg-superficie px-4 py-3 text-lg text-tenue">
-        📷 Leyendo el código del recibo…
+        Leyendo el código del recibo…
       </p>
     );
   }
@@ -68,7 +69,7 @@ export function ReciboEnChat({ alLeer, alSinDeuda, alNoLeer }: Props) {
       <input ref={camara} type="file" accept="image/*" capture="environment" hidden onChange={alElegir} />
       <input ref={galeria} type="file" accept="image/*" hidden onChange={alElegir} />
       <button type="button" onClick={() => camara.current?.click()} className="flex min-h-14 items-center justify-center gap-2 rounded-xl bg-marca text-lg font-bold text-white">
-        📷 Tomar foto
+        <Camera className="h-6 w-6" aria-hidden /> Tomar foto
       </button>
       <button type="button" onClick={() => galeria.current?.click()} className="min-h-12 rounded-xl border-2 border-marca bg-superficie font-bold text-marca">
         Elegir de mi galería

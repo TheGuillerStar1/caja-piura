@@ -1,5 +1,6 @@
 "use client";
 // Dueño: Agente D. Progreso del cliente: puntos, beneficios, pagos del mes, visitas ahorradas y avance del crédito.
+import { Check, Star } from "lucide-react";
 import type { ProgresoRes } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -111,7 +112,7 @@ export default function ProgresoPage() {
                         logrado ? "bg-exito text-white" : "bg-fondo text-tenue"
                       }`}
                     >
-                      {logrado ? "✓" : "★"}
+                      {logrado ? <Check className="h-4 w-4" aria-hidden /> : <Star className="h-4 w-4" aria-hidden />}
                     </span>
                     <span className="flex-1">
                       <span className="block font-bold">{b.nombre}</span>

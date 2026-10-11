@@ -2,6 +2,7 @@
 // Barra superior azul de la app oficial: ☰ (menú lateral) o ‹ (volver) + título. Debajo puede ir una línea
 // secundaria (p. ej. el tipo de cambio en Mis productos). El menú lateral replica el de la app: perfil, secciones
 // y "Cerrar sesión" al pie.
+import { Moon, Sun, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -71,7 +72,7 @@ function BotonVoz() {
       aria-label={activa ? "Silenciar la voz de Pía" : "Activar la voz de Pía"}
       className="mr-2 flex min-h-10! shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 text-sm font-bold"
     >
-      <span aria-hidden className="text-base leading-none">{activa ? "🔊" : "🔇"}</span>
+      {activa ? <Volume2 className="h-4 w-4" aria-hidden /> : <VolumeX className="h-4 w-4" aria-hidden />}
       {activa ? "Voz" : "Silencio"}
     </button>
   );
@@ -154,7 +155,7 @@ function MenuLateral({ cerrar }: { cerrar: () => void }) {
           onClick={() => (track("menu-tema", "tocar"), setTema(tema === "claro" ? "oscuro" : "claro"))}
           className="flex min-h-14 items-center gap-4 border-t border-white/25 px-6 text-[0.95rem] font-medium"
         >
-          <span aria-hidden className="w-6 text-center text-xl">{tema === "claro" ? "🌙" : "☀️"}</span>
+          {tema === "claro" ? <Moon className="h-6 w-6" aria-hidden /> : <Sun className="h-6 w-6" aria-hidden />}
           {tema === "claro" ? "Pantalla oscura" : "Pantalla clara"}
         </button>
         <button type="button" onClick={salir} disabled={saliendo} className="flex min-h-14 items-center gap-4 border-t border-white/25 px-6 text-[0.95rem] font-medium">
