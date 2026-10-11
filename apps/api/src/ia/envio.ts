@@ -82,3 +82,27 @@ export function pedidoEnvio(mensaje: string): PedidoEnvio | null {
   if (!billetera && !nombre) return null;
   return { nombre, monto: montoDe(mensaje), billetera };
 }
+
+// ── Transferencias a una cuenta ("transfiere 100 a la cuenta 00110200000002", "pasa 50 a mi otra cuenta", "a otro banco") ──
+export type TipoCuenta = "PROPIAS" | "TERCEROS" | "INTERBANCARIA";
+export type PedidoCuenta = { tipo: TipoCuenta; destino: string | null; monto: number | null };
+
+const VERBO_TRANSFERIR = /\b(transf\w*|envi\w*|mand\w*|pas[ae]\w*|deposit\w*|mover|muev\w*)\b/;
+const PROPIAS = /\b(mis cuentas|mi otra cuenta|mi cuenta|cuenta propia|cuentas propias|entre mis|a mi ahorro|mi ahorro)\b/;
+const OTRO_BANCO = /\b(otro banco|otra entidad|interbancari\w*|cci|bcp|interbank|bbva|scotiabank|banco de la nacion|banbif|pichincha)\b/;
+const TERCEROS = /\b(otra cuenta|terceros?|cuenta de caja piura|cuenta de otra persona|a la cuenta|al numero de cuenta|numero de cuenta)\b/;
+
+/** ¿Es una transferencia a una cuenta? Dice el tipo, el n.º de cuenta o CCI si lo escribió y el monto. */
+export function pedidoCuenta(mensaje: string): PedidoCuenta | null {
+  const t = normalizar(mensaje);
+  if (!VERBO_TRANSFERIR.test(t)) return null;
+  // N.º de cuenta (10-18 dígitos) o CCI (20), seguidos o con guiones.
+  const numero = (mensaje.match(/\d[\d-]{8,26}\d/g) ?? []).map((n) => n.replace(/-/g, "")).find((n) => n.length >= 10 && n.length <= 20 && n.length !== 19);
+  const monto = montoDe(mensaje.replace(/\d[\d-]{8,26}\d/g, " "));
+  if (numero?.length === 20) return { tipo: "INTERBANCARIA", destino: numero, monto };
+  if (OTRO_BANCO.test(t)) return { tipo: "INTERBANCARIA", destino: null, monto };
+  if (numero) return { tipo: "TERCEROS", destino: numero, monto };
+  if (PROPIAS.test(t)) return { tipo: "PROPIAS", destino: null, monto };
+  if (TERCEROS.test(t)) return { tipo: "TERCEROS", destino: null, monto };
+  return null;
+}

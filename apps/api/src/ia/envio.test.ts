@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pedidoEnvio } from "./envio.js";
+import { pedidoCuenta, pedidoEnvio } from "./envio.js";
 import { interpretar } from "./palabrasClave.js";
 
 describe("envíos a contacto en el chat (solo se entiende el pedido; no se envía nada)", () => {
@@ -21,11 +21,33 @@ describe("envíos a contacto en el chat (solo se entiende el pedido; no se enví
     expect(pedidoEnvio("quiero transferir")).toBeNull();
     expect(pedidoEnvio("transferir a otra cuenta")).toBeNull();
     expect(pedidoEnvio("transferencia a otro banco")).toBeNull();
-    expect(interpretar("quiero transferir", [])).toEqual({ tipo: "TRANSFERIR", envio: null });
+    expect(interpretar("quiero transferir", [])).toEqual({ tipo: "TRANSFERIR", envio: null, cuenta: null });
   });
 
   it("la clave sigue primero y Plin no se confunde con pin", () => {
     expect(interpretar("dame mi clave para yapear", []).tipo).toBe("CLAVE_PEDIDA");
     expect(interpretar("plinea a sergio", [])).toMatchObject({ tipo: "TRANSFERIR", envio: { nombre: "sergio", billetera: "PLIN" } });
+  });
+});
+
+describe("transferencias a una cuenta en el chat (solo se entiende el pedido)", () => {
+  it("reconoce el tipo, el número y el monto", () => {
+    expect(pedidoCuenta("transfiere 100 a la cuenta 00110200000002")).toEqual({ tipo: "TERCEROS", destino: "00110200000002", monto: 100 });
+    expect(pedidoCuenta("quiero transferir a otra cuenta")).toEqual({ tipo: "TERCEROS", destino: null, monto: null });
+    expect(pedidoCuenta("pasa 50 soles a mi otra cuenta")).toEqual({ tipo: "PROPIAS", destino: null, monto: 50 });
+    expect(pedidoCuenta("transferir entre mis cuentas")).toEqual({ tipo: "PROPIAS", destino: null, monto: null });
+    expect(pedidoCuenta("transferencia a otro banco de 200")).toEqual({ tipo: "INTERBANCARIA", destino: null, monto: 200 });
+    expect(pedidoCuenta("envía 80 al CCI 00212345678901234567")).toEqual({ tipo: "INTERBANCARIA", destino: "00212345678901234567", monto: 80 });
+  });
+
+  it("no confunde envíos a contactos ni pedidos sin transferir", () => {
+    expect(pedidoCuenta("yapéale 50 a Sergio")).toBeNull();
+    expect(pedidoCuenta("quiero transferir")).toBeNull();
+    expect(pedidoCuenta("ver mi cuenta")).toBeNull();
+  });
+
+  it("interpretar: cuenta antes que contacto", () => {
+    expect(interpretar("transfiere 100 a la cuenta 00110200000002", [])).toMatchObject({ tipo: "TRANSFERIR", cuenta: { tipo: "TERCEROS" }, envio: null });
+    expect(interpretar("yapea 20 a sergio", [])).toMatchObject({ tipo: "TRANSFERIR", cuenta: null, envio: { nombre: "sergio" } });
   });
 });

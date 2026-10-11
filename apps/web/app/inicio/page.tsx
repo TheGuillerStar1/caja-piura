@@ -1,7 +1,7 @@
 "use client";
 // "Mis productos": réplica de la pantalla principal de la app oficial (saludo, tipo de cambio, Cuentas / Tarjetas /
-// Créditos desplegables y Mis servicios). Lo único nuevo son los recordatorios de Pía arriba y, en la vista
-// asistida, los accesos grandes "¿Qué necesitas hacer hoy?".
+// Créditos desplegables y Mis servicios). Lo único nuevo, solo en la vista asistida, son los recordatorios de Pía
+// arriba y los accesos grandes "¿Qué necesitas hacer hoy?". La vista estándar queda como la app de siempre.
 import { X } from "lucide-react";
 import type { Aviso, CuotaRes, InicioRes, MeRes } from "@cp/shared";
 import Link from "next/link";
@@ -126,7 +126,8 @@ export default function Inicio() {
     );
   }
 
-  const avisos = filtrarAvisos(datos.avisos, rec);
+  // Recordatorios solo en la vista asistida; en la estándar el inicio queda limpio, como la app oficial.
+  const avisos = asistida ? filtrarAvisos(datos.avisos, rec) : [];
   const cuentas = me.cuentas;
   const filaSeccion = (s: Seccion, Icono: (p: { className?: string }) => React.ReactNode, texto: string) => (
     <button
@@ -178,7 +179,7 @@ export default function Inicio() {
         </section>
       )}
 
-      {rec.activos === null && cuota && (
+      {asistida && rec.activos === null && cuota && (
         <section aria-labelledby="pregunta-avisos" className="flex flex-col gap-3 rounded-2xl border-2 border-linea bg-superficie p-4">
           <p id="pregunta-avisos" className="text-lg font-bold leading-snug">
             Tu próxima cuota vence el {fechaCorta(cuota.vencimiento)}. ¿Quieres que te recordemos?

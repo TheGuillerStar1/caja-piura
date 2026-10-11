@@ -9,7 +9,7 @@ import { aNumero, cuandoVence, soles } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { perfilDeCliente, recomendar } from "../motor/index.js";
 import { interpretar, type FrecuenteCtx, type Intencion, type Pantalla, type ProblemaPago, type Rubro } from "./palabrasClave.js";
-import type { Billetera, PedidoEnvio } from "./envio.js";
+import type { Billetera, PedidoCuenta, PedidoEnvio } from "./envio.js";
 import { herramientaAceptable, textoLibreAceptable } from "./guardas.js";
 import { quitarThink } from "./texto.js";
 
@@ -246,11 +246,27 @@ function enviarAContacto(ctx: Ctx, e: PedidoEnvio): Resultado {
   };
 }
 
+/** Transferencia a una cuenta en el mismo chat: Pía arma el pedido; el cliente completa, ve a nombre de quién está la
+ *  cuenta y confirma con su huella. Pía no transfiere nada. */
+function transferirACuenta(ctx: Ctx, c: PedidoCuenta): Resultado {
+  const cuanto = c.monto ? ` de ${soles(c.monto)}` : "";
+  const que = { PROPIAS: "entre tus cuentas", TERCEROS: "a otra cuenta de Caja Piura", INTERBANCARIA: "a otro banco" }[c.tipo];
+  const falta = c.tipo === "PROPIAS" ? "Elige la cuenta" : c.destino ? "Revisa los datos" : c.tipo === "INTERBANCARIA" ? "Escribe el CCI" : "Escribe el número de cuenta";
+  return {
+    respuesta: t(ctx, {
+      calido: `Claro, ${ctx.nombre}. Transferencia${cuanto} ${que}. ${falta} y confirma tú.`,
+      corto: `Transferencia${cuanto} ${que}. ${falta} y confirma.`,
+      directo: `Transferencia${cuanto} ${que}. ${falta}:`,
+    }),
+    accion: { tipo: "TRANSFERENCIA_CUENTA", transferencia: c.tipo, destino: c.destino, monto: c.monto },
+  };
+}
+
 function transferir(ctx: Ctx): Resultado {
   return {
     respuesta: t(ctx, {
-      calido: `${ctx.nombre}, las transferencias se hacen en su pantalla y tú confirmas cada paso. ¿A dónde quieres enviar?`,
-      corto: "Las transferencias se hacen en su pantalla. ¿A dónde quieres enviar?",
+      calido: `${ctx.nombre}, ¿a dónde quieres enviar? Lo hacemos aquí mismo y tú confirmas.`,
+      corto: "¿A dónde quieres enviar? Tú confirmas.",
       directo: "Elige el tipo de transferencia:",
     }),
     accion: {
@@ -368,7 +384,7 @@ export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resulta
     case "FUERA_DE_ALCANCE":
       return fueraDeAlcance(ctx);
     case "TRANSFERIR":
-      return i.envio ? enviarAContacto(ctx, i.envio) : transferir(ctx);
+      return i.cuenta ? transferirACuenta(ctx, i.cuenta) : i.envio ? enviarAContacto(ctx, i.envio) : transferir(ctx);
     case "PROBLEMA_PAGO":
       return problemaPago(ctx, i.problema);
     default:

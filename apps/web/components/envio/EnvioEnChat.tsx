@@ -99,7 +99,7 @@ export function EnvioEnChat({ nombre, monto, billetera, asistida, activo, alEnvi
   useEffect(() => {
     cargar();
     track("envio-chat", "ver");
-    cargarCliente().then(
+    cargarCliente(true).then(
       (m) => {
         const c = m.cuentas.filter((k) => k.paraPagar);
         setCuentas(c);

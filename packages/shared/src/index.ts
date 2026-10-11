@@ -226,6 +226,13 @@ export const AccionUI = z.discriminatedUnion("tipo", [
     monto: z.number().nullable(),
     billetera: z.enum(["YAPE", "PLIN", "BIM", "DALE", "SIP"]).nullable(),
   }),
+  /** Transferir a una cuenta dentro del chat (propia, de Caja Piura u otro banco). El cliente completa y confirma. */
+  z.object({
+    tipo: z.literal("TRANSFERENCIA_CUENTA"),
+    transferencia: z.enum(["PROPIAS", "TERCEROS", "INTERBANCARIA"]),
+    destino: z.string().nullable(), // n.º de cuenta o CCI si lo escribió
+    monto: z.number().nullable(),
+  }),
 ]);
 export type AccionUI = z.infer<typeof AccionUI>;
 export const AsistenteRes = z.object({ respuesta: z.string(), accion: AccionUI, fuente: z.enum(["LLM", "PALABRAS_CLAVE"]) });

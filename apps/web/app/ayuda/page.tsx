@@ -14,6 +14,8 @@ import { TutorialPia, tutorialVisto } from "@/components/ayuda/TutorialPia";
 import { BotonConstanciaWhatsApp } from "@/components/pago/ConstanciaWhatsApp";
 import { PagoEnChat } from "@/components/pago/PagoEnChat";
 import { ConstanciaEnvio } from "@/components/envio/ConstanciaEnvio";
+import { ConstanciaTransferencia } from "@/components/envio/ConstanciaTransferencia";
+import { TransferenciaEnChat, type TipoCuenta, type TransferenciaHecha } from "@/components/envio/TransferenciaEnChat";
 import { EnvioEnChat, type EnvioHecho } from "@/components/envio/EnvioEnChat";
 import { NOMBRE_BILLETERA } from "@/components/envio/contactos";
 import { Boton, Mascota, Pantalla } from "@/components/ui";
@@ -30,11 +32,20 @@ type AccionChat =
   | { tipo: "RECIBO_FOTO" }
   | { tipo: "PAGO_CHAT"; pago: TipoPago; ref: number }
   | { tipo: "CONSTANCIA"; resultado: ResultadoPago }
-  | { tipo: "CONSTANCIA_ENVIO"; envio: EnvioHecho };
+  | { tipo: "CONSTANCIA_ENVIO"; envio: EnvioHecho }
+  | { tipo: "CONSTANCIA_TRANSFERENCIA"; t: TransferenciaHecha };
 type Mensaje = { id: number; de: "pia" | "yo"; texto: string; accion?: AccionChat };
 
 /** El tono sigue a la vista elegida (si ya eligió); si no, al que recomienda el motor. */
 const tonoDe = (m: MeRes): Tono => (m.vistaPreferida ? (m.vistaPreferida === "ASISTIDA" ? "CALIDO" : "DIRECTO") : m.recomendacion.tono);
+
+/** Las opciones de «Transferir» que da Pía se hacen en el chat, no en otra pantalla. */
+const TRANSFERENCIAS: Record<string, TipoCuenta | "CONTACTO"> = {
+  "/transferir/contacto": "CONTACTO",
+  "/transferir/terceros": "TERCEROS",
+  "/transferir/propias": "PROPIAS",
+  "/transferir/interbancaria": "INTERBANCARIA",
+};
 
 /** "/pagar/confirmar?tipo=CUOTA&ref=12" → { pago: "CUOTA", ref: 12 } */
 function pagoDe(ruta: string): { pago: TipoPago; ref: number } | null {
@@ -429,6 +440,20 @@ export default function Ayuda() {
                 />
               )}
               {m.accion?.tipo === "CONSTANCIA_ENVIO" && <ConstanciaEnvio envio={m.accion.envio} />}
+              {m.accion?.tipo === "TRANSFERENCIA_CUENTA" && (
+                // Transferir a una cuenta aquí mismo: cuenta y monto, a nombre de quién, «Confirmar transferencia» y huella.
+                <TransferenciaEnChat
+                  tipo={m.accion.transferencia}
+                  destino={m.accion.destino}
+                  monto={m.accion.monto}
+                  asistida={asistida}
+                  activo={m === ultimoPia}
+                  alTransferir={(r) =>
+                    decirPia(`¡Listo! Transferiste ${soles(r.monto)} a ${r.nombreDestino}. Aquí tienes tu constancia:`, { tipo: "CONSTANCIA_TRANSFERENCIA", t: r })
+                  }
+                />
+              )}
+              {m.accion?.tipo === "CONSTANCIA_TRANSFERENCIA" && <ConstanciaTransferencia t={m.accion.t} />}
               {m.accion?.tipo === "CONSTANCIA" && (
                 <div className="ml-10">
                   <Boton
@@ -476,7 +501,11 @@ export default function Ayuda() {
                       type="button"
                       onClick={() => {
                         const pago = pagoDe(o.ruta);
+                        const transferencia = TRANSFERENCIAS[o.ruta];
                         if (pago) decirPia("Listo. Revisa y confirma aquí mismo:", { tipo: "PAGO_CHAT", ...pago });
+                        // Transferencias: también aquí mismo, sin ir a otra pantalla.
+                        else if (transferencia === "CONTACTO") decirPia("¿A quién le envías? Tú confirmas.", { tipo: "ENVIO_CONTACTO", nombre: null, monto: null, billetera: null });
+                        else if (transferencia) decirPia("Completa los datos y confirma tú:", { tipo: "TRANSFERENCIA_CUENTA", transferencia, destino: null, monto: null });
                         else if (o.ruta.startsWith("/pagar/recibo")) decirPia("Tómale una foto a tu recibo y yo leo el código:", { tipo: "RECIBO_FOTO" });
                         else ir(o.ruta);
                       }}
