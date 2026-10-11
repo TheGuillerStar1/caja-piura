@@ -248,3 +248,22 @@ model Evento {
   @@index([pantalla, accion])
   @@index([sesionId])
 }
+
+enum AccionCampana {
+  AVISO
+  RECORDATORIO_CUOTA
+  CASHBACK_DOBLE
+}
+
+/// Campañas del Centro de mando (/gestion): un segmento de clientes + una acción.
+/// Los resultados no se guardan: se proyectan con un modelo determinista sobre los perfiles (datos ficticios)
+/// y avanzan con «Simular 30 días» (diasSimulados).
+model Campana {
+  id            Int           @id @default(autoincrement())
+  nombre        String        @db.VarChar(80)
+  accion        AccionCampana
+  /// Filtros del segmento (SegmentoCampana de @cp/shared)
+  segmento      Json
+  diasSimulados Int           @default(0)
+  creadoEn      DateTime      @default(now())
+}

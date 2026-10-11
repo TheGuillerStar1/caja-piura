@@ -14,7 +14,7 @@ export function DemoBarDiferida() {
   // Solo en el navegador y después de pintar la pantalla.
   const [montado, setMontado] = useState(false);
   useEffect(() => setMontado(true), []);
-  if (!montado || SIN_BARRA.includes(ruta) || ruta.startsWith("/panel")) return null;
+  if (!montado || SIN_BARRA.includes(ruta) || ruta.startsWith("/panel") || ruta.startsWith("/gestion")) return null;
   return (
     <Suspense fallback={null}>
       <DemoBar />

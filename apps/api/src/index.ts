@@ -12,6 +12,7 @@ import { router as cuotas } from "./routes/cuotas.js";
 import { router as demo } from "./routes/demo.js";
 import { router as eventos } from "./routes/eventos.js";
 import { router as frecuentes } from "./routes/frecuentes.js";
+import { router as gestion } from "./routes/gestion.js";
 import { router as inicio } from "./routes/inicio.js";
 import { router as me } from "./routes/me.js";
 import { router as pagos } from "./routes/pagos.js";
@@ -48,7 +49,7 @@ app.get("/archivos/*key", requiereSesion, async (req, res) => {
   res.type(key.endsWith(".png") ? "png" : "jpeg").set("Cache-Control", "public, max-age=86400").send(buf);
 });
 
-for (const r of [auth, me, inicio, cuotas, frecuentes, pagos, transferencias, recibos, asistente, progreso, demo, eventos, panel]) app.use(r);
+for (const r of [auth, me, inicio, cuotas, frecuentes, pagos, transferencias, recibos, asistente, progreso, demo, eventos, panel, gestion]) app.use(r);
 
 app.use((_req, res) => {
   res.status(404).json({ error: { codigo: "NO_ENCONTRADO", mensaje: "Ruta no encontrada" } });

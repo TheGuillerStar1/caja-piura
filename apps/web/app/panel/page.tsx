@@ -1,6 +1,7 @@
 "use client";
 // Dueño: Agente D. Panel del jurado (público): indicadores en vivo, se actualiza cada 5 s.
 import type { KpisRes } from "@cp/shared";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Cargando } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -53,10 +54,15 @@ export default function PanelPage() {
           <p className="text-sm font-bold uppercase tracking-wide text-marca">Caja Piura · Modo Acompaña</p>
           <h1 className="text-2xl font-bold sm:text-3xl">Panel de indicadores</h1>
         </div>
-        <p className="flex items-center gap-2 text-sm text-tenue">
-          <span className={`inline-block h-2.5 w-2.5 rounded-full ${error ? "bg-error" : "bg-exito"}`} aria-hidden />
-          {error ? "Sin conexión, reintentando…" : actualizado ? `En vivo · ${actualizado.toLocaleTimeString("es-PE")}` : "Conectando…"}
-        </p>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+          <p className="flex items-center gap-2 text-tenue">
+            <span className={`inline-block h-2.5 w-2.5 rounded-full ${error ? "bg-error" : "bg-exito"}`} aria-hidden />
+            {error ? "Sin conexión, reintentando…" : actualizado ? `En vivo · ${actualizado.toLocaleTimeString("es-PE")}` : "Conectando…"}
+          </p>
+          <Link href="/gestion" className="flex items-center font-bold text-marca underline underline-offset-4">
+            Centro de mando →
+          </Link>
+        </div>
       </header>
 
       <AntesYAhora />

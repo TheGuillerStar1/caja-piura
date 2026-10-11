@@ -40,7 +40,7 @@ export default function DemoBar() {
     return () => clearTimeout(t);
   }, [notis]);
 
-  if (OCULTA_EN.includes(pathname) || pathname.startsWith("/panel")) return null;
+  if (OCULTA_EN.includes(pathname) || pathname.startsWith("/panel") || pathname.startsWith("/gestion")) return null;
 
   async function adelantar() {
     setOcupado("adelantar");

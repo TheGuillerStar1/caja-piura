@@ -331,3 +331,110 @@ export const ConfirmarTransferenciaRes = z.object({
   repetida: z.boolean(),
 });
 export type ConfirmarTransferenciaRes = z.infer<typeof ConfirmarTransferenciaRes>;
+
+// ── Centro de mando (/gestion): mapa por distrito, KPIs del negocio y campañas ──
+/**
+ * Supuestos de costo para estimar el ahorro (soles por operación). PROVISIONALES: reemplazar por los costos
+ * reales de Caja Piura. Se muestran en pantalla como supuestos.
+ */
+export const SUPUESTOS_GESTION = {
+  costoOpVentanilla: 5.5,
+  costoOpDigital: 0.5,
+  costoSms: 0.06,
+  /** Soles extra por pago que cuesta la campaña «Cashback doble» */
+  cashbackExtraPorPago: 2,
+} as const;
+
+export const OcupacionCliente = z.enum(["COMERCIANTE", "AGRICULTOR", "TRANSPORTISTA", "OTRO"]);
+export type OcupacionCliente = z.infer<typeof OcupacionCliente>;
+export const GamaCelular = z.enum(["BAJA", "MEDIA", "ALTA"]);
+export type GamaCelular = z.infer<typeof GamaCelular>;
+export const ZonaCliente = z.enum(["RURAL", "URBANA"]);
+export type ZonaCliente = z.infer<typeof ZonaCliente>;
+
+export const DistritoGestion = z.object({
+  /** Ubigeo INEI (el mismo de /geo/piura-distritos.geojson) */
+  ubigeo: z.string(),
+  /** Nombres de distrito tal como están en la base (Veintiséis de Octubre se agrupa en el polígono de Piura) */
+  nombres: z.array(z.string()),
+  clientes: z.number(),
+  /** Clientes con al menos 1 operación digital al mes ÷ clientes (0..1) */
+  adopcion: z.number(),
+  /** Operaciones digitales ÷ todas las operaciones (0..1) */
+  tasaDigital: z.number(),
+  opsVentanillaMes: z.number(),
+  opsDigitalesMes: z.number(),
+  /** Operaciones en ventanilla/mes de clientes con celular de gama media o alta: las más fáciles de pasar a la app */
+  oportunidad: z.number(),
+  /** Cuotas que vencen en los próximos 7 días y su monto */
+  porVencer: z.number(),
+  montoPorVencer: z.number(),
+  /** Cuotas ya vencidas sin pagar (mora temprana) */
+  vencidas: z.number(),
+  /** Parte de los clientes a los que el motor recomienda la vista asistida (0..1) */
+  asistida: z.number(),
+  edadMedia: z.number(),
+  ocupacionPrincipal: OcupacionCliente,
+  pagosApp: z.number(),
+});
+export type DistritoGestion = z.infer<typeof DistritoGestion>;
+
+export const ResumenGestionRes = z.object({
+  distritos: z.array(DistritoGestion),
+  totales: DistritoGestion.omit({ ubigeo: true, nombres: true, ocupacionPrincipal: true, edadMedia: true }).extend({
+    cashbackEntregado: z.number(),
+    tasaExitoSinAyuda: z.number(),
+  }),
+  /** Matriz ocupación × gama del celular */
+  segmentos: z.array(z.object({ ocupacion: OcupacionCliente, gama: GamaCelular, clientes: z.number(), tasaDigital: z.number(), asistida: z.number() })),
+  supuestos: z.object({ costoOpVentanilla: z.number(), costoOpDigital: z.number(), costoSms: z.number(), cashbackExtraPorPago: z.number() }),
+});
+export type ResumenGestionRes = z.infer<typeof ResumenGestionRes>;
+
+export const AccionCampana = z.enum(["AVISO", "RECORDATORIO_CUOTA", "CASHBACK_DOBLE"]);
+export type AccionCampana = z.infer<typeof AccionCampana>;
+
+export const SegmentoCampana = z.object({
+  /** Ubigeos; vacío = todos */
+  distritos: z.array(z.string().max(6)).max(70).default([]),
+  ocupaciones: z.array(OcupacionCliente).default([]),
+  gamas: z.array(GamaCelular).default([]),
+  zonas: z.array(ZonaCliente).default([]),
+  edadMin: z.number().int().min(18).max(99).default(18),
+  edadMax: z.number().int().min(18).max(99).default(99),
+  /** Solo quienes hacen la mayoría de sus operaciones en ventanilla */
+  soloVentanilla: z.boolean().default(false),
+});
+export type SegmentoCampana = z.infer<typeof SegmentoCampana>;
+
+export const AlcanceSegmentoRes = z.object({
+  clientes: z.number(),
+  porApp: z.number(), // ya usan la app: el aviso llega dentro de la app
+  porSms: z.number(), // no usan la app: el aviso llega por SMS
+  opsVentanillaMes: z.number(),
+});
+export type AlcanceSegmentoRes = z.infer<typeof AlcanceSegmentoRes>;
+
+export const CrearCampanaReq = z.object({
+  nombre: z.string().trim().min(3, "Ponle un nombre a la campaña").max(80),
+  accion: AccionCampana,
+  segmento: SegmentoCampana,
+});
+export type CrearCampanaReq = z.infer<typeof CrearCampanaReq>;
+
+export const CampanaRes = z.object({
+  id: z.number(),
+  nombre: z.string(),
+  accion: AccionCampana,
+  segmento: SegmentoCampana,
+  creadoEn: z.string(),
+  diasSimulados: z.number(),
+  alcance: AlcanceSegmentoRes,
+  /** Embudo proyectado a diasSimulados */
+  embudo: z.object({ enviados: z.number(), abrieron: z.number(), pagaron: z.number(), siguenUsando: z.number() }),
+  /** Operaciones al mes que dejan la ventanilla y pasan a la app */
+  opsMigradasMes: z.number(),
+  ahorroMes: z.number(),
+  costo: z.number(),
+});
+export type CampanaRes = z.infer<typeof CampanaRes>;
