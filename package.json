@@ -1,7 +1,10 @@
 {
   "name": "caja-piura",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "npm run dev -w apps/api & npm run dev -w apps/web",
     "dev:api": "npm run dev -w apps/api",
@@ -9,7 +12,11 @@
     "typecheck": "npm run typecheck -w apps/api && npm run typecheck -w packages/shared && npx tsc -p apps/web --noEmit",
     "db:migrate": "npm run db:migrate -w apps/api",
     "db:seed": "npm run db:seed -w apps/api",
-    "test": "npm run test -w apps/api"
+    "test": "npm run test -w apps/api",
+    "start": "node scripts/iniciar-todo.mjs",
+    "build": "npm run build -w apps/web"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

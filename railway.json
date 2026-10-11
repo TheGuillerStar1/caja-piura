@@ -1,8 +1,12 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "npm run build -w apps/web"
+  },
   "deploy": {
-    "startCommand": "npm run start -w apps/api",
-    "healthcheckPath": "/health",
+    "startCommand": "node scripts/iniciar-todo.mjs",
+    "healthcheckPath": "/api/health",
+    "healthcheckTimeout": 180,
     "restartPolicyType": "ON_FAILURE"
   }
 }
