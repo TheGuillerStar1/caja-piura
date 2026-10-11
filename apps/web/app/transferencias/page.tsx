@@ -14,7 +14,7 @@ export default function Transferencias() {
           { texto: "Entre cuentas propias", ruta: otro("Entre cuentas propias"), Icono: IcBilletera },
           { texto: "A terceros", ruta: otro("Transferencias a terceros"), Icono: IcPersonas },
           { texto: "Interbancarias en línea", ruta: otro("Interbancarias en línea"), Icono: IcBanco },
-          { texto: "A contacto", ruta: otro("Transferencias a contacto"), Icono: IcCelular },
+          { texto: "A contacto", ruta: "/transferir", Icono: IcCelular },
         ].map((i) => ({ ...i, onClick: () => track(`transferencias-${i.texto}`, "tocar") }))}
       />
       <ChipFrecuentes onClick={() => track("transferencias-frecuentes", "tocar")} />

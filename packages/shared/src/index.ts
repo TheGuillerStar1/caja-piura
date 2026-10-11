@@ -179,10 +179,77 @@ export const ConfirmarPagoRes = z.object({
 });
 export type ConfirmarPagoRes = z.infer<typeof ConfirmarPagoRes>;
 
+// ── Transferencias a contacto (por número de celular) ──
+/** Destino interoperable por celular. */
+export const Billetera = z.enum(["YAPE", "PLIN", "BIM", "DALE", "SIP"]);
+export type Billetera = z.infer<typeof Billetera>;
+/** Máximo por envío a celular (S/). */
+export const LIMITE_TRANSFERENCIA = 500;
+
+const Celular = z.string().regex(/^9\d{8}$/, "El número debe tener 9 dígitos y empezar con 9");
+const MontoTransferencia = z
+  .number()
+  .positive("Escribe un monto mayor a cero")
+  .max(LIMITE_TRANSFERENCIA, `El máximo por envío es S/ ${LIMITE_TRANSFERENCIA}`)
+  .refine((n) => Math.round(n * 100) === n * 100, "Máximo 2 decimales");
+
+export const PrepararTransferenciaReq = z.object({
+  telefono: Celular,
+  nombre: z.string().trim().min(1).max(60), // como lo tiene guardado el cliente
+  billetera: Billetera,
+  monto: MontoTransferencia,
+});
+export type PrepararTransferenciaReq = z.infer<typeof PrepararTransferenciaReq>;
+/** Resumen para revisar. No mueve dinero. */
+export const PrepararTransferenciaRes = z.object({
+  nombre: z.string(),
+  telefonoOculto: z.string(), // "987 *** 321"
+  /** Nombre registrado en la billetera de destino, enmascarado: "SER*** CAS***" */
+  titularOculto: z.string(),
+  billetera: Billetera,
+  monto: z.number(),
+  comision: z.number(),
+  cuenta: Cuenta,
+  saldoSuficiente: z.boolean(),
+  idempotencyKey: z.string(),
+});
+export type PrepararTransferenciaRes = z.infer<typeof PrepararTransferenciaRes>;
+
+export const ConfirmarTransferenciaReq = PrepararTransferenciaReq.extend({
+  idempotencyKey: z.string(),
+  autenticacion: z.enum(["ROSTRO", "HUELLA", "CLAVE"]),
+});
+export type ConfirmarTransferenciaReq = z.infer<typeof ConfirmarTransferenciaReq>;
+export const ConfirmarTransferenciaRes = z.object({
+  estado: z.literal("EXITOSO"),
+  operacion: z.string(),
+  monto: z.number(),
+  billetera: Billetera,
+  nombre: z.string(),
+  titularOculto: z.string(),
+  telefonoOculto: z.string(),
+  fecha: z.string(),
+  /** true si la key ya existía: se devolvió el envío anterior sin cobrar de nuevo */
+  repetido: z.boolean(),
+});
+export type ConfirmarTransferenciaRes = z.infer<typeof ConfirmarTransferenciaRes>;
+
+/** Agenda de prueba (contactos ficticios) para celulares sin acceso a contactos. */
+export const ContactoDemo = z.object({ nombre: z.string(), telefono: z.string() });
+export const ContactosDemoRes = z.array(ContactoDemo);
+export type ContactoDemo = z.infer<typeof ContactoDemo>;
+
 // ── Asistente ────────────────────────────────────────
 export const AsistenteReq = z.object({ mensaje: z.string().min(1).max(500) });
 export const AccionUI = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("NINGUNA") }),
+  /** Enviar a un contacto. Pía solo entiende el pedido; el cliente elige el contacto en su celular, pone el monto y confirma. */
+  z.object({
+    tipo: z.literal("TRANSFERIR"),
+    nombre: z.string().nullable(), // "sergio" (para buscar en los contactos del celular)
+    monto: z.number().nullable(),
+    billetera: Billetera.nullable(),
+  }),
   z.object({ tipo: z.literal("NAVEGAR"), ruta: z.string() }), // p. ej. "/pagar/confirmar?tipo=CUOTA&ref=12"
   z.object({ tipo: z.literal("OPCIONES"), opciones: z.array(z.object({ texto: z.string(), ruta: z.string() })) }),
 ]);
@@ -210,7 +277,7 @@ export const EventoIn = z.object({
   sesionId: z.string().max(40),
   pantalla: z.string().max(40),
   accion: z.enum(["ver", "tocar", "completar", "abandonar", "error", "ayuda"]),
-  flujo: z.enum(["CUOTA", "FRECUENTE", "RECIBO", "LOGIN", "ASISTENTE"]).optional(),
+  flujo: z.enum(["CUOTA", "FRECUENTE", "RECIBO", "LOGIN", "ASISTENTE", "TRANSFERENCIA"]).optional(),
   msDesdeInicio: z.number().int().nonnegative().optional(),
   ayudaUsada: z.boolean().optional(),
 });

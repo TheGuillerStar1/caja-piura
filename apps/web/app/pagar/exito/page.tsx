@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { guardarResultado, leerResultado, type ResultadoPago } from "@/components/pago/almacen";
 import { EstilosPago } from "@/components/pago/EstilosPago";
-import { IconoCheck } from "@/components/pago/Iconos";
+import { IconoCheck, IconoWhatsApp } from "@/components/pago/Iconos";
 import { Boton, Pantalla, Tarjeta } from "@/components/ui";
 import { fechaHora, soles } from "@/lib/formato";
 import { iniciarFlujo, track } from "@/lib/track";
@@ -27,7 +27,6 @@ export default function PagoExito() {
   const router = useRouter();
   const { asistida } = useVista();
   const [r, setR] = useState<ResultadoPago | null>(null);
-  const [copiado, setCopiado] = useState(false);
   const registrado = useRef(false);
 
   useEffect(() => {
@@ -52,28 +51,18 @@ export default function PagoExito() {
 
   if (!r) return null;
 
-  const compartir = async () => {
+  // Abre WhatsApp (app en el celular, web en la PC) con la constancia escrita; el cliente elige a quién.
+  const enviarWhatsApp = () => {
     track("exito", "tocar", { flujo: r.tipo });
-    const texto = textoConstancia(r);
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: "Constancia de pago Caja Piura", text: texto });
-        return;
-      }
-      await navigator.clipboard.writeText(texto);
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 2500);
-    } catch {
-      // El cliente cerró el menú de compartir o no hay portapapeles: no pasa nada.
-    }
+    window.open(`https://wa.me/?text=${encodeURIComponent(textoConstancia(r))}`, "_blank", "noopener");
   };
 
   return (
     <Pantalla titulo="Pago realizado">
       <EstilosPago />
       <div className="anim-aparece flex flex-col items-center gap-2 pt-2 text-center">
-        <IconoCheck className="h-24 w-24" />
-        <h2 className="text-2xl font-bold text-exito">¡Pago realizado!</h2>
+        <IconoCheck className="h-24 w-24" color="var(--color-marca)" />
+        <h2 className="text-2xl font-bold text-marca">¡Pago realizado!</h2>
         <p className="text-5xl font-bold tracking-tight">{soles(r.monto)}</p>
         <p className="text-lg">{r.descripcion}</p>
         {r.repetido && <p className="text-tenue">Este pago ya estaba hecho. No se cobró otra vez.</p>}
@@ -94,13 +83,13 @@ export default function PagoExito() {
         </p>
       </Tarjeta>
 
-      <Tarjeta tono="exito" className="flex items-center justify-between gap-3">
+      <Tarjeta tono="marca" className="flex items-center justify-between gap-3">
         <p className="text-lg font-bold">{r.mensaje}</p>
         {r.puntosGanados > 0 && (
           <Link
             href="/progreso"
             onClick={() => track("exito", "tocar", { flujo: r.tipo })}
-            className="shrink-0 rounded-full bg-exito px-3 py-2 font-bold text-white"
+            className="shrink-0 rounded-full bg-marca px-3 py-2 font-bold text-white"
           >
             +{r.puntosGanados} puntos
           </Link>
@@ -113,8 +102,9 @@ export default function PagoExito() {
             ¿Lo guardo para la próxima?
           </Boton>
         )}
-        <Boton variante="secundario" onClick={compartir}>
-          {copiado ? "Constancia copiada" : "Compartir constancia"}
+        <Boton variante="secundario" onClick={enviarWhatsApp}>
+          <IconoWhatsApp className="h-6 w-6" />
+          Enviar constancia por WhatsApp
         </Boton>
         <Boton variante={r.ofrecerGuardar ? "fantasma" : "primario"} guia={asistida && !r.ofrecerGuardar} href="/inicio">
           Volver al inicio

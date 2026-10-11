@@ -84,6 +84,7 @@ model Cliente {
   pagos      Pago[]
   puntos     Punto[]
   eventos    Evento[]
+  transferencias Transferencia[]
 }
 
 model Cuenta {
@@ -93,8 +94,9 @@ model Cuenta {
   tipo      String  @db.VarChar(30) // "Ahorro", "Ahorro emprendedor"
   saldo     Decimal @db.Decimal(12, 2)
 
-  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  pagos   Pago[]
+  cliente        Cliente         @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  pagos          Pago[]
+  transferencias Transferencia[]
 
   @@index([clienteId])
 }
@@ -174,6 +176,28 @@ model Pago {
   puntosGanados  Int        @default(0)
   operacion      String     @db.VarChar(20) // n.º de operación de la constancia
   creadoEn       DateTime   @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  cuenta  Cuenta  @relation(fields: [cuentaId], references: [id])
+
+  @@index([clienteId, creadoEn])
+}
+
+/// Envío a un contacto por su celular (Yape, Plin, Bim…). Solo se crea al confirmar con huella, rostro o clave.
+model Transferencia {
+  id             Int      @id @default(autoincrement())
+  idempotencyKey String   @unique @db.VarChar(64)
+  clienteId      Int
+  cuentaId       Int
+  telefono       String   @db.VarChar(9)
+  /// Nombre como lo tiene guardado el cliente en sus contactos
+  nombreContacto String   @db.VarChar(60)
+  /// Titular registrado en la billetera de destino (completo; a la app solo va enmascarado)
+  titular        String   @db.VarChar(120)
+  billetera      String   @db.VarChar(10) // YAPE | PLIN | BIM | DALE | SIP
+  monto          Decimal  @db.Decimal(12, 2)
+  operacion      String   @db.VarChar(20)
+  creadoEn       DateTime @default(now())
 
   cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   cuenta  Cuenta  @relation(fields: [cuentaId], references: [id])

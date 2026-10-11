@@ -42,7 +42,20 @@ describe("interpretar (respaldo sin LLM)", () => {
     expect(interpretar("cuál es mi contraseña", rosa).tipo).toBe("CLAVE_PEDIDA");
     expect(interpretar("quiero cambiar mi clave", rosa).tipo).toBe("CLAVE_CAMBIAR");
     expect(interpretar("olvidé mi clave", rosa).tipo).toBe("CLAVE_CAMBIAR");
-    expect(interpretar("transfiere 100 soles a mi hijo", rosa).tipo).toBe("FUERA_DE_ALCANCE");
+    expect(interpretar("préstame plata", rosa).tipo).toBe("FUERA_DE_ALCANCE");
+  });
+
+  it("envíos a contacto: entiende a quién, cuánto y por dónde (sin enviar nada)", () => {
+    expect(interpretar("quiero que le yapees a sergio 50 soles", rosa)).toEqual({ tipo: "TRANSFERIR", nombre: "sergio", monto: 50, billetera: "YAPE" });
+    expect(interpretar("plinéale S/ 20.50 a mi mamá", rosa)).toEqual({ tipo: "TRANSFERIR", nombre: "mama", monto: 20.5, billetera: "PLIN" });
+    expect(interpretar("transfiere 100 soles a mi hijo", rosa)).toEqual({ tipo: "TRANSFERIR", nombre: "hijo", monto: 100, billetera: null });
+    expect(interpretar("yapea a don pedro", rosa)).toEqual({ tipo: "TRANSFERIR", nombre: "don pedro", monto: null, billetera: "YAPE" });
+    expect(interpretar("mándale cincuenta a lucía por dale", rosa)).toEqual({ tipo: "TRANSFERIR", nombre: "lucia", monto: 50, billetera: "DALE" });
+    expect(interpretar("quiero yapear", rosa)).toEqual({ tipo: "TRANSFERIR", nombre: null, monto: null, billetera: "YAPE" });
+    // Un celular en el texto no es el monto.
+    expect(interpretar("yapea 30 al 987654321", rosa)).toMatchObject({ tipo: "TRANSFERIR", monto: 30 });
+    // "pin" de clave no se confunde con Plin.
+    expect(interpretar("plinea a sergio", rosa).tipo).toBe("TRANSFERIR");
   });
 
   it("si nada coincide → NADA (la UI muestra ¿Quisiste decir…?)", () => {

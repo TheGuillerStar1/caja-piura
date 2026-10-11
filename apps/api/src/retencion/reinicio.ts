@@ -96,6 +96,7 @@ export function planReinicio(db: PrismaClient, idPorDni: Record<string, number>,
     //    Los recibos de demo incluyen los del "mes siguiente" que crea "Adelantar 30 días" y los marcados como pagados.
     borrar: () => [
       db.pago.deleteMany({ where }),
+      db.transferencia.deleteMany({ where }),
       db.punto.deleteMany({ where }),
       db.evento.deleteMany({ where }),
       db.frecuente.deleteMany({ where }),
@@ -103,7 +104,7 @@ export function planReinicio(db: PrismaClient, idPorDni: Record<string, number>,
       db.recibo.deleteMany({ where: { OR: codigosRecibosDemo(servicios) } }),
       ...clientes,
     ],
-    // 2. Recrear. La cuenta se borra recién aquí porque los pagos (ya borrados) la referencian.
+    // 2. Recrear. La cuenta se borra recién aquí porque los pagos y envíos (ya borrados) la referencian.
     crear: () => [
       db.cuenta.deleteMany({ where }).then(() => db.cuenta.createMany({ data: cuentas })),
       db.cuota.createMany({ data: cuotas }),

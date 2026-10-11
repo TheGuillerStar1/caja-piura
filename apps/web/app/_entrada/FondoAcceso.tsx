@@ -34,7 +34,8 @@ export function FondoAcceso({ children }: { children: React.ReactNode }) {
         <path d="M70 420c4-40 10-70 26-96l30-46c6-8 16-5 14 5l-12 40 18-36c4-8 14-6 13 3l-10 40 14-22c5-7 13-3 11 5l-10 30 12-14c5-5 12-1 10 6l-26 60c-8 20-12 25-14 25" />
         <path d="M160 270c6-14 12-34 14-52 2-12 14-12 14 0l-4 50" />
       </svg>
-      <div className="relative flex flex-1 flex-col">{children}</div>
+      {/* En tablet el contenido (formulario y teclado) queda en un bloque centrado, no de borde a borde. */}
+      <div className="relative mx-auto flex w-full flex-1 flex-col md:max-w-lg">{children}</div>
     </div>
   );
 }

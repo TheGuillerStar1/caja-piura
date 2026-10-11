@@ -69,6 +69,18 @@
 html { font-size: 16px; }
 html[data-vista="ASISTIDA"] { font-size: 18px; }
 
+/* Tablets y módulos de autoatención en agencia: la persona mira la pantalla más lejos que un celular.
+   Todo crece un paso (rem) y la columna de la app se ensancha hasta llenar una tablet vertical;
+   en horizontal o en pantallas grandes queda centrada con los costados oscurecidos. */
+@media (min-width: 48rem) {
+  html { font-size: 18px; }
+  html[data-vista="ASISTIDA"] { font-size: 20px; }
+  :root { --container-app: 46rem; }
+}
+@media (min-width: 64rem) {
+  :root { --container-app: 50rem; }
+}
+
 /* En pantallas anchas la app queda al centro y los costados se oscurecen. */
 body {
   background: var(--color-afuera);

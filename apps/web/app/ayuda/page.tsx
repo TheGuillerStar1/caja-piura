@@ -1,10 +1,12 @@
 "use client";
-// Dueño: Agente C. Ayuda con Pía: chat simple. Pía prepara y lleva a la pantalla; nunca paga ni pide la clave.
+// Dueño: Agente C. Ayuda con Pía: chat simple. Pía prepara y lleva a la pantalla; nunca paga, envía ni pide la clave.
 // Al abrir: saludo corto + 3 accesos grandes con ícono + preguntas rápidas. Cada botón dice lo que hace ("Revisar y pagar"),
 // nunca "Ir ahora". Pía a la izquierda, tú a la derecha.
 import type { AccionUI, AsistenteRes, MeRes, Sugerencia, Tono } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { TutorialPia, tutorialVisto } from "@/components/ayuda/TutorialPia";
+import { EnviarAContacto } from "@/components/transferir/EnviarAContacto";
 import { IconoCuota, IconoFrecuente, IconoProgreso, IconoRecibo, IconoSaldo } from "@/components/pago/Iconos";
 import { Boton, Mascota, Pantalla } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
@@ -28,7 +30,7 @@ const ACCESOS: Partial<Record<Sugerencia["id"], Acceso>> = {
   PROGRESO: { texto: "Mis puntos", Icono: IconoProgreso },
 };
 const ACCESOS_BASE: Sugerencia["id"][] = ["PAGAR_CUOTA", "PAGAR_RECIBO", "FRECUENTES"];
-const PREGUNTAS = ["¿Cuánto debo?", "¿Se hizo mi pago?", "Me cobraron dos veces"];
+const PREGUNTAS = ["¿Cuánto debo?", "Yapear a un contacto", "¿Se hizo mi pago?", "Me cobraron dos veces"];
 
 /** Si el asistente no responde, estos accesos siempre funcionan. */
 const OPCIONES_RESPALDO = [
@@ -58,7 +60,7 @@ function IcParlante({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-function Burbuja({ texto, escuchar }: { texto: React.ReactNode; escuchar?: () => void }) {
+function Burbuja({ texto, escuchar, tutorial }: { texto: React.ReactNode; escuchar?: () => void; tutorial?: boolean }) {
   return (
     <div className="flex items-start gap-2">
       <span className="mt-1 shrink-0 rounded-full bg-white p-0.5">
@@ -70,6 +72,7 @@ function Burbuja({ texto, escuchar }: { texto: React.ReactNode; escuchar?: () =>
           <button
             type="button"
             onClick={escuchar}
+            data-tutorial={tutorial ? "escuchar" : undefined}
             aria-label="Escuchar este mensaje"
             className="-my-2 flex min-h-11! w-11 shrink-0 items-center justify-center rounded-full text-marca active:bg-marca-claro"
           >
@@ -88,6 +91,7 @@ export default function Ayuda() {
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
   const [llevando, setLlevando] = useState<string | null>(null);
+  const [tutorial, setTutorial] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fin = useRef<HTMLDivElement>(null);
   const sigId = useRef(1);
@@ -101,6 +105,8 @@ export default function Ayuda() {
     api<MeRes>("/me")
       .then((m) => {
         setMe(m);
+        // Primera vez en el chat: tutorial guiado (una sola vez; se puede repetir con «¿Cómo se usa?»).
+        if (!tutorialVisto()) setTutorial(true);
         setMensajes([{ id: 0, de: "pia", texto: SALUDOS[m.recomendacion.tono](m.nombre.split(" ")[0]) }]);
       })
       .catch((e) => {
@@ -191,7 +197,7 @@ export default function Ayuda() {
               ))}
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex gap-2" data-tutorial="escribir">
             <input
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
@@ -212,7 +218,7 @@ export default function Ayuda() {
               </svg>
             </button>
           </div>
-          <p className="text-center text-sm text-tenue">🔒 Pía nunca te pide tu clave.</p>
+          <p className="text-center text-sm text-tenue" data-tutorial="seguridad">🔒 Pía nunca te pide tu clave.</p>
         </form>
       }
     >
@@ -224,7 +230,7 @@ export default function Ayuda() {
             </p>
           ) : (
             <div key={m.id} className="flex flex-col gap-2">
-              <Burbuja texto={m.texto} escuchar={() => hablar(m.texto)} />
+              <Burbuja texto={m.texto} escuchar={() => hablar(m.texto)} tutorial={m.id === 0} />
               {m.accion?.tipo === "NAVEGAR" && (
                 <div className="ml-10 flex flex-col gap-2">
                   <Boton guia={m === ultimoPia} onClick={() => ir((m.accion as { ruta: string }).ruta)}>
@@ -247,6 +253,18 @@ export default function Ayuda() {
                   )}
                 </div>
               )}
+              {m.accion?.tipo === "TRANSFERIR" && (
+                // Pía solo arma el pedido: el cliente elige el contacto, pone el monto y confirma en la pantalla siguiente.
+                <div className="ml-10">
+                  <EnviarAContacto
+                    nombre={m.accion.nombre}
+                    monto={m.accion.monto}
+                    billetera={m.accion.billetera}
+                    desdeChat
+                    guia={m === ultimoPia}
+                  />
+                </div>
+              )}
               {m.accion?.tipo === "OPCIONES" && (
                 <div className="ml-10 flex flex-col gap-2">
                   {m.accion.opciones.map((o) => (
@@ -262,7 +280,7 @@ export default function Ayuda() {
 
         {inicio && me && (
           <>
-            <section aria-label="Lo más pedido" className="ml-10 flex flex-col gap-2">
+            <section aria-label="Lo más pedido" className="ml-10 flex flex-col gap-2" data-tutorial="accesos">
               {accesos.map((id, i) => {
                 const a = ACCESOS[id]!;
                 return (
@@ -280,7 +298,7 @@ export default function Ayuda() {
                 );
               })}
             </section>
-            <section aria-labelledby="preguntas" className="ml-10 flex flex-col gap-2">
+            <section aria-labelledby="preguntas" className="ml-10 flex flex-col gap-2" data-tutorial="preguntas">
               <h2 id="preguntas" className="text-sm font-bold tracking-wide text-tenue uppercase">
                 Preguntas rápidas
               </h2>
@@ -297,6 +315,13 @@ export default function Ayuda() {
                 ))}
               </div>
             </section>
+            <button
+              type="button"
+              onClick={() => setTutorial(true)}
+              className="ml-10 min-h-11 self-start font-bold text-marca underline underline-offset-4"
+            >
+              ¿Cómo se usa el chat?
+            </button>
           </>
         )}
 
@@ -314,6 +339,7 @@ export default function Ayuda() {
         )}
         <div ref={fin} />
       </div>
+      {tutorial && <TutorialPia alCerrar={() => setTutorial(false)} />}
     </Pantalla>
   );
 }

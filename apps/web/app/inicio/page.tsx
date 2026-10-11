@@ -153,19 +153,19 @@ export default function Inicio() {
       ))}
 
       {asistida && (
-        <section className="flex flex-col gap-3" aria-label="Qué necesitas hacer hoy">
-          <h2 className="text-xl font-bold">¿Qué necesitas hacer hoy?</h2>
+        <section className="flex flex-col gap-3 lg:grid lg:grid-cols-3" aria-label="Qué necesitas hacer hoy">
+          <h2 className="text-xl font-bold lg:col-span-3">¿Qué necesitas hacer hoy?</h2>
           {ordenar(datos.accesos).map((r, i) => (
             <Link
               key={r.id}
               href={r.ruta}
               onClick={() => (iniciarFlujo(r.flujo), track("inicio", "tocar", { flujo: r.flujo }))}
-              className={`${!avisos.length && i === 0 ? "guia-toca guia-etiqueta " : ""}flex min-h-20 items-center gap-4 rounded-xl border border-linea-fuerte bg-superficie px-4 active:bg-superficie-2`}
+              className={`${!avisos.length && i === 0 ? "guia-toca guia-etiqueta " : ""}flex min-h-20 items-center gap-4 rounded-xl border border-linea-fuerte bg-superficie px-4 active:bg-superficie-2 lg:flex-col lg:justify-center lg:py-5 lg:text-center`}
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-marca text-white">
                 <r.Icono className="h-7 w-7" />
               </span>
-              <span className="flex-1">
+              <span className="flex-1 lg:flex-none">
                 <span className="block text-xl font-bold">{r.texto}</span>
                 <span className="block text-tenue">{r.ayuda}</span>
               </span>
@@ -179,7 +179,7 @@ export default function Inicio() {
 
         {filaSeccion("cuentas", IcCuentas, `Cuentas (${cuentas.length})`)}
         {abierta === "cuentas" && (
-          <ul className="anim-aparece flex flex-col gap-2 py-3">
+          <ul className="anim-aparece flex flex-col gap-2 py-3 md:grid md:grid-cols-2">
             {cuentas.map((c) => (
               <li key={c.id} className="rounded-lg bg-superficie px-4 py-3">
                 <p className="text-sm text-tenue">

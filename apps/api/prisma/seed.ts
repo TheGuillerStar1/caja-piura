@@ -40,6 +40,7 @@ async function main() {
   const t0 = Date.now();
   console.log("Limpiando datos…");
   await prisma.pago.deleteMany();
+  await prisma.transferencia.deleteMany();
   await prisma.punto.deleteMany();
   await prisma.evento.deleteMany();
   await prisma.frecuente.deleteMany();

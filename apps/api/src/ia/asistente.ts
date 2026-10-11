@@ -8,7 +8,7 @@ import { groq, hayGroq, MODELO_TEXTO } from "../lib/groq.js";
 import { aNumero, cuandoVence, soles } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { perfilDeCliente, recomendar } from "../motor/index.js";
-import { interpretar, type FrecuenteCtx, type Intencion, type Pantalla, type ProblemaPago, type Rubro } from "./palabrasClave.js";
+import { interpretar, type Billetera, type FrecuenteCtx, type Intencion, type Pantalla, type ProblemaPago, type Rubro } from "./palabrasClave.js";
 import { herramientaAceptable, textoLibreAceptable } from "./guardas.js";
 import { quitarThink } from "./texto.js";
 
@@ -227,6 +227,31 @@ function opcionesNoEntendi(ctx: Ctx): Resultado {
   };
 }
 
+// ── Enviar a un contacto: Pía solo arma el pedido. Los contactos viven en el celular (nunca llegan aquí ni al LLM):
+// la app busca "¿cuál Sergio?", el cliente pone el monto, elige Yape/Plin/otros y confirma con su huella. ──
+const NOMBRE_BILLETERA: Record<Billetera, string> = { YAPE: "Yape", PLIN: "Plin", BIM: "Bim", DALE: "Dale", SIP: "Sip" };
+const capitalizar = (s: string) => s.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+
+function prepararEnvio(ctx: Ctx, nombre: string | null, monto: number | null, billetera: Billetera | null): Resultado {
+  const por = billetera ? ` por ${NOMBRE_BILLETERA[billetera]}` : "";
+  const quien = nombre ? capitalizar(nombre) : null;
+  const cuanto = monto ? ` ${soles(monto)}` : "";
+  return {
+    respuesta: quien
+      ? t(ctx, {
+          calido: `Claro, ${ctx.nombre}. Busquemos a ${quien} en tus contactos para enviarle${cuanto}${por}. Tú revisas y confirmas; yo no envío nada.`,
+          corto: `Busquemos a ${quien} en tus contactos. Tú confirmas el envío.`,
+          directo: `Elige a ${quien} en tus contactos y confirma el envío${por}.`,
+        })
+      : t(ctx, {
+          calido: `Claro, ${ctx.nombre}. Elige a quién le envías${por}. Tú revisas y confirmas; yo no envío nada.`,
+          corto: `Elige a quién le envías${por}. Tú confirmas.`,
+          directo: `Elige el contacto y confirma el envío${por}.`,
+        }),
+    accion: { tipo: "TRANSFERIR", nombre, monto, billetera },
+  };
+}
+
 // ── Problemas con un pago: se responde con los pagos reales del cliente (nunca con lo que diga el LLM) ──
 const fechaCorta = (d: Date) => d.toLocaleDateString("es-PE", { day: "numeric", month: "long", timeZone: "America/Lima" });
 
@@ -324,6 +349,8 @@ export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resulta
       return fueraDeAlcance(ctx);
     case "PROBLEMA_PAGO":
       return problemaPago(ctx, i.problema);
+    case "TRANSFERIR":
+      return prepararEnvio(ctx, i.nombre, i.monto, i.billetera);
     default:
       return opcionesNoEntendi(ctx);
   }
@@ -382,7 +409,8 @@ Reglas:
 - "pagar la luz/agua/celular/internet" o un alias → preparar_pago_frecuente con el id que corresponda. Si hay más de uno posible, usa otrosCandidatos. Si no tiene ese servicio guardado → preparar_pago_recibo.
 - "cuánto debo" → ver_deuda. "mi crédito/cuota" → preparar_pago_cuota.
 - Nunca pidas ni muestres claves, DNI ni números de cuenta. Si piden su clave: "Nunca te pediré tu clave. Caja Piura no la pide por teléfono ni por mensaje."
-- Si piden transferir dinero o algo fuera de pagos de cuota/recibos/saldo/puntos, di amablemente que no puedes y ofrece lo que sí puedes.`;
+- Los envíos a contactos (yapear, plinear, transferir) los arma la app, no tú: si llegan, pide que escriba por ejemplo "Yapear a Sergio".
+- Si piden algo fuera de pagos de cuota/recibos/saldo/puntos/envíos, di amablemente que no puedes y ofrece lo que sí puedes.`;
 }
 
 async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<Resultado | null> {
@@ -469,8 +497,9 @@ export async function responder(clienteId: number, mensaje: string): Promise<Asi
 async function responderSinRespaldo(clienteId: number, mensaje: string): Promise<AsistenteRes> {
   const ctx = await cargarContexto(clienteId);
   const intencion = interpretar(mensaje, ctx.frecuentes);
-  // Seguridad determinista: la clave, mover dinero y los reclamos de pagos nunca pasan por el LLM.
-  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "PROBLEMA_PAGO") {
+  // Seguridad determinista: la clave, mover dinero (envíos) y los reclamos de pagos nunca pasan por el LLM.
+  const deterministas: Intencion["tipo"][] = ["CLAVE_PEDIDA", "CLAVE_CAMBIAR", "FUERA_DE_ALCANCE", "PROBLEMA_PAGO", "TRANSFERIR"];
+  if (deterministas.includes(intencion.tipo)) {
     return { ...(await ejecutarIntencion(ctx, intencion)), fuente: "PALABRAS_CLAVE" };
   }
   if (hayGroq) {
