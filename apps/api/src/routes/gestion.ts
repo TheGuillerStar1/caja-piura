@@ -192,6 +192,11 @@ async function calcularFunciona(): Promise<FuncionaRes> {
     prisma.transferencia.count({ where: { tipo: "CONTACTO", conAyuda: { not: null } } }),
     prisma.transferencia.count({ where: { tipo: "CONTACTO", conAyuda: false } }),
   ]);
+  // Actividad simulada (prisma/actividad-simulada.ts): se avisa en pantalla mientras exista.
+  const [pagosSim, yapeosSim] = await Promise.all([
+    prisma.pago.count({ where: { idempotencyKey: { startsWith: "sim-" } } }),
+    prisma.transferencia.count({ where: { idempotencyKey: { startsWith: "sim-" } } }),
+  ]);
 
   const sinAyudaDe = new Map(sinAyudaPorTipo.map((g) => [g.tipo, g._count._all]));
   const sinAyuda = pagosSinAyuda({
@@ -241,6 +246,7 @@ async function calcularFunciona(): Promise<FuncionaRes> {
       ],
     },
     aTiempo: { ...aTiempo, meta: METAS_FUNCIONA.aTiempo },
+    simulados: pagosSim + yapeosSim,
     ahorro: { actualMes: r2(opsAppMes * AHORRO_POR_OP), potencialMes: r2(opsMigrablesMes * AHORRO_POR_OP), opsAppMes, opsMigrablesMes, ahorroPorOp: AHORRO_POR_OP },
   };
 }

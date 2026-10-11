@@ -480,6 +480,8 @@ export const FuncionaRes = z.object({
   }),
   /** Pagan a tiempo: cuotas pagadas por la app el día del vencimiento o antes */
   aTiempo: z.object({ tasa: z.number().nullable(), aTiempo: z.number(), cuotas: z.number(), diasAnticipacion: z.number().nullable(), meta: z.number() }),
+  /** Operaciones simuladas incluidas (prisma/actividad-simulada.ts, marcadas «sim-»); 0 = solo actividad real */
+  simulados: z.number(),
   /** Le cuesta menos a la Caja: ahorro estimado al mes (supuestos de SUPUESTOS_GESTION) */
   ahorro: z.object({ actualMes: z.number(), potencialMes: z.number(), opsAppMes: z.number(), opsMigrablesMes: z.number(), ahorroPorOp: z.number() }),
 });

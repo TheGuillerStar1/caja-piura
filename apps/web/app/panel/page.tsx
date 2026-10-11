@@ -216,8 +216,9 @@ function Contenido({ k }: { k: KpisRes }) {
 
 function Embudo({ filas }: { filas: KpisRes["embudo"] }) {
   const max = Math.max(1, ...filas.map((f) => f.vistas));
+  // Solo se destaca una pantalla con visitas suficientes: 1 abandono en 3 visitas no es una tendencia.
   const peor = filas
-    .filter((f) => f.abandonos > 0)
+    .filter((f) => f.abandonos > 0 && f.vistas >= 20)
     .sort((a, b) => b.abandonos / Math.max(1, b.vistas) - a.abandonos / Math.max(1, a.vistas))[0];
   return (
     <div className={`${TARJETA} flex flex-1 flex-col gap-4 p-5`}>

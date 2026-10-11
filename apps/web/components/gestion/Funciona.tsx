@@ -123,6 +123,15 @@ export function Funciona({ jurado = false }: { jurado?: boolean }) {
           )}
         </div>
       )}
+      {!!f?.simulados && (
+        <p className="flex items-start gap-2 rounded-xl bg-aviso-claro px-3 py-2 text-sm text-aviso">
+          <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            <b>Incluye actividad simulada:</b> {entero(f.simulados)} pagos y yapeos de 3 meses sobre los perfiles ficticios, para mostrar cómo se verían
+            los indicadores en un piloto. Lo que hagas en la demo se suma en vivo.
+          </span>
+        </p>
+      )}
       <p className="text-xs text-tenue">
         Metas propuestas para el piloto (ajustables con Caja Piura). «Pagan solos» cuenta como intento cada pago o yapeo y cada abandono en la
         confirmación; lo que se hace dentro del chat con Pía cuenta como «con ayuda». «Vuelven a pagar» cuenta a quien hizo otro pago por la app al
