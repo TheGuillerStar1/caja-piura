@@ -1,5 +1,5 @@
 // Dueño: Agente A. Contratos de request/response en @cp/shared.
-import { PutVistaReq, type MeRes } from "@cp/shared";
+import { PutVistaReq, type MeRes, type MovimientosRes } from "@cp/shared";
 import { Router } from "express";
 import { HttpError, validar } from "../lib/errores.js";
 import { aNumero, ocultarCuenta } from "../lib/formato.js";
@@ -35,4 +35,17 @@ router.put("/me/vista", requiereSesion, async (req, res) => {
   const { vista } = validar(PutVistaReq, req.body);
   await prisma.cliente.update({ where: { id: req.clienteId! }, data: { vistaPreferida: vista, primerIngreso: false } });
   res.json({ ok: true, vista });
+});
+
+// Últimos movimientos de una cuenta del cliente (pagos exitosos que salieron de ella).
+router.get("/me/cuentas/:id/movimientos", requiereSesion, async (req, res) => {
+  const cuentaId = Number(req.params.id);
+  const cuenta = Number.isInteger(cuentaId) ? await prisma.cuenta.findFirst({ where: { id: cuentaId, clienteId: req.clienteId! } }) : null;
+  if (!cuenta) throw new HttpError(404, "CUENTA_NO_ENCONTRADA", "No encontramos esa cuenta");
+  const pagos = await prisma.pago.findMany({ where: { cuentaId, estado: "EXITOSO" }, orderBy: { creadoEn: "desc" }, take: 10 });
+  const r: MovimientosRes = {
+    cuentaId,
+    movimientos: pagos.map((p) => ({ id: p.id, descripcion: p.descripcion, monto: aNumero(p.monto), fecha: p.creadoEn.toISOString(), operacion: p.operacion })),
+  };
+  res.json(r);
 });

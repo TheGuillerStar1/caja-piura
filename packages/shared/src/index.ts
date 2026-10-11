@@ -67,6 +67,12 @@ export const MeRes = z.object({
 });
 export type MeRes = z.infer<typeof MeRes>;
 
+// Movimientos de una cuenta (lo que se pagó desde ella), al tocarla en «Mis productos».
+export const Movimiento = z.object({ id: z.number(), descripcion: z.string(), monto: z.number(), fecha: z.string(), operacion: z.string() });
+export type Movimiento = z.infer<typeof Movimiento>;
+export const MovimientosRes = z.object({ cuentaId: z.number(), movimientos: z.array(Movimiento) });
+export type MovimientosRes = z.infer<typeof MovimientosRes>;
+
 export const PutVistaReq = z.object({ vista: Vista });
 
 // ── Inicio ───────────────────────────────────────────

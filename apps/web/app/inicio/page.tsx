@@ -7,6 +7,7 @@ import type { Aviso, CuotaRes, InicioRes, MeRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { CuentaConMovimientos } from "@/components/app/CuentaConMovimientos";
 import { IcCelular, IcChevronArriba, IcCreditos, IcCuentas, IcTarjeta } from "@/components/app/IconosApp";
 import { rutaConfirmar } from "@/components/pago/almacen";
 import { EstilosPago } from "@/components/pago/EstilosPago";
@@ -218,13 +219,7 @@ export default function Inicio() {
         {abierta === "cuentas" && (
           <ul className="anim-aparece flex flex-col gap-2 py-3">
             {cuentas.map((c) => (
-              <li key={c.id} className="rounded-lg bg-superficie px-4 py-3">
-                <p className="text-sm text-tenue">
-                  {c.tipo} · {c.numeroOculto}
-                </p>
-                <p className="text-2xl font-bold">{soles(c.saldo)}</p>
-                <p className="text-xs text-tenue">{c.paraPagar ? "Saldo disponible" : "No se usa para pagar"}</p>
-              </li>
+              <CuentaConMovimientos key={c.id} cuenta={c} grande={asistida} />
             ))}
           </ul>
         )}
