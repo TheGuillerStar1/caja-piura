@@ -26,6 +26,9 @@
   --color-error: #ff7a6e;
   --color-error-claro: #3a1a18;
 
+  --color-afuera: #0b0d10;       /* costados en pantallas anchas (fuera de la app) */
+  --container-app: 35rem;        /* ancho de la columna de la app: max-w-app */
+
   --font-sans: var(--font-roboto), Roboto, "Segoe UI", system-ui, sans-serif;
   --radius-boton: 10px;
 }
@@ -52,6 +55,7 @@
     --color-aviso-claro: #fff3dc;
     --color-error: #b42318;
     --color-error-claro: #fdecea;
+    --color-afuera: #c9cfd8;
   }
 }
 
@@ -65,8 +69,9 @@
 html { font-size: 16px; }
 html[data-vista="ASISTIDA"] { font-size: 18px; }
 
+/* En pantallas anchas la app queda al centro y los costados se oscurecen. */
 body {
-  background: var(--color-fondo);
+  background: var(--color-afuera);
   color: var(--color-tinta);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;

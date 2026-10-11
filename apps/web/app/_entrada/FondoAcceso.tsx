@@ -2,7 +2,7 @@
 export function FondoAcceso({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden text-white"
+      className="relative mx-auto flex min-h-dvh w-full max-w-app flex-col overflow-hidden text-white"
       style={{ background: "linear-gradient(180deg,#b4a2ec 0%,#c6b8f1 45%,#d9cff6 100%)" }}
     >
       <svg
