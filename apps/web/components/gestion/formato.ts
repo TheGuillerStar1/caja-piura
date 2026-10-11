@@ -9,7 +9,12 @@ export const soles = (n: number) => {
   return `S/ ${n.toLocaleString("es-PE", { minimumFractionDigits: dec, maximumFractionDigits: dec })}`;
 };
 
-export const OCUPACIONES = { COMERCIANTE: "Comerciantes", AGRICULTOR: "Agricultores", TRANSPORTISTA: "Transportistas", OTRO: "Otros" } as const;
+/** Estilo del Centro de mando: tarjetas blancas con sombra azulada suave y el degradado de marca (azul institucional → azul app). */
+export const TARJETA = "rounded-2xl bg-superficie ring-1 ring-linea shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_28px_-12px_rgb(0_84_159/0.28)]";
+export const DEGRADADO_MARCA = "linear-gradient(120deg, var(--cp-brand) 0%, var(--cp-app-blue) 62%, color-mix(in srgb, var(--cp-app-blue) 72%, var(--cp-login-light)) 100%)";
+export const DEGRADADO_BARRA = "linear-gradient(90deg, var(--cp-brand), var(--cp-app-blue))";
+
+export const OCUPACIONES ={ COMERCIANTE: "Comerciantes", AGRICULTOR: "Agricultores", TRANSPORTISTA: "Transportistas", OTRO: "Otros" } as const;
 export const GAMAS = { BAJA: "Gama baja", MEDIA: "Gama media", ALTA: "Gama alta" } as const;
 export const ZONAS = { URBANA: "Urbana", RURAL: "Rural" } as const;
 

@@ -126,7 +126,7 @@ export function MapaPiura({
             );
           })}
           {/* Contorno del seleccionado encima de todos (si no, los vecinos lo tapan). */}
-          {sel && <path d={sel.d} fill="none" stroke="var(--color-tinta)" strokeWidth={2.5} strokeLinejoin="round" pointerEvents="none" />}
+          {sel && <path d={sel.d} fill="none" stroke="var(--cp-action-focus)" strokeWidth={3} strokeLinejoin="round" pointerEvents="none" />}
           {geo.formas
             .filter((f) => porUbigeo.has(f.ubigeo))
             .map((f) => {
