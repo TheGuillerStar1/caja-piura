@@ -126,8 +126,16 @@ export default function Ayuda() {
   const [hayVoz, setHayVoz] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
   const reconocedor = useRef<{ stop: () => void } | null>(null);
-  const campo = useRef<HTMLInputElement>(null);
+  const campo = useRef<HTMLTextAreaElement>(null);
   const [dictado, setDictado] = useState(false);
+  // La caja crece con el texto (hasta ~5 líneas; después hace scroll) y baja al final mientras dictas.
+  useEffect(() => {
+    const el = campo.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 4}px`;
+    el.scrollTop = el.scrollHeight;
+  }, [texto]);
 
   const tono: Tono = me ? tonoDe(me) : "CALIDO";
 
@@ -213,13 +221,15 @@ export default function Ayuda() {
     const r = new SR();
     r.lang = "es-PE";
     r.interimResults = true;
-    r.continuous = true;
+    // En Android el modo continuo repite lo ya dicho: ahí se dicta por tramos (cada toque agrega al texto).
+    r.continuous = !/android/i.test(navigator.userAgent);
     r.maxAlternatives = 1;
     const antes = texto.trim() ? `${texto.trim()} ` : "";
     r.onresult = (e) => {
-      let dicho = "";
-      for (let i = 0; i < e.results.length; i++) dicho += e.results[i]?.[0]?.transcript ?? "";
-      setTexto((antes + dicho.trim()).slice(0, 500));
+      const partes: string[] = [];
+      for (let i = 0; i < e.results.length; i++) partes.push((e.results[i]?.[0]?.transcript ?? "").trim());
+      const dicho = partes.filter(Boolean).join(" ");
+      setTexto((antes + dicho.charAt(0).toUpperCase() + dicho.slice(1)).slice(0, 500));
     };
     r.onend = () => {
       setEscuchando(false);
@@ -280,16 +290,24 @@ export default function Ayuda() {
               ))}
             </div>
           )}
-          <div className="flex gap-2">
-            <input
+          <div className="flex items-end gap-2">
+            {/* Varias líneas: lo que dictas o escribes baja como párrafo en vez de cortarse. Enter envía; Shift+Enter, nueva línea. */}
+            <textarea
               ref={campo}
+              rows={1}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  enviar(texto);
+                }
+              }}
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
               maxLength={500}
               placeholder={escuchando ? "Te escucho… habla ahora" : hayVoz ? "Escribe o toca el micrófono" : "Escribe tu pregunta"}
               aria-label="Escribe tu pregunta para Pía"
               enterKeyHint="send"
-              className="min-h-14 min-w-0 flex-1 rounded-full border-2 border-linea bg-superficie px-5 text-lg focus:border-marca focus:outline-none"
+              className="max-h-40 min-h-14 min-w-0 flex-1 resize-none overflow-y-auto rounded-3xl border-2 border-linea bg-superficie px-5 py-3 text-lg leading-snug focus:border-marca focus:outline-none"
             />
             {escuchando || (!texto.trim() && hayVoz) ? (
               <button
