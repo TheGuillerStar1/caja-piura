@@ -72,7 +72,7 @@ const ACCESOS: Partial<Record<Sugerencia["id"], Acceso>> = {
   PROGRESO: { texto: "Mi cashback", Icono: IconoProgreso },
 };
 const ACCESOS_BASE: Sugerencia["id"][] = ["PAGAR_CUOTA", "PAGAR_RECIBO", "FRECUENTES"];
-const PREGUNTAS = ["¿Cuánto debo?", "Yapear a un contacto", "¿Se hizo mi pago?", "Me cobraron dos veces"];
+const PREGUNTAS = ["¿Cuánto debo?", "Yapear a un contacto", "¿A cuánto está el dólar?", "¿Se hizo mi pago?", "Me cobraron dos veces"];
 
 /** Si el asistente no responde, estos accesos siempre funcionan. */
 const OPCIONES_RESPALDO = [

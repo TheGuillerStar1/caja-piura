@@ -1,6 +1,7 @@
 // Dueño: Agente C. Respaldo del asistente SIN LLM: interpreta el mensaje con palabras clave (sin tildes, tolera errores).
 // Se usa si no hay Groq, si falla, si tarda más de 6 s o si contradice a estas reglas. También decide los casos de seguridad (clave) antes del LLM.
 import { pedidoCuenta, pedidoEnvio, type PedidoCuenta, type PedidoEnvio } from "./envio.js";
+import { pedidoCambio, type Conversion } from "./cambio.js";
 import { pedidoServicio, type RubroServicio } from "./servicio.js";
 import { contienePalabra, normalizar } from "./texto.js";
 
@@ -18,6 +19,8 @@ export type Intencion =
   | { tipo: "RUBRO_SIN_FRECUENTE"; rubro: Rubro }
   /** Pagar un servicio por empresa y código, en el chat ("pagar servicios", "paga Enosa 31264587"). */
   | { tipo: "SERVICIO"; rubro: RubroServicio | null; empresa: string | null; codigo: string | null }
+  /** Tipo de cambio dólar ↔ sol, con la cuenta hecha si dio un monto. */
+  | { tipo: "CAMBIO"; conversion: Conversion | null }
   | { tipo: "RECIBO" }
   | { tipo: "PANTALLA"; pantalla: Pantalla }
   | { tipo: "CLAVE_CAMBIAR" }
@@ -93,6 +96,10 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
   // 2c. Pagar un servicio por empresa o código ("pagar servicios", "paga Enosa 31264587"): se hace en el chat.
   const servicio = pedidoServicio(mensaje);
   if (servicio) return { tipo: "SERVICIO", ...servicio };
+
+  // 2d. Tipo de cambio ("¿a cuánto está el dólar?", "¿cuántos soles son 100 dólares?"). Después de envíos y pagos.
+  const cambio = pedidoCambio(mensaje);
+  if (cambio) return { tipo: "CAMBIO", ...cambio };
 
   // 3. Pagos frecuentes por alias ("luz de mamá", "mi celular").
   const porAlias = buscarPorAlias(t, frecuentes);

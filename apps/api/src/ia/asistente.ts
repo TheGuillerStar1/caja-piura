@@ -11,6 +11,7 @@ import { perfilDeCliente, recomendar } from "../motor/index.js";
 import { interpretar, type FrecuenteCtx, type Intencion, type Pantalla, type ProblemaPago, type Rubro } from "./palabrasClave.js";
 import type { Billetera, PedidoCuenta, PedidoEnvio } from "./envio.js";
 import { herramientaAceptable, textoLibreAceptable } from "./guardas.js";
+import { textoCambio } from "./cambio.js";
 import { quitarThink } from "./texto.js";
 
 /** Límite de espera al LLM: pasado este tiempo responde el respaldo por palabras clave (la demo no se queda colgada). */
@@ -393,6 +394,9 @@ export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resulta
       return prepararRecibo(ctx, i.rubro);
     case "RECIBO":
       return prepararRecibo(ctx);
+    case "CAMBIO":
+      // Las cifras salen de la tabla fija (cambio.ts), nunca del LLM.
+      return { respuesta: textoCambio({ conversion: i.conversion }, ctx.nombre, ctx.tono === "CALIDO"), accion: ninguna };
     case "SERVICIO":
       return pagarServicio(ctx, i.rubro, i.empresa, i.codigo);
     case "PANTALLA":
@@ -553,7 +557,7 @@ async function responderSinRespaldo(clienteId: number, mensaje: string): Promise
   const ctx = await cargarContexto(clienteId);
   const intencion = interpretar(mensaje, ctx.frecuentes);
   // Seguridad determinista: la clave, mover dinero y los reclamos de pagos nunca pasan por el LLM.
-  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "TRANSFERIR" || intencion.tipo === "SERVICIO" || intencion.tipo === "PROBLEMA_PAGO" || (intencion.tipo === "CUOTA" && /pag|cancel/.test(mensaje.toLowerCase()))) {
+  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "TRANSFERIR" || intencion.tipo === "SERVICIO" || intencion.tipo === "CAMBIO" || intencion.tipo === "PROBLEMA_PAGO" || (intencion.tipo === "CUOTA" && /pag|cancel/.test(mensaje.toLowerCase()))) {
     return { ...(await ejecutarIntencion(ctx, intencion)), fuente: "PALABRAS_CLAVE" };
   }
   if (hayGroq) {
