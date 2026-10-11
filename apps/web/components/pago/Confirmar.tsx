@@ -207,7 +207,7 @@ export function Confirmar() {
         <EstilosPago />
         <Tarjeta tono="marca" className="anim-aparece text-center">
           <p className="text-2xl font-bold">Cancelaste el pago</p>
-          <p className="mt-2 text-lg">No se movió dinero de tu cuenta.</p>
+          <p className="mt-2 text-lg">No enviamos una nueva solicitud.</p>
         </Tarjeta>
         {pago && (
           <Tarjeta className="anim-aparece text-center">
@@ -267,7 +267,7 @@ export function Confirmar() {
           // Se intentó confirmar y no hubo respuesta: no sabemos si se cobró. La key se conserva, así que revisar no cobra dos veces.
           <>
             <Tarjeta tono="aviso" className="text-center">
-              <p className="text-2xl font-bold">Estamos verificando tu pago</p>
+              <p className="text-2xl font-bold">Estamos verificando el estado</p>
               <p className="mt-2 text-lg">No vuelvas a pagar todavía.</p>
             </Tarjeta>
             <p className="text-center text-tenue">Toca «Revisar el pago» en un momento. Aunque lo toques varias veces, no se cobra dos veces.</p>
@@ -296,6 +296,7 @@ export function Confirmar() {
           </Boton>
         ) : (
           <div className="flex flex-col gap-2">
+            <p className="text-center font-medium">Revisa el monto y la cuenta. El pago se hará solo cuando confirmes.</p>
             <div ref={registrar("boton")} className={`rounded-boton ${marcar("boton")}`}>
               <Boton
                 guia={asistida && guia === null}

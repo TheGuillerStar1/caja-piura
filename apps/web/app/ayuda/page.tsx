@@ -71,9 +71,10 @@ function Burbuja({ texto, escuchar }: { texto: React.ReactNode; escuchar?: () =>
             type="button"
             onClick={escuchar}
             aria-label="Escuchar este mensaje"
-            className="-my-2 flex min-h-11! w-11 shrink-0 items-center justify-center rounded-full text-marca active:bg-marca-claro"
+            className="-my-2 flex min-h-11! shrink-0 flex-col items-center justify-center rounded-lg px-1.5 text-marca active:bg-marca-claro"
           >
             <IcParlante />
+            <span className="text-[0.7rem] font-bold leading-none">Escuchar</span>
           </button>
         )}
       </div>
@@ -209,7 +210,7 @@ export default function Ayuda() {
             <span className="text-lg font-bold">Pía</span>
             <span className="flex items-center gap-1.5 text-xs font-normal text-white/85">
               <span aria-hidden className="h-2 w-2 rounded-full bg-[#4cc77f]" />
-              En línea · asistente virtual, no es una persona
+              En línea · asistente virtual
             </span>
           </span>
         </span>
@@ -254,23 +255,25 @@ export default function Ayuda() {
                 disabled={pensando}
                 aria-label={escuchando ? "Dejar de escuchar" : "Hablarle a Pía"}
                 aria-pressed={escuchando}
-                className={`relative flex min-h-14 w-14 shrink-0 items-center justify-center rounded-full text-white disabled:bg-linea ${escuchando ? "bg-error guia-toca" : "bg-marca"}`}
+                className={`relative flex min-h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl text-white disabled:bg-linea ${escuchando ? "bg-error guia-toca" : "bg-marca"}`}
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
                   <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
                   <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
                 </svg>
+                <span className="text-[0.7rem] font-bold leading-none">{escuchando ? "Parar" : "Hablar"}</span>
               </button>
             ) : (
               <button
                 type="submit"
                 disabled={!texto.trim() || pensando}
                 aria-label="Enviar"
-                className="flex min-h-14 w-14 shrink-0 items-center justify-center rounded-full bg-marca text-white disabled:bg-linea disabled:text-tenue"
+                className="flex min-h-14 w-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-2xl bg-marca text-white disabled:bg-linea disabled:text-tenue"
               >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                   <path d="M3 20.5 21 12 3 3.5 3 10l12 2-12 2z" />
                 </svg>
+                <span className="text-[0.7rem] font-bold leading-none">Enviar</span>
               </button>
             )}
           </div>
@@ -290,10 +293,10 @@ export default function Ayuda() {
               <button
                 type="button"
                 onClick={() => hablar(mensajes[0]?.texto ?? "")}
-                aria-label="Escuchar"
-                className="flex min-h-10! w-10 items-center justify-center rounded-full text-marca active:bg-marca-claro"
+                className="flex min-h-10! items-center gap-1 rounded-full px-2 text-base font-bold text-marca active:bg-marca-claro"
               >
                 <IcParlante />
+                Escuchar
               </button>
             </p>
           </section>

@@ -33,9 +33,8 @@ function InicioAsistida({ pagar }: { pagar: () => void }) {
           </span>
           <span className="text-[13px] font-bold">S/ 350</span>
         </div>
-        <div className="relative mt-3.5">
-          <span className="absolute -top-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-acento px-2 text-[9px] font-bold leading-4 text-white">👇 Toca aquí</span>
-          <button type="button" onClick={pagar} className="guia-toca flex min-h-9! w-full items-center justify-center rounded-md bg-marca text-[12px] font-bold text-white">
+        <div className="relative mt-2">
+          <button type="button" onClick={pagar} className="flex min-h-9! w-full items-center justify-center rounded-md bg-marca text-[12px] font-bold text-white">
             Pagar S/ 350.00
           </button>
           <Manito className="-bottom-4 right-6" />
@@ -87,7 +86,7 @@ function Confirmar({ asistida, confirmar, volver }: { asistida: boolean; confirm
       </div>
       {asistida && <p className="text-center text-[10px] text-tenue">🔊 «Vas a pagar 350 soles»</p>}
       <div className="relative">
-        <button type="button" onClick={confirmar} className="guia-toca flex min-h-9! w-full items-center justify-center rounded-md bg-marca text-[12px] font-bold text-white">
+        <button type="button" onClick={confirmar} className="flex min-h-9! w-full items-center justify-center rounded-md bg-marca text-[12px] font-bold text-white">
           Confirmar pago
         </button>
         <Manito className="-bottom-4 right-8" />

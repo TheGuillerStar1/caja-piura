@@ -148,6 +148,13 @@ body {
 @keyframes rebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .anim-rebote { animation: rebote 1.8s ease-in-out infinite; }
 
+/* «Omitir ayuda»: sin anillo ni etiqueta "Toca aquí" en toda la app. En @layer: fuera de las capas Tailwind lo descarta. */
+@layer utilities {
+  html[data-guia="no"] .guia-toca::after,
+  html[data-guia="no"] .guia-etiqueta::before { display: none; }
+  html[data-guia="no"] .guia-etiqueta { margin-top: 0; }
+}
+
 /* Movimiento reducido: sin animaciones ni transiciones en toda la app (incluye spinners y avisos de otros componentes).
    La guía "toca aquí" queda como un anillo fijo para no perder la indicación. */
 @media (prefers-reduced-motion: reduce) {

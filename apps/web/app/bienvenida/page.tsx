@@ -81,7 +81,8 @@ export default function Bienvenida() {
 
   const rec = me.recomendacion.vista;
   const nombre = me.nombre.split(" ")[0];
-  const saludo = `Hola, ${nombre}. ¿Cómo quieres ver tu app?`;
+  // Microcopy del manual visual («Bienvenida inicial»).
+  const saludo = `Hola, ${nombre}. Ahora puedes elegir cómo usar Caja Piura: Vista estándar o Vista asistida.`;
 
   return (
     <Pantalla
@@ -99,7 +100,7 @@ export default function Bienvenida() {
         <span className="shrink-0 rounded-full bg-white p-0.5">
           <Mascota tamano={44} animada />
         </span>
-        <p className="flex-1 text-xl font-bold leading-snug">{saludo}</p>
+        <p className="flex-1 text-lg font-bold leading-snug">{saludo}</p>
         <button
           type="button"
           onClick={() => hablar(`${saludo} Te recomendamos la vista ${rec === "ASISTIDA" ? "asistida" : "estándar"}.`)}

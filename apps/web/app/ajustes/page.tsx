@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Boton, Cargando, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { api, esSinSesion } from "@/lib/api";
 import { track } from "@/lib/track";
+import { useGuia } from "@/lib/guia";
 import { useTema } from "@/lib/tema";
 import { useVista } from "@/lib/vista";
 import {
@@ -23,6 +24,7 @@ export default function Ajustes() {
   const router = useRouter();
   const { vista, setVista } = useVista();
   const { tema, setTema } = useTema();
+  const guia = useGuia();
   const [me, setMe] = useState<MeRes | null>(null);
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
@@ -119,6 +121,15 @@ export default function Ajustes() {
             <h2 id="titulo-recordatorios" className="text-xl font-bold">
               Mis recordatorios
             </h2>
+            <label className="flex min-h-14 items-center gap-3 rounded-2xl border-2 border-linea bg-superficie px-4 text-lg font-bold">
+              <input
+                type="checkbox"
+                className="h-6 w-6 accent-marca"
+                checked={rec.activos === true && !rec.pausados}
+                onChange={(e) => cambiarRecordatorios(e.target.checked ? { activos: true, pausados: false } : { pausados: true })}
+              />
+              {rec.activos === true && !rec.pausados ? "Avisos activados" : rec.activos === true ? "Avisos pausados" : "Avisos apagados"}
+            </label>
             <p className="text-tenue">¿Cuándo quieres que te avisemos de un pago?</p>
             <div role="radiogroup" aria-label="Cuándo avisarme" className="grid grid-cols-2 gap-2">
               {OPCIONES_DIAS.map((o) => (
@@ -147,6 +158,10 @@ export default function Ajustes() {
             ))}
             <p className="text-sm text-tenue">Si un pago ya venció, siempre te lo mostramos.</p>
           </section>
+          <label className="flex min-h-14 items-center gap-3 rounded-2xl border-2 border-linea bg-superficie px-4 text-lg">
+            <input type="checkbox" className="h-6 w-6 accent-marca" checked={guia.activa} onChange={(e) => (track(P, "tocar"), guia.setActiva(e.target.checked))} />
+            Mostrar la guía «👇 Toca aquí»
+          </label>
           <Tarjeta>
             <p className="font-bold">{me.nombre}</p>
             {me.cuentas.map((c) => (

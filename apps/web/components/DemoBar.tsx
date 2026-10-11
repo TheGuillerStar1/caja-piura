@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NotificacionesSimuladas } from "@/components/retencion/NotificacionesSimuladas";
+import { avisosEncendidos, leerRecordatorios } from "@/components/retencion/recordatorios";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 
 const OCULTA_EN = ["/", "/entrar", "/panel"];
@@ -46,6 +47,11 @@ export default function DemoBar() {
     setMensaje(null);
     try {
       const r = await api<AdelantarRes>("/demo/adelantar", { metodo: "POST" });
+      // Recordatorios opt-in (Manual visual): sin el sí del cliente, o si los pausó, no le llega ningún aviso.
+      if (!avisosEncendidos(leerRecordatorios())) {
+        setMensaje("Pasaron 30 días. No se envió aviso porque los recordatorios no están activados (actívalos en el inicio o en Ajustes).");
+        return;
+      }
       setAbierta(false);
       setNotis(r.notificaciones.length ? r.notificaciones : ["No tienes pagos pendientes este mes"]);
       try {

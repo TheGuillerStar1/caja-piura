@@ -11,7 +11,7 @@ const roboto = Roboto({ subsets: ["latin"], weight: ["400", "500", "700"], varia
 // Fija <html data-vista> desde localStorage ANTES de pintar: la vista asistida no "salta" desde la estándar al recargar,
 // y VistaProvider (lib/vista.tsx) arranca ya con el valor correcto.
 // Igual con el modo claro u oscuro (lib/tema.ts).
-const SCRIPT_VISTA = `try{var d=document.documentElement,v=localStorage.getItem("cp_vista"),t=localStorage.getItem("cp_tema");if(v==="ASISTIDA"||v==="ESTANDAR")d.dataset.vista=v;if(t==="claro"||t==="oscuro")d.dataset.tema=t}catch(e){}`;
+const SCRIPT_VISTA = `try{var d=document.documentElement,v=localStorage.getItem("cp_vista"),t=localStorage.getItem("cp_tema");if(v==="ASISTIDA"||v==="ESTANDAR")d.dataset.vista=v;if(t==="claro"||t==="oscuro")d.dataset.tema=t;if(localStorage.getItem("cp_guia")==="no")d.dataset.guia="no"}catch(e){}`;
 
 export const metadata: Metadata = {
   title: "Caja Piura",

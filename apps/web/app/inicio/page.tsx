@@ -10,7 +10,7 @@ import { IcCelular, IcChevronArriba, IcCreditos, IcCuentas, IcTarjeta } from "@/
 import { rutaConfirmar } from "@/components/pago/almacen";
 import { EstilosPago } from "@/components/pago/EstilosPago";
 import { IconoCuota, IconoFrecuente, IconoRecibo } from "@/components/pago/Iconos";
-import { filtrarAvisos, leerRecordatorios } from "@/components/retencion/recordatorios";
+import { filtrarAvisos, guardarRecordatorios, leerRecordatorios, RECORDATORIOS_INICIALES, type Recordatorios } from "@/components/retencion/recordatorios";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { cargarCliente } from "@/lib/cliente";
@@ -57,6 +57,7 @@ export default function Inicio() {
   const [cuota, setCuota] = useState<CuotaRes | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const [anuncio, setAnuncio] = useState(false);
+  const [rec, setRec] = useState<Recordatorios>(RECORDATORIOS_INICIALES);
   const [abierta, setAbierta] = useState<Seccion | null>(null);
 
   const cargar = useCallback(async () => {
@@ -79,6 +80,7 @@ export default function Inicio() {
   useEffect(() => {
     track("inicio", "ver");
     cargar();
+    setRec(leerRecordatorios());
     try {
       if (!localStorage.getItem(ANUNCIO)) setAnuncio(true);
     } catch {}
@@ -90,6 +92,14 @@ export default function Inicio() {
     try {
       localStorage.setItem(ANUNCIO, "1");
     } catch {}
+  };
+
+  // Manual visual (retención): «Tu próxima cuota vence el 12. ¿Quieres que te recordemos?». Se pregunta una sola vez.
+  const decidirAvisos = (si: boolean) => {
+    track("inicio-avisos", "tocar");
+    const nuevo = { ...rec, activos: si, pausados: false };
+    setRec(nuevo);
+    guardarRecordatorios(nuevo);
   };
 
   const pagarAviso = (a: Aviso) => {
@@ -114,7 +124,7 @@ export default function Inicio() {
     );
   }
 
-  const avisos = filtrarAvisos(datos.avisos, leerRecordatorios());
+  const avisos = filtrarAvisos(datos.avisos, rec);
   const cuentas = me.cuentas;
   const filaSeccion = (s: Seccion, Icono: (p: { className?: string }) => React.ReactNode, texto: string) => (
     <button
@@ -132,6 +142,49 @@ export default function Inicio() {
   return (
     <Pantalla titulo={`Hola, ${me.nombre}`} subtitulo={cambio} pestana="productos">
       <EstilosPago />
+
+      {/* Primera vez: Pía se presenta sin tapar la pantalla (Manual: nada de ventanas que bloqueen operaciones). */}
+      {anuncio && (
+        <section aria-labelledby="anuncio-titulo" className="anim-aparece flex flex-col gap-3 rounded-2xl border-2 border-marca bg-marca-claro p-4">
+          <div className="flex items-start gap-3">
+            <span className="shrink-0 rounded-full bg-white p-0.5">
+              <Mascota tamano={44} />
+            </span>
+            <div className="flex-1">
+              <h2 id="anuncio-titulo" className="text-lg font-bold leading-tight">
+                Ahora tienes a Pía
+              </h2>
+              <p className="mt-1 leading-snug">¿Necesitas ayuda? Toca aquí para que te acompañemos.</p>
+            </div>
+            <button
+              type="button"
+              onClick={cerrarAnuncio}
+              aria-label="Cerrar el aviso de Pía"
+              className="flex min-h-12 shrink-0 items-center gap-1 rounded-xl border-2 border-linea-fuerte bg-superficie px-3 text-base font-bold"
+            >
+              <span aria-hidden className="text-xl leading-none">✕</span> Cerrar
+            </button>
+          </div>
+          <Boton href="/ayuda" onClick={cerrarAnuncio}>
+            ¿Necesitas ayuda?
+          </Boton>
+        </section>
+      )}
+
+      {rec.activos === null && cuota && (
+        <section aria-labelledby="pregunta-avisos" className="flex flex-col gap-3 rounded-2xl border-2 border-linea bg-superficie p-4">
+          <p id="pregunta-avisos" className="text-lg font-bold leading-snug">
+            Tu próxima cuota vence el {fechaCorta(cuota.vencimiento)}. ¿Quieres que te recordemos?
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <Boton onClick={() => decidirAvisos(true)}>Sí, recuérdame</Boton>
+            <Boton variante="secundario" onClick={() => decidirAvisos(false)}>
+              No, gracias
+            </Boton>
+          </div>
+          <p className="text-sm text-tenue">Lo puedes cambiar o pausar en Ajustes.</p>
+        </section>
+      )}
 
       {/* Lo nuevo: recordatorios de Pía (opt-in y configurables en Ajustes). */}
       {avisos.map((a, i) => (
@@ -238,27 +291,6 @@ export default function Inicio() {
         </Link>
       </section>
 
-      {anuncio && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="anuncio-titulo">
-          <div className="anim-aparece flex w-full max-w-sm flex-col gap-4 rounded-2xl bg-superficie p-5 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <span className="rounded-full bg-white p-1">
-                <Mascota tamano={52} />
-              </span>
-              <h2 id="anuncio-titulo" className="text-xl font-bold leading-tight">
-                Ahora tienes a Pía
-              </h2>
-            </div>
-            <p>Tu app es la misma. Lo nuevo es el botón <b>«¿Necesitas ayuda?»</b>, abajo a la derecha.</p>
-            <ul className="flex flex-col gap-2">
-              <li className="flex gap-2"><span aria-hidden>✓</span>Paga tu cuota y tus recibos en 2 toques.</li>
-              <li className="flex gap-2"><span aria-hidden>✓</span>Te avisa antes de que venza un pago.</li>
-              <li className="flex gap-2"><span aria-hidden>🔒</span>Nunca te pide tu clave. Tú confirmas cada pago.</li>
-            </ul>
-            <Boton onClick={cerrarAnuncio}>Entendido</Boton>
-          </div>
-        </div>
-      )}
     </Pantalla>
   );
 }
