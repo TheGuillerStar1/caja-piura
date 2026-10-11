@@ -46,7 +46,7 @@ export function CelularPrevia({ vista }: { vista: Vista }) {
         style={{ zoom: escala }}
         className="pointer-events-none mx-auto w-[248px] select-none rounded-[1.6rem] bg-[#0a0b0d] p-[5px] ring-1 ring-white/15"
       >
-        <div key={vista} className="anim-previa relative flex h-[300px] flex-col overflow-hidden rounded-[1.25rem] bg-fondo">
+        <div key={vista} className="anim-previa relative isolate flex h-[250px] flex-col overflow-hidden rounded-[1.25rem] bg-fondo">
           <div className="bg-marca px-3 pb-2 pt-2.5 text-white">
             <div className="flex items-center gap-2 text-[13px] font-medium">
               <span className="text-[15px] leading-none">☰</span> Hola, Rosa
@@ -66,7 +66,7 @@ export function CelularPrevia({ vista }: { vista: Vista }) {
           {asistida && (
             <>
               <div className="absolute inset-0 z-10 bg-black/60" />
-              <div className="absolute inset-x-3 bottom-[96px] z-20 rounded-lg bg-superficie p-2 text-[10.5px] font-bold leading-snug text-tinta shadow-lg">
+              <div className="absolute inset-x-3 bottom-[86px] z-20 rounded-lg bg-superficie p-2 text-[10.5px] font-bold leading-snug text-tinta shadow-lg">
                 ¿Necesitas ayuda? Toca aquí para que te acompañemos. 👇
               </div>
             </>

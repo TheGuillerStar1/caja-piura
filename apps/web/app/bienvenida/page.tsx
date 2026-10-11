@@ -17,7 +17,7 @@ const P = "bienvenida";
 
 /** Qué va a encontrar en cada vista, en 1-2-3 (en vez de rasgos sueltos que confundían). */
 const PASOS: Record<Vista, string[]> = {
-  ASISTIDA: ["Tu app de siempre, con letra más grande.", "Pía, tu asistente, te ayuda con tus pagos desde «¿Necesitas ayuda?».", "Te muestra paso a paso dónde tocar. Tú confirmas cada pago."],
+  ASISTIDA: ["Pía, tu asistente, te ayuda con tus pagos desde «¿Necesitas ayuda?».", "Te muestra paso a paso dónde tocar. Tú confirmas cada pago."],
   ESTANDAR: ["Tu app de siempre, con todas las opciones.", "Pía está en «¿Necesitas ayuda?» cuando la necesites.", "Tú confirmas cada pago."],
 };
 
@@ -129,8 +129,6 @@ export default function Bienvenida() {
         ))}
       </div>
 
-      <CelularPrevia vista={previa} />
-
       <ol key={previa} className="anim-previa flex flex-col gap-2" aria-live="polite">
         {PASOS[previa].map((p, k) => (
           <li key={p} className="flex items-start gap-3 text-lg leading-snug">
@@ -141,6 +139,10 @@ export default function Bienvenida() {
           </li>
         ))}
       </ol>
+
+      <CelularPrevia vista={previa} />
+
+
 
       {previa === rec && (
       <details className="group rounded-2xl border border-linea bg-superficie px-4">

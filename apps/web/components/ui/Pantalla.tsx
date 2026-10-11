@@ -24,7 +24,7 @@ export function Pantalla({ titulo, volver, subtitulo, pestana, sinPia, plano, ch
         <OmitirAyuda />
         {children}
       </main>
-      {pie && <footer className="sticky bottom-0 border-t border-linea bg-fondo/95 px-4 pb-5 pt-3">{pie}</footer>}
+      {pie && <footer className="sticky bottom-0 z-40 border-t border-linea bg-fondo px-4 pb-5 pt-3">{pie}</footer>}
       {pestana && <BarraInferior activa={pestana} sinPia={sinPia} />}
     </div>
   );
