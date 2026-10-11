@@ -15,6 +15,7 @@ import { BotonConstanciaWhatsApp } from "@/components/pago/ConstanciaWhatsApp";
 import { PagoEnChat } from "@/components/pago/PagoEnChat";
 import { ConstanciaEnvio } from "@/components/envio/ConstanciaEnvio";
 import { ConstanciaTransferencia } from "@/components/envio/ConstanciaTransferencia";
+import { ServicioEnChat } from "@/components/envio/ServicioEnChat";
 import { TransferenciaEnChat, type TipoCuenta, type TransferenciaHecha } from "@/components/envio/TransferenciaEnChat";
 import { EnvioEnChat, type EnvioHecho } from "@/components/envio/EnvioEnChat";
 import { NOMBRE_BILLETERA } from "@/components/envio/contactos";
@@ -410,6 +411,23 @@ export default function Ayuda() {
                   </div>
                 </>
               )}
+              {m.accion?.tipo === "PAGAR_SERVICIO" && (
+                // Pagar un servicio aquí mismo: empresa y código; con el recibo encontrado sigue la tarjeta de pago.
+                <ServicioEnChat
+                  rubro={m.accion.rubro}
+                  empresa={m.accion.empresa}
+                  codigo={m.accion.codigo}
+                  activo={m === ultimoPia}
+                  alEncontrar={(r: ReciboRes) =>
+                    decirPia(`Encontré tu recibo de ${r.empresa}: ${r.titularOculto}, ${soles(r.monto)}, vence el ${fechaCorta(r.vencimiento)}. Revisa y confirma:`, {
+                      tipo: "PAGO_CHAT",
+                      pago: "RECIBO",
+                      ref: r.id,
+                    })
+                  }
+                  alFoto={() => decirPia("Tómale una foto a tu recibo y yo leo el código:", { tipo: "RECIBO_FOTO" })}
+                />
+              )}
               {m.accion?.tipo === "PAGO_CHAT" && (
                 <PagoEnChat
                   tipo={m.accion.pago}
@@ -507,6 +525,7 @@ export default function Ayuda() {
                         else if (transferencia === "CONTACTO") decirPia("¿A quién le envías? Tú confirmas.", { tipo: "ENVIO_CONTACTO", nombre: null, monto: null, billetera: null });
                         else if (transferencia) decirPia("Completa los datos y confirma tú:", { tipo: "TRANSFERENCIA_CUENTA", transferencia, destino: null, monto: null });
                         else if (o.ruta.startsWith("/pagar/recibo")) decirPia("Tómale una foto a tu recibo y yo leo el código:", { tipo: "RECIBO_FOTO" });
+                        else if (o.ruta.startsWith("/pagar/servicios")) decirPia("Elige la empresa y escribe el código; tú confirmas.", { tipo: "PAGAR_SERVICIO", rubro: null, empresa: null, codigo: null });
                         else ir(o.ruta);
                       }}
                       className="flex min-h-14 items-center justify-between gap-2 rounded-xl border-2 border-marca bg-superficie px-4 text-left text-lg font-bold text-marca active:bg-marca-claro"

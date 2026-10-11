@@ -233,6 +233,13 @@ export const AccionUI = z.discriminatedUnion("tipo", [
     destino: z.string().nullable(), // n.º de cuenta o CCI si lo escribió
     monto: z.number().nullable(),
   }),
+  /** Pagar un servicio dentro del chat: empresa y código; luego la tarjeta de pago del chat (el cliente confirma). */
+  z.object({
+    tipo: z.literal("PAGAR_SERVICIO"),
+    rubro: z.enum(["LUZ", "AGUA", "TELEFONIA", "INTERNET"]).nullable(),
+    empresa: z.string().nullable(), // "Enosa"
+    codigo: z.string().nullable(), // si lo escribió
+  }),
 ]);
 export type AccionUI = z.infer<typeof AccionUI>;
 export const AsistenteRes = z.object({ respuesta: z.string(), accion: AccionUI, fuente: z.enum(["LLM", "PALABRAS_CLAVE"]) });

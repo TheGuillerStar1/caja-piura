@@ -183,7 +183,25 @@ async function prepararFrecuente(ctx: Ctx, ids: number[]): Promise<Resultado> {
   };
 }
 
+/** Pagar un servicio en el mismo chat: el cliente elige la empresa, escribe el código y Pía busca el recibo.
+ *  Luego revisa y confirma con su huella (la misma tarjeta de pago del chat). Pía no paga nada. */
+function pagarServicio(ctx: Ctx, rubro: Rubro | null, empresa: string | null, codigo: string | null): Resultado {
+  const DE: Record<Rubro, string> = { LUZ: "de la luz", AGUA: "del agua", TELEFONIA: "del celular", INTERNET: "del internet" };
+  const de = empresa ? ` de ${empresa}` : rubro ? ` ${DE[rubro]}` : "";
+  const falta = codigo ? "Busco tu recibo" : empresa || rubro ? "Escribe el código del recibo" : "Elige la empresa y escribe el código";
+  return {
+    respuesta: t(ctx, {
+      calido: `Claro, ${ctx.nombre}. Pago${de}. ${falta}; tú confirmas.`,
+      corto: `Pago${de}. ${falta}.`,
+      directo: `Pago${de}. ${falta}:`,
+    }),
+    accion: { tipo: "PAGAR_SERVICIO", rubro, empresa, codigo },
+  };
+}
+
 function prepararRecibo(ctx: Ctx, rubro?: Rubro): Resultado {
+  // "Pagar el agua" sin pago frecuente: se paga en el chat con empresa y código (y la foto como atajo).
+  if (rubro) return pagarServicio(ctx, rubro, null, null);
   const que = rubro ? `${RUBRO_TXT[rubro]} ` : "";
   return {
     respuesta: t(ctx, {
@@ -375,6 +393,8 @@ export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resulta
       return prepararRecibo(ctx, i.rubro);
     case "RECIBO":
       return prepararRecibo(ctx);
+    case "SERVICIO":
+      return pagarServicio(ctx, i.rubro, i.empresa, i.codigo);
     case "PANTALLA":
       return irA(ctx, i.pantalla);
     case "CLAVE_CAMBIAR":
@@ -533,7 +553,7 @@ async function responderSinRespaldo(clienteId: number, mensaje: string): Promise
   const ctx = await cargarContexto(clienteId);
   const intencion = interpretar(mensaje, ctx.frecuentes);
   // Seguridad determinista: la clave, mover dinero y los reclamos de pagos nunca pasan por el LLM.
-  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "TRANSFERIR" || intencion.tipo === "PROBLEMA_PAGO" || (intencion.tipo === "CUOTA" && /pag|cancel/.test(mensaje.toLowerCase()))) {
+  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "TRANSFERIR" || intencion.tipo === "SERVICIO" || intencion.tipo === "PROBLEMA_PAGO" || (intencion.tipo === "CUOTA" && /pag|cancel/.test(mensaje.toLowerCase()))) {
     return { ...(await ejecutarIntencion(ctx, intencion)), fuente: "PALABRAS_CLAVE" };
   }
   if (hayGroq) {

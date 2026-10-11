@@ -1,6 +1,7 @@
 // Dueño: Agente C. Respaldo del asistente SIN LLM: interpreta el mensaje con palabras clave (sin tildes, tolera errores).
 // Se usa si no hay Groq, si falla, si tarda más de 6 s o si contradice a estas reglas. También decide los casos de seguridad (clave) antes del LLM.
 import { pedidoCuenta, pedidoEnvio, type PedidoCuenta, type PedidoEnvio } from "./envio.js";
+import { pedidoServicio, type RubroServicio } from "./servicio.js";
 import { contienePalabra, normalizar } from "./texto.js";
 
 export type Rubro = "LUZ" | "AGUA" | "TELEFONIA" | "INTERNET";
@@ -15,6 +16,8 @@ export type Intencion =
   | { tipo: "SALDO" }
   | { tipo: "FRECUENTE"; ids: number[] }
   | { tipo: "RUBRO_SIN_FRECUENTE"; rubro: Rubro }
+  /** Pagar un servicio por empresa y código, en el chat ("pagar servicios", "paga Enosa 31264587"). */
+  | { tipo: "SERVICIO"; rubro: RubroServicio | null; empresa: string | null; codigo: string | null }
   | { tipo: "RECIBO" }
   | { tipo: "PANTALLA"; pantalla: Pantalla }
   | { tipo: "CLAVE_CAMBIAR" }
@@ -86,6 +89,10 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
   for (const [problema, claves] of PROBLEMAS) {
     if (frase(t, claves)) return { tipo: "PROBLEMA_PAGO", problema };
   }
+
+  // 2c. Pagar un servicio por empresa o código ("pagar servicios", "paga Enosa 31264587"): se hace en el chat.
+  const servicio = pedidoServicio(mensaje);
+  if (servicio) return { tipo: "SERVICIO", ...servicio };
 
   // 3. Pagos frecuentes por alias ("luz de mamá", "mi celular").
   const porAlias = buscarPorAlias(t, frecuentes);
