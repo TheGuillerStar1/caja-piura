@@ -1,9 +1,18 @@
 "use client";
-// Teclado de la app oficial: números en orden aleatorio (seguridad ante miradas), "Borrar" gris y "Listo" naranja.
+// Teclado de la app oficial: "Borrar" gris y "Listo" naranja. Para la clave, números en orden aleatorio (seguridad ante
+// miradas); para el DNI, en orden normal (no es secreto y así se escribe más rápido y sin errores).
 // No abre el teclado del celular.
 import { useEffect, useState } from "react";
 
-type Props = { onDigito: (d: string) => void; onBorrar: () => void; onListo: () => void; listoActivo?: boolean; deshabilitado?: boolean };
+type Props = {
+  onDigito: (d: string) => void;
+  onBorrar: () => void;
+  onListo: () => void;
+  listoActivo?: boolean;
+  deshabilitado?: boolean;
+  /** true: números en orden aleatorio (clave). false: 1-9 y 0 en orden (DNI). */
+  aleatorio?: boolean;
+};
 
 const ORDEN_FIJO = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];
 
@@ -16,10 +25,11 @@ function barajar(a: string[]) {
   return b;
 }
 
-export function Teclado({ onDigito, onBorrar, onListo, listoActivo = true, deshabilitado }: Props) {
-  // Se baraja después de montar: el HTML del servidor y el primer render del cliente coinciden.
+export function Teclado({ onDigito, onBorrar, onListo, listoActivo = true, deshabilitado, aleatorio = true }: Props) {
+  // Se baraja después de montar (el HTML del servidor y el primer render del cliente coinciden) y cada vez que se pasa
+  // del DNI a la clave: el orden de la clave nunca es el mismo.
   const [orden, setOrden] = useState(ORDEN_FIJO);
-  useEffect(() => setOrden(barajar(ORDEN_FIJO)), []);
+  useEffect(() => setOrden(aleatorio ? barajar(ORDEN_FIJO) : ORDEN_FIJO), [aleatorio]);
 
   const tecla = "flex h-14 items-center justify-center rounded-md text-xl font-medium text-white disabled:opacity-50";
   const digito = (d: string) => (

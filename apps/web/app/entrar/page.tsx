@@ -208,6 +208,7 @@ export default function Entrar() {
       </main>
 
       <Teclado
+        aleatorio={!enDni}
         deshabilitado={enviando}
         onDigito={digito}
         onBorrar={() => (enDni ? setDni((v) => v.slice(0, -1)) : setClave((c) => c.slice(0, -1)))}
