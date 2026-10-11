@@ -166,7 +166,7 @@ export default function Entrar() {
         <p className={`text-center text-white/95 ${sombra}`}>{enDni ? "Ingresa tu número de DNI" : "Ingresa tu pin de 6 dígitos"}</p>
 
         {enDni ? (
-          <div className="flex h-14 items-center rounded-lg bg-fondo px-4" aria-live="polite">
+          <div className="flex h-14 items-center rounded-lg bg-[#1c1f24] px-4" aria-live="polite">
             <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" fill="none" stroke="#fff" strokeWidth="1.8" aria-hidden="true">
               <rect x="3" y="5" width="18" height="14" rx="2" />
               <circle cx="9" cy="11" r="2" />
@@ -179,7 +179,7 @@ export default function Entrar() {
         )}
 
         {error && (
-          <p role="alert" className="rounded-md bg-fondo/85 px-3 py-2 text-center font-medium text-white">
+          <p role="alert" className="rounded-md bg-[#1c1f24]/85 px-3 py-2 text-center font-medium text-white">
             {error}
           </p>
         )}

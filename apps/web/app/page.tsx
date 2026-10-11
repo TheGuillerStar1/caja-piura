@@ -38,7 +38,7 @@ export default function Principal() {
         <Link
           href="/entrar"
           onClick={() => track("principal", "tocar")}
-          className="mt-5 flex min-h-13 items-center justify-center rounded-lg bg-fondo text-lg font-medium text-marca shadow-lg active:bg-black"
+          className="mt-5 flex min-h-13 items-center justify-center rounded-lg bg-[#1c1f24] text-lg font-medium text-[#5b93ff] shadow-lg active:bg-black"
         >
           Ingresar
         </Link>
