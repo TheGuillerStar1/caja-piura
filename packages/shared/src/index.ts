@@ -218,6 +218,14 @@ export const AccionUI = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("NINGUNA") }),
   z.object({ tipo: z.literal("NAVEGAR"), ruta: z.string() }), // p. ej. "/pagar/confirmar?tipo=CUOTA&ref=12"
   z.object({ tipo: z.literal("OPCIONES"), opciones: z.array(z.object({ texto: z.string(), ruta: z.string() })) }),
+  /** Enviar a un contacto dentro del chat: Pía solo entiende el pedido. El cliente elige el contacto (en su celular),
+   *  revisa y toca «Confirmar envío» con huella, rostro o clave. La IA nunca envía. */
+  z.object({
+    tipo: z.literal("ENVIO_CONTACTO"),
+    nombre: z.string().nullable(), // "sergio": para buscar en los contactos del celular
+    monto: z.number().nullable(),
+    billetera: z.enum(["YAPE", "PLIN", "BIM", "DALE", "SIP"]).nullable(),
+  }),
 ]);
 export type AccionUI = z.infer<typeof AccionUI>;
 export const AsistenteRes = z.object({ respuesta: z.string(), accion: AccionUI, fuente: z.enum(["LLM", "PALABRAS_CLAVE"]) });

@@ -1,5 +1,6 @@
 // Dueño: Agente C. Respaldo del asistente SIN LLM: interpreta el mensaje con palabras clave (sin tildes, tolera errores).
 // Se usa si no hay Groq, si falla, si tarda más de 6 s o si contradice a estas reglas. También decide los casos de seguridad (clave) antes del LLM.
+import { pedidoEnvio, type PedidoEnvio } from "./envio.js";
 import { contienePalabra, normalizar } from "./texto.js";
 
 export type Rubro = "LUZ" | "AGUA" | "TELEFONIA" | "INTERNET";
@@ -19,7 +20,8 @@ export type Intencion =
   | { tipo: "CLAVE_CAMBIAR" }
   | { tipo: "CLAVE_PEDIDA" }
   | { tipo: "FUERA_DE_ALCANCE" }
-  | { tipo: "TRANSFERIR" }
+  /** envio != null: a un contacto (a quién, cuánto, por dónde); null: "quiero transferir" sin más. */
+  | { tipo: "TRANSFERIR"; envio: PedidoEnvio | null }
   | { tipo: "PROBLEMA_PAGO"; problema: ProblemaPago }
   | { tipo: "NADA" };
 
@@ -69,9 +71,11 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
       ? { tipo: "CLAVE_CAMBIAR" }
       : { tipo: "CLAVE_PEDIDA" };
   }
-  // 2. Transferir: Pía no mueve ese dinero desde el chat, pero lleva a la pantalla de Transferencias de la app.
-  if (algun(t, ["transferir", "transferencia", "transfiere", "yapear", "yape", "plin", "depositar a", "enviar plata", "mandar plata", "enviar dinero", "mandar dinero"])) {
-    return { tipo: "TRANSFERIR" };
+  // 2. Transferir. A un contacto ("yapéale 50 a Sergio"): se hace en el chat, el cliente elige y confirma.
+  //    Otros tipos ("quiero transferir"): Pía ofrece los tipos de transferencia de la app.
+  const envio = pedidoEnvio(mensaje);
+  if (envio || algun(t, ["transferir", "transferencia", "transfiere", "yapear", "yape", "plin", "depositar a", "enviar plata", "mandar plata", "enviar dinero", "mandar dinero"])) {
+    return { tipo: "TRANSFERIR", envio };
   }
   // 2a. Préstamos de dinero o retiros: no se hacen desde la app.
   if (algun(t, ["prestame plata", "prestame dinero", "retirar"])) return { tipo: "FUERA_DE_ALCANCE" };

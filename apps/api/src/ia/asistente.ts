@@ -9,6 +9,7 @@ import { aNumero, cuandoVence, soles } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { perfilDeCliente, recomendar } from "../motor/index.js";
 import { interpretar, type FrecuenteCtx, type Intencion, type Pantalla, type ProblemaPago, type Rubro } from "./palabrasClave.js";
+import type { Billetera, PedidoEnvio } from "./envio.js";
 import { herramientaAceptable, textoLibreAceptable } from "./guardas.js";
 import { quitarThink } from "./texto.js";
 
@@ -221,6 +222,30 @@ function fueraDeAlcance(ctx: Ctx): Resultado {
   };
 }
 
+const NOMBRE_BILLETERA: Record<Billetera, string> = { YAPE: "Yape", PLIN: "Plin", BIM: "Bim", DALE: "Dale", SIP: "Sip" };
+const capitalizar = (s: string) => s.replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+
+/** Envío a un contacto en el mismo chat: Pía arma el pedido; los contactos están en el celular (nunca llegan aquí).
+ *  El cliente toca a quién, revisa y confirma con su huella. Pía no envía nada. */
+function enviarAContacto(ctx: Ctx, e: PedidoEnvio): Resultado {
+  const por = e.billetera ? ` por ${NOMBRE_BILLETERA[e.billetera]}` : "";
+  const cuanto = e.monto ? ` ${soles(e.monto)}` : "";
+  return {
+    respuesta: e.nombre
+      ? t(ctx, {
+          calido: `Claro, ${ctx.nombre}. Envío${cuanto}${por} a ${capitalizar(e.nombre)}. Toca a quién y confirma tú.`,
+          corto: `Envío${cuanto}${por} a ${capitalizar(e.nombre)}. Toca a quién y confirma.`,
+          directo: `Envío${cuanto}${por} a ${capitalizar(e.nombre)}. Elige el contacto:`,
+        })
+      : t(ctx, {
+          calido: `Claro, ${ctx.nombre}. ¿A quién le envías${por}? Tú confirmas.`,
+          corto: `¿A quién le envías${por}?`,
+          directo: `Elige el contacto${por}:`,
+        }),
+    accion: { tipo: "ENVIO_CONTACTO", nombre: e.nombre, monto: e.monto, billetera: e.billetera },
+  };
+}
+
 function transferir(ctx: Ctx): Resultado {
   return {
     respuesta: t(ctx, {
@@ -343,7 +368,7 @@ export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resulta
     case "FUERA_DE_ALCANCE":
       return fueraDeAlcance(ctx);
     case "TRANSFERIR":
-      return transferir(ctx);
+      return i.envio ? enviarAContacto(ctx, i.envio) : transferir(ctx);
     case "PROBLEMA_PAGO":
       return problemaPago(ctx, i.problema);
     default:

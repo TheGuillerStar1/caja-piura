@@ -1,5 +1,5 @@
 "use client";
-// Dueño: Agente C. Ayuda con Pía: chat simple. Pía prepara y lleva a la pantalla; nunca paga ni pide la clave.
+// Dueño: Agente C. Ayuda con Pía: chat simple. Pía prepara; nunca paga, envía ni pide la clave: siempre confirma la persona.
 // Al abrir: saludo corto + 3 accesos grandes con ícono + preguntas rápidas. Cada botón dice lo que hace ("Revisar y pagar"),
 // nunca "Ir ahora". Pía a la izquierda, tú a la derecha.
 import { ChevronRight, Mic, SendHorizontal, Volume2 } from "lucide-react";
@@ -13,6 +13,8 @@ import { guardarResultado, type ResultadoPago } from "@/components/pago/almacen"
 import { TutorialPia, tutorialVisto } from "@/components/ayuda/TutorialPia";
 import { BotonConstanciaWhatsApp } from "@/components/pago/ConstanciaWhatsApp";
 import { PagoEnChat } from "@/components/pago/PagoEnChat";
+import { EnvioEnChat } from "@/components/envio/EnvioEnChat";
+import { NOMBRE_BILLETERA } from "@/components/envio/contactos";
 import { Boton, Mascota, Pantalla } from "@/components/ui";
 import { fechaCorta, soles } from "@/lib/formato";
 import { useVista } from "@/lib/vista";
@@ -56,7 +58,7 @@ const ACCESOS: Partial<Record<Sugerencia["id"], Acceso>> = {
   PROGRESO: { texto: "Mis puntos", Icono: IconoProgreso },
 };
 const ACCESOS_BASE: Sugerencia["id"][] = ["PAGAR_CUOTA", "PAGAR_RECIBO", "FRECUENTES"];
-const PREGUNTAS = ["¿Cuánto debo?", "¿Se hizo mi pago?", "Me cobraron dos veces"];
+const PREGUNTAS = ["¿Cuánto debo?", "Yapear a un contacto", "¿Se hizo mi pago?", "Me cobraron dos veces"];
 
 /** Si el asistente no responde, estos accesos siempre funcionan. */
 const OPCIONES_RESPALDO = [
@@ -405,6 +407,21 @@ export default function Ayuda() {
                       tipo: "CONSTANCIA",
                       resultado: r,
                     })
+                  }
+                />
+              )}
+              {m.accion?.tipo === "ENVIO_CONTACTO" && (
+                // Enviar a un contacto aquí mismo: ¿cuál?, monto y Yape/Plin ya llenos, «Confirmar envío» y huella.
+                <EnvioEnChat
+                  nombre={m.accion.nombre}
+                  monto={m.accion.monto}
+                  billetera={m.accion.billetera}
+                  asistida={asistida}
+                  activo={m === ultimoPia}
+                  alEnviar={(r) =>
+                    decirPia(
+                      `¡Listo! Enviaste ${soles(r.monto)} a ${r.contacto.nombre} por ${NOMBRE_BILLETERA[r.billetera]}. N.º de operación ${r.operacion}.${r.repetida ? " Ya estaba hecho: no se envió otra vez." : ""}`,
+                    )
                   }
                 />
               )}
