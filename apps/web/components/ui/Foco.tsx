@@ -59,7 +59,7 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }
       <div className={franja} style={{ top: r.top, left: r.left + r.width, right: 0, height: r.height }} />
       <div
         aria-hidden
-        className="guia-toca pointer-events-none fixed z-[71] rounded-2xl ring-4 ring-acento"
+        className="pointer-events-none fixed z-[71] rounded-2xl ring-4 ring-acento"
         style={{ top: r.top, left: r.left, width: r.width, height: r.height }}
       />
       <div
