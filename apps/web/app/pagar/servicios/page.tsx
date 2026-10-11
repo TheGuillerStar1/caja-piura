@@ -18,7 +18,7 @@ import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { fechaCorta, soles } from "@/lib/formato";
 import { iniciarFlujo, track } from "@/lib/track";
 
-const RUBROS: Record<string, string> = { AGUA: "Agua", LUZ: "Energía eléctrica", TELEFONIA: "Telecomunicaciones", INTERNET: "Internet" };
+const RUBROS: Record<string, string> = { AGUA: "Agua", LUZ: "Energía eléctrica", TELEFONIA: "Telecomu\u00ADnicaciones", INTERNET: "Internet" };
 /** Servicio que ofrece cada empresa (ventana «Elige un servicio» de la app oficial). */
 const SERVICIO_DE: Record<string, string> = { AGUA: "Pago de agua", LUZ: "Pago de luz", TELEFONIA: "Pago de recibo móvil", INTERNET: "Pago de internet" };
 /** Cómo se llama el código en el recibo de cada rubro. */
@@ -107,11 +107,11 @@ export default function PagoServicios() {
                   {rubros.map((r) => (
                     <label
                       key={r}
-                      className={`flex min-h-13 cursor-pointer items-center gap-2 rounded-xl border-2 px-3 font-bold ${rubro === r ? "border-marca bg-marca-claro" : "border-linea bg-superficie"}`}
+                      className={`flex min-h-13 min-w-0 cursor-pointer items-center gap-2 rounded-xl border-2 px-3 py-2 font-bold leading-tight ${rubro === r ? "border-marca bg-marca-claro" : "border-linea bg-superficie"}`}
                     >
                       <input type="radio" name="rubro" checked={rubro === r} onChange={() => setRubro(r)} className="sr-only" />
-                      <IconoRubro rubro={r} className="h-5 w-5 text-marca" />
-                      {RUBROS[r] ?? r}
+                      <IconoRubro rubro={r} className="h-5 w-5 shrink-0 text-marca" />
+                      <span className="min-w-0 break-words">{RUBROS[r] ?? r}</span>
                     </label>
                   ))}
                 </div>
