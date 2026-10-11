@@ -119,7 +119,6 @@ export function PagoEnChat({ tipo, refId, asistida, alPagar }: Props) {
         <b>{pago.destinatario}</b>
       </p>
       <div className="flex flex-col gap-1">
-        <span className="text-tenue">Desde tu cuenta</span>
         <CuentaOrigen nombre={`cuenta-chat-${refId}`} cuentas={cuentas} actual={pago.cuenta} onCambio={(id) => setCuentaId(id)} />
       </div>
 

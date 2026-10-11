@@ -391,8 +391,7 @@ export function Confirmar() {
       </section>
 
       <section ref={registrar("cuenta")} className={`rounded-2xl bg-superficie p-4 ${marcar("cuenta")}`}>
-        <p className="text-tenue">Desde tu cuenta</p>
-        <div className="mt-1">
+        <div>
           <CuentaOrigen
             nombre="cuenta-confirmar"
             cuentas={cuentasPago}
