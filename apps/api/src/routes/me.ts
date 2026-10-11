@@ -3,6 +3,7 @@ import { PutVistaReq, type MeRes } from "@cp/shared";
 import { Router } from "express";
 import { HttpError, validar } from "../lib/errores.js";
 import { aNumero, ocultarCuenta } from "../lib/formato.js";
+import { sePuedePagarDesde } from "../pagos/servicio.js";
 import { prisma } from "../lib/prisma.js";
 import { requiereSesion } from "../lib/sesion.js";
 import { perfilDeCliente, recomendar } from "../motor/index.js";
@@ -25,7 +26,7 @@ router.get("/me", requiereSesion, async (req, res) => {
     primerIngreso: c.primerIngreso,
     fechaSimulada: c.fechaSimulada.toISOString(),
     recomendacion: recomendar(perfilDeCliente(c, c._count.frecuentes > 0)),
-    cuentas: c.cuentas.map((k) => ({ id: k.id, numero: k.numero, numeroOculto: ocultarCuenta(k.numero), tipo: k.tipo, saldo: aNumero(k.saldo) })),
+    cuentas: c.cuentas.map((k) => ({ id: k.id, numero: k.numero, numeroOculto: ocultarCuenta(k.numero), tipo: k.tipo, saldo: aNumero(k.saldo), paraPagar: sePuedePagarDesde(k.tipo) })),
   };
   res.json(r);
 });

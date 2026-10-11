@@ -2,17 +2,37 @@
 // Dueño: Agente C. Ayuda con Pía: chat simple. Pía prepara y lleva a la pantalla; nunca paga ni pide la clave.
 // Al abrir: saludo corto + 3 accesos grandes con ícono + preguntas rápidas. Cada botón dice lo que hace ("Revisar y pagar"),
 // nunca "Ir ahora". Pía a la izquierda, tú a la derecha.
-import type { AccionUI, AsistenteRes, MeRes, Sugerencia, Tono } from "@cp/shared";
+import type { AccionUI, AsistenteRes, MeRes, ReciboRes, Sugerencia, TipoPago, Tono } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { IconoCuota, IconoFrecuente, IconoProgreso, IconoRecibo, IconoSaldo } from "@/components/pago/Iconos";
+import { ReciboEnChat } from "@/components/ia/ReciboEnChat";
+import { guardarResultado, type ResultadoPago } from "@/components/pago/almacen";
+import { PagoEnChat } from "@/components/pago/PagoEnChat";
 import { Boton, Mascota, Pantalla } from "@/components/ui";
+import { fechaCorta, soles } from "@/lib/formato";
+import { useVista } from "@/lib/vista";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { iniciarFlujo, marcarAyuda, track } from "@/lib/track";
 import { empezarGuia, type IdGuia } from "@/lib/guiaPasos";
 import { hablar } from "@/lib/voz";
 
-type Mensaje = { id: number; de: "pia" | "yo"; texto: string; accion?: AccionUI };
+/** Además de lo que responde la API, el chat tiene acciones propias: el recibo con foto y el pago se hacen aquí mismo. */
+type AccionChat =
+  | AccionUI
+  | { tipo: "RECIBO_FOTO" }
+  | { tipo: "PAGO_CHAT"; pago: TipoPago; ref: number }
+  | { tipo: "CONSTANCIA"; resultado: ResultadoPago };
+type Mensaje = { id: number; de: "pia" | "yo"; texto: string; accion?: AccionChat };
+
+/** "/pagar/confirmar?tipo=CUOTA&ref=12" → { pago: "CUOTA", ref: 12 } */
+function pagoDe(ruta: string): { pago: TipoPago; ref: number } | null {
+  if (!ruta.startsWith("/pagar/confirmar")) return null;
+  const q = new URLSearchParams(ruta.split("?")[1] ?? "");
+  const pago = q.get("tipo") as TipoPago | null;
+  const ref = Number(q.get("ref"));
+  return pago && ref ? { pago, ref } : null;
+}
 
 const SALUDOS: Record<Tono, (n: string) => string> = {
   CALIDO: (n) => `Hola, ${n}. ¿Qué quieres hacer?`,
@@ -93,6 +113,8 @@ function Burbuja({ texto, escuchar }: { texto: React.ReactNode; escuchar?: () =>
 
 export default function Ayuda() {
   const router = useRouter();
+  const { asistida } = useVista();
+  const decirPia = (texto: string, accion?: AccionChat) => setMensajes((m) => [...m, { id: sigId.current++, de: "pia", texto, accion }]);
   const [me, setMe] = useState<MeRes | null>(null);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState("");
@@ -152,7 +174,8 @@ export default function Ayuda() {
     setPensando(true);
     try {
       const r = await api<AsistenteRes>("/asistente", { cuerpo: { mensaje: msg } });
-      setMensajes((m) => [...m, { id: sigId.current++, de: "pia", texto: r.respuesta, accion: r.accion }]);
+      const accion: AccionChat = r.accion.tipo === "NAVEGAR" && r.accion.ruta.startsWith("/pagar/recibo") ? { tipo: "RECIBO_FOTO" } : r.accion;
+      setMensajes((m) => [...m, { id: sigId.current++, de: "pia", texto: r.respuesta, accion }]);
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
       track("ayuda", "error", { flujo: "ASISTENTE" });
@@ -312,9 +335,64 @@ export default function Ayuda() {
           ) : (
             <div key={m.id} className="flex flex-col gap-2">
               <Burbuja texto={m.texto} escuchar={() => hablar(m.texto)} />
+              {m.accion?.tipo === "RECIBO_FOTO" && (
+                <>
+                  <ReciboEnChat
+                    alLeer={(r: ReciboRes) =>
+                      decirPia(
+                        `Leí tu recibo de ${r.empresa}: ${r.titularOculto}, ${soles(r.monto)}, vence el ${fechaCorta(r.vencimiento)}. El monto lo da la empresa, no la foto.`,
+                        { tipo: "NAVEGAR", ruta: `/pagar/confirmar?tipo=RECIBO&ref=${r.id}` },
+                      )
+                    }
+                    alSinDeuda={() => decirPia("Ese recibo no tiene deuda pendiente. ¿Quieres probar con otro?", { tipo: "RECIBO_FOTO" })}
+                    alNoLeer={(motivo) => decirPia(`${motivo} Prueba otra foto con más luz, o te guío en la app para escribir el código.`, { tipo: "RECIBO_FOTO" })}
+                  />
+                  <div className="ml-10">
+                    <Boton variante="secundario" onClick={() => guiarme("RECIBO")}>
+                      Guíame paso a paso en la app
+                    </Boton>
+                  </div>
+                </>
+              )}
+              {m.accion?.tipo === "PAGO_CHAT" && (
+                <PagoEnChat
+                  tipo={m.accion.pago}
+                  refId={m.accion.ref}
+                  asistida={asistida}
+                  alPagar={(r) =>
+                    decirPia(`¡Pago realizado! ${r.descripcion}: ${soles(r.monto)}. N.º de operación ${r.operacion}. Hoy no hiciste cola. 🙌`, {
+                      tipo: "CONSTANCIA",
+                      resultado: r,
+                    })
+                  }
+                />
+              )}
+              {m.accion?.tipo === "CONSTANCIA" && (
+                <div className="ml-10">
+                  <Boton
+                    variante="secundario"
+                    onClick={() => {
+                      guardarResultado((m.accion as { resultado: ResultadoPago }).resultado);
+                      router.push("/pagar/exito");
+                    }}
+                  >
+                    Ver mi constancia
+                  </Boton>
+                </div>
+              )}
               {m.accion?.tipo === "NAVEGAR" && (
                 <div className="ml-10 flex flex-col gap-2">
-                  <Boton onClick={() => ir((m.accion as { ruta: string }).ruta)}>{textoBoton(m.accion.ruta)}</Boton>
+                  <Boton
+                    onClick={() => {
+                      const ruta = (m.accion as { ruta: string }).ruta;
+                      const pago = pagoDe(ruta);
+                      // «Sí, prepáralo tú»: el pago se confirma aquí mismo, sin salir del chat.
+                      if (pago) decirPia("Listo. Revisa y confirma aquí mismo:", { tipo: "PAGO_CHAT", ...pago });
+                      else ir(ruta);
+                    }}
+                  >
+                    {textoBoton(m.accion.ruta)}
+                  </Boton>
                   {guiaDe(m.accion.ruta) && (
                     <Boton variante="secundario" onClick={() => guiarme(guiaDe((m.accion as { ruta: string }).ruta)!)}>
                       Guíame paso a paso en la app
@@ -328,7 +406,12 @@ export default function Ayuda() {
                     <button
                       key={o.ruta + o.texto}
                       type="button"
-                      onClick={() => ir(o.ruta)}
+                      onClick={() => {
+                        const pago = pagoDe(o.ruta);
+                        if (pago) decirPia("Listo. Revisa y confirma aquí mismo:", { tipo: "PAGO_CHAT", ...pago });
+                        else if (o.ruta.startsWith("/pagar/recibo")) decirPia("Tómale una foto a tu recibo y yo leo el código:", { tipo: "RECIBO_FOTO" });
+                        else ir(o.ruta);
+                      }}
                       className="flex min-h-14 items-center justify-between gap-2 rounded-xl border-2 border-marca bg-superficie px-4 text-left text-lg font-bold text-marca active:bg-marca-claro"
                     >
                       {o.texto}

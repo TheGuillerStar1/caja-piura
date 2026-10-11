@@ -222,7 +222,7 @@ export default function Inicio() {
                   {c.tipo} · {c.numeroOculto}
                 </p>
                 <p className="text-2xl font-bold">{soles(c.saldo)}</p>
-                <p className="text-xs text-tenue">Saldo disponible</p>
+                <p className="text-xs text-tenue">{c.paraPagar ? "Saldo disponible" : "No se usa para pagar"}</p>
               </li>
             ))}
           </ul>
@@ -257,7 +257,7 @@ export default function Inicio() {
                   <p className="text-2xl font-bold">{soles(cuota.monto)}</p>
                   <p className="text-xs text-tenue">Vence el {fechaCorta(cuota.vencimiento)}</p>
                 </div>
-                <Boton href="/pagar/cuota" className="min-h-11! py-2 text-base">
+                <Boton href="/pagar/creditos" className="min-h-11! py-2 text-base">
                   Pagar cuota
                 </Boton>
               </div>

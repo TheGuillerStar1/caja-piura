@@ -1,6 +1,6 @@
 "use client";
 // Dueño: Agente B. Confirmación común de pagos: /pagar/confirmar?tipo=CUOTA|FRECUENTE|RECIBO&ref=<id>[&fallar=1]
-import type { ConfirmarPagoRes, PrepararPagoRes, TipoPago } from "@cp/shared";
+import type { ConfirmarPagoRes, Cuenta, PrepararPagoRes, TipoPago } from "@cp/shared";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
@@ -9,7 +9,8 @@ import { soles } from "@/lib/formato";
 import { iniciarFlujo, marcarAyuda, track, usoAyuda } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 import { callar, hablar, montoHablado } from "@/lib/voz";
-import { borrarKey, guardarKey, guardarResultado, leerKey } from "./almacen";
+import { cargarCliente } from "@/lib/cliente";
+import { borrarKey, guardarKey, guardarResultado, leerKey, rutaConfirmar } from "./almacen";
 import { EstilosPago } from "./EstilosPago";
 import { HojaAutenticacion, type MetodoAuth } from "./HojaAutenticacion";
 import { IconoX } from "./Iconos";
@@ -60,6 +61,12 @@ export function Confirmar() {
 
   const [estado, setEstado] = useState<Estado>({ fase: "cargando" });
   const [pago, setPago] = useState<PrepararPagoRes | null>(null);
+  const [cuentasPago, setCuentasPago] = useState<Cuenta[]>([]);
+  useEffect(() => {
+    cargarCliente()
+      .then((m) => setCuentasPago(m.cuentas.filter((k) => k.paraPagar)))
+      .catch(() => {});
+  }, []);
   const [saldoInsuficiente, setSaldoInsuficiente] = useState(false);
   const [guia, setGuia] = useState<number | null>(null);
   const intentos = useRef(0);
@@ -92,7 +99,7 @@ export function Confirmar() {
       setEstado({ fase: "error", codigo: f.codigo, mensaje: f.message });
       track("confirmar", "error", { flujo });
     }
-  }, [tipo, ref, router, flujo]);
+  }, [tipo, ref, router, flujo, cuentaId]);
 
   useEffect(() => {
     // Llegó desde el asistente (Ayuda navega directo aquí): el tiempo se mide desde ahora, sin perder la marca de ayuda.
@@ -375,9 +382,28 @@ export function Confirmar() {
 
       <section ref={registrar("cuenta")} className={`rounded-2xl bg-superficie p-4 ${marcar("cuenta")}`}>
         <p className="text-tenue">Desde tu cuenta</p>
-        <p className="text-2xl font-bold">
-          {pago.cuenta.tipo} {pago.cuenta.numeroOculto}
-        </p>
+        {cuentasPago.length > 1 ? (
+          // Cuenta de origen elegible aquí también (pagos frecuentes, recibo con foto y lo que prepara Pía).
+          <select
+            aria-label="Cuenta de origen"
+            value={pago.cuenta.id}
+            onChange={(e) => {
+              track("confirmar", "tocar", { flujo });
+              router.replace(`${rutaConfirmar(tipo!, ref)}&cuenta=${e.target.value}`);
+            }}
+            className="mt-1 min-h-13 w-full rounded-lg border-2 border-linea-fuerte bg-superficie px-3 text-lg font-bold"
+          >
+            {cuentasPago.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.tipo} {k.numeroOculto}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <p className="text-2xl font-bold">
+            {pago.cuenta.tipo} {pago.cuenta.numeroOculto}
+          </p>
+        )}
         <p className="text-tenue">Saldo disponible: {soles(pago.cuenta.saldo)}</p>
       </section>
 

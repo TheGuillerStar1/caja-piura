@@ -82,13 +82,14 @@ export default function PagoCreditos() {
           <CampoApp etiqueta="Cuenta origen" ayuda="Es la cuenta de la que sale el dinero para pagar.">
             <select data-paso="cuenta" value={cuenta} onChange={(e) => setCuenta(e.target.value)} className={claseSelect}>
               <option value="">Elige tu cuenta</option>
-              {me.cuentas.map((k) => (
+              {me.cuentas.filter((k) => k.paraPagar).map((k) => (
                 <option key={k.id} value={k.id}>
                   {k.tipo} {k.numeroOculto} · Saldo {soles(k.saldo)}
                 </option>
               ))}
             </select>
           </CampoApp>
+          {me.cuentas.some((k) => !k.paraPagar) && <p className="-mt-3 text-sm text-tenue">La CTS y los depósitos a plazo fijo no se usan para pagar.</p>}
 
           <CampoApp etiqueta="Operación">
             <select data-paso="operacion" value={operacion} onChange={(e) => setOperacion(e.target.value)} className={claseSelect}>

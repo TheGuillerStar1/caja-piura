@@ -11,9 +11,19 @@ export async function obtenerCliente(clienteId: number) {
   return c;
 }
 
-/** Cuenta de origen: la elegida (si es del cliente) o, si no viene, la principal = la primera cuenta del cliente. */
+/** CTS y depósitos a plazo fijo no se usan para pagar (como en la app oficial); las cuentas de ahorro sí. */
+export const sePuedePagarDesde = (tipo: string) => !/cts|plazo/i.test(tipo);
+
+/** Cuenta de origen: la elegida (si es del cliente y sirve para pagar) o, si no viene, la primera cuenta de ahorro. */
 export async function cuentaPrincipal(clienteId: number, cuentaId?: number) {
-  const c = await prisma.cuenta.findFirst({ where: { clienteId, ...(cuentaId !== undefined ? { id: cuentaId } : {}) }, orderBy: { id: "asc" } });
+  if (cuentaId !== undefined) {
+    const c = await prisma.cuenta.findFirst({ where: { clienteId, id: cuentaId } });
+    if (!c) throw new HttpError(422, "SIN_CUENTA", "No encontramos esa cuenta");
+    if (!sePuedePagarDesde(c.tipo)) throw new HttpError(422, "CUENTA_NO_PERMITIDA", `Desde tu ${c.tipo} no se puede pagar. Elige una cuenta de ahorro.`);
+    return c;
+  }
+  const todas = await prisma.cuenta.findMany({ where: { clienteId }, orderBy: { id: "asc" } });
+  const c = todas.find((k) => sePuedePagarDesde(k.tipo));
   if (!c) throw new HttpError(422, "SIN_CUENTA", "No encontramos una cuenta para pagar");
   return c;
 }
@@ -24,6 +34,7 @@ export const aCuentaRes = (c: { id: number; numero: string; tipo: string; saldo:
   numeroOculto: ocultarCuenta(c.numero),
   tipo: c.tipo,
   saldo: aNumero(c.saldo),
+  paraPagar: sePuedePagarDesde(c.tipo),
 });
 
 type CuotaDb = { id: number; credito: string; numero: number; totalCuotas: number; monto: Prisma.Decimal; vencimiento: Date };

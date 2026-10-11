@@ -49,7 +49,8 @@ export const Recomendacion = z.object({
 export type Recomendacion = z.infer<typeof Recomendacion>;
 
 // ── Perfil ───────────────────────────────────────────
-export const Cuenta = z.object({ id: z.number(), numero: z.string(), numeroOculto: z.string(), tipo: z.string(), saldo: z.number() });
+/** paraPagar: las cuentas de ahorro sí; CTS y depósito a plazo fijo no se usan para pagar. */
+export const Cuenta = z.object({ id: z.number(), numero: z.string(), numeroOculto: z.string(), tipo: z.string(), saldo: z.number(), paraPagar: z.boolean() });
 export type Cuenta = z.infer<typeof Cuenta>;
 
 export const MeRes = z.object({
