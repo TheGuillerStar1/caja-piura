@@ -3,7 +3,7 @@
 // Rápido: ~15 consultas en 3 tandas paralelas (unos 3 viajes a la base). Idempotente: si algo falla a medias, se repite entero.
 // No toca a los 500 perfiles ni a sus recibos: solo borra por clienteId de demo y por (servicio, código) de recibos de demo.
 import type { Prisma, PrismaClient } from "@prisma/client";
-import { asegurarServicios, CLAVE_DEMO, CLIENTES_DEMO, type Empresa, hoyUTC, RECIBOS_DEMO, sembrarDemo } from "../../prisma/demo.js";
+import { asegurarServicios, CLAVE_DEMO, CLIENTES_DEMO, type Empresa, hoyUTC, RECIBOS_DEMO, sembrarDemo, venceReciboDemo } from "../../prisma/demo.js";
 
 const DIA = 86400000;
 const masDias = (d: Date, dias: number) => new Date(d.getTime() + dias * DIA);
@@ -92,7 +92,7 @@ export function planReinicio(db: PrismaClient, idPorDni: Record<string, number>,
     });
   });
   for (const r of RECIBOS_DEMO) {
-    recibos.push({ codigo: r.codigo, servicioId: servicios[r.empresa], titular: r.titular, monto: r.monto, vencimiento: masDias(hoy, r.dias), imagenKey: r.imagenKey });
+    recibos.push({ codigo: r.codigo, servicioId: servicios[r.empresa], titular: r.titular, monto: r.monto, vencimiento: venceReciboDemo(r), imagenKey: r.imagenKey });
   }
 
   return {

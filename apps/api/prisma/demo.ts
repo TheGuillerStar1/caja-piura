@@ -89,12 +89,19 @@ export const CLIENTES_DEMO: DemoCliente[] = [
   },
 ];
 
-/** Recibos sueltos para la ruta C (foto del recibo). El Agente C genera las imágenes con estos datos. */
-export const RECIBOS_DEMO: { empresa: Empresa; codigo: string; titular: string; monto: number; dias: number; imagenKey: string }[] = [
-  { empresa: "Enosa", codigo: "31264587", titular: "ELENA QUISPE", monto: 72.3, dias: 6, imagenKey: "demo/recibo-enosa.jpg" },
-  { empresa: "EPS Grau", codigo: "2045871", titular: "ELENA QUISPE", monto: 38.5, dias: 9, imagenKey: "demo/recibo-epsgrau.jpg" },
-  { empresa: "Movistar", codigo: "912345678", titular: "JUAN CHAVEZ", monto: 45, dias: 4, imagenKey: "demo/recibo-movistar.jpg" },
+/**
+ * Recibos sueltos para la ruta C (foto del recibo). Monto, vencimiento y titular son LOS MISMOS que trae impresos cada
+ * imagen (scripts/recibos-demo.ts): al leer la foto, Pía muestra lo que el cliente ve en su recibo. El monto igual sale
+ * de la base ("lo da la empresa"), nunca de la foto.
+ */
+export const RECIBOS_DEMO: { empresa: Empresa; codigo: string; titular: string; monto: number; vence: string; imagenKey: string }[] = [
+  { empresa: "Enosa", codigo: "31264587", titular: "ELENA QUISPE", monto: 68.9, vence: "2026-10-28", imagenKey: "demo/recibo-enosa.jpg" },
+  { empresa: "EPS Grau", codigo: "2045871", titular: "ELENA QUISPE", monto: 35.2, vence: "2026-10-25", imagenKey: "demo/recibo-epsgrau.jpg" },
+  { empresa: "Movistar", codigo: "912345678", titular: "JUAN CHAVEZ", monto: 39.9, vence: "2026-10-22", imagenKey: "demo/recibo-movistar.jpg" },
 ];
+
+/** Vencimiento de un recibo de demo: la fecha impresa en su imagen ("2026-10-28" → 28 oct, medianoche UTC como el resto). */
+export const venceReciboDemo = (r: { vence: string }) => new Date(`${r.vence}T00:00:00.000Z`);
 
 export const CLAVE_DEMO = "123456";
 
@@ -189,7 +196,7 @@ export async function sembrarDemo(prisma: PrismaClient) {
         servicioId: servicios[r.empresa],
         titular: r.titular,
         monto: r.monto,
-        vencimiento: masDias(hoy, r.dias),
+        vencimiento: venceReciboDemo(r),
         imagenKey: r.imagenKey,
       },
     });

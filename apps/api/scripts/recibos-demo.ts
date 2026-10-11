@@ -1,6 +1,7 @@
 // Dueño: Agente C. Genera 3 recibos de demo (SVG → JPEG con sharp), los guarda en prisma/demo-recibos/ y los sube a R2.
 // Uso (desde apps/api): npx tsx --env-file=../../.env scripts/recibos-demo.ts [--sin-subir]
-// El MONTO IMPRESO es a propósito distinto al real de Caja Piura: demuestra que el monto de la foto no se usa.
+// Monto, vencimiento y titular impresos = los de RECIBOS_DEMO (prisma/demo.ts): lo que lee Pía coincide con la foto.
+// El monto igual sale de la base, nunca de la foto.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,7 +22,7 @@ type Demo = {
   vence: string;
   consumo: string;
   detalle: [string, string][];
-  montoImpreso: string; // distinto al real (monto del mes anterior)
+  montoImpreso: string; // igual a RECIBOS_DEMO.monto
   extra: [string, string][]; // otros números del recibo (para que sea realista)
 };
 

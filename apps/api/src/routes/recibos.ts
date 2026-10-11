@@ -11,7 +11,7 @@ import { leerArchivo, PREFIJO_SUBIDAS, subirArchivo, urlDemo } from "../lib/r2.j
 import { requiereSesion } from "../lib/sesion.js";
 import { type Lectura, leerRecibo } from "../ia/leerRecibo.js";
 import { demoPorCodigo, demoPorImagen, demoPorKey, demoPorNombreArchivo, NO_PUDE, type ReciboDemoConocido, resolverLectura } from "../ia/respaldoRecibos.js";
-import { RECIBOS_DEMO } from "../../prisma/demo.js";
+import { RECIBOS_DEMO, venceReciboDemo } from "../../prisma/demo.js";
 
 export const router = Router();
 
@@ -148,10 +148,8 @@ async function reponerReciboDemo(codigo: string, servicioId: number | undefined,
   if (!s) return false;
   const ultimo = await prisma.recibo.findFirst({ where: { servicioId: s.id, codigo }, orderBy: { vencimiento: "desc" } });
   if (!ultimo) {
-    const c = await prisma.cliente.findUnique({ where: { id: clienteId }, select: { fechaSimulada: true } });
-    const hoy = c?.fechaSimulada ?? new Date();
     await prisma.recibo.create({
-      data: { codigo, servicioId: s.id, titular: demo.titular, monto: demo.monto, vencimiento: new Date(hoy.getTime() + demo.dias * 86400000), imagenKey: demo.imagenKey },
+      data: { codigo, servicioId: s.id, titular: demo.titular, monto: demo.monto, vencimiento: venceReciboDemo(demo), imagenKey: demo.imagenKey },
     });
     return true;
   }
