@@ -118,6 +118,8 @@ async function main() {
       tipo: c.ocupacion === "COMERCIANTE" ? "Ahorro emprendedor" : "Ahorro",
       saldo: faker.number.float({ min: 20, max: 6000, fractionDigits: 2 }),
     });
+    // Segunda cuenta: así cualquiera puede probar «Cambiar cuenta» y las transferencias entre cuentas propias.
+    cuentas.push({ clienteId: c.id, numero: `0011040${String(i + 1).padStart(7, "0")}`, tipo: "Ahorro corriente", saldo: faker.number.float({ min: 50, max: 800, fractionDigits: 2 }) });
 
     const totalCuotas = pick([6, 8, 10, 12, 12, 18, 24]);
     const pagadas = entre(0, totalCuotas - 1);

@@ -59,6 +59,7 @@ export function CuentaOrigen({ cuentas, actual, onCambio, nombre, etiqueta = "De
           {puedeCambiar && <ChevronRight className="h-6 w-6 shrink-0 text-marca" aria-hidden />}
         </button>
       )}
+      {!puedeCambiar && <span className="text-sm text-tenue">Es tu única cuenta para pagar.</span>}
     </div>
   );
 }
