@@ -61,7 +61,7 @@ type DemoCliente = {
 
 export const CLIENTES_DEMO: DemoCliente[] = [
   {
-    dni: "40000001", nombre: "Rosa", apellido: "Huamán", edad: 55, ocupacion: "COMERCIANTE", zona: "URBANA", distrito: "Catacaos",
+    dni: "12345678", nombre: "Rosa", apellido: "Huamán", edad: 55, ocupacion: "COMERCIANTE", zona: "URBANA", distrito: "Catacaos",
     presenciales: 9, digitales: 0, gama: "BAJA", cuentaTipo: "Ahorro emprendedor", saldo: 1200, otrasCuentas: [{ tipo: "Ahorro corriente", saldo: 280 }, { tipo: "CTS", saldo: 3500 }, { tipo: "Depósito a plazo fijo", saldo: 5000 }],
     credito: "0012345", totalCuotas: 12, montoCuota: 350, pagadas: 7, diasSiguiente: 3,
     frecuentes: [{ alias: "Luz de mamá", empresa: "Enosa", codigo: "45781236", esPropio: false, titular: "MARIA PEREZ", monto: 85.4, dias: 5 }],
