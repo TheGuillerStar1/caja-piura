@@ -2,7 +2,7 @@
 // Ingreso, réplica de la app oficial: DNI (solo la primera vez o con "otra cuenta") → PIN de 6 dígitos con teclado
 // aleatorio → /bienvenida (primer ingreso) o /inicio. La clave NUNCA se muestra; 2 errores → salida a agencia.
 import { IdCard } from "lucide-react";
-import type { ClienteDemo, LoginReq, LoginRes, MeRes } from "@cp/shared";
+import type { LoginReq, LoginRes, MeRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -25,7 +25,6 @@ export default function Entrar() {
   const [paso, setPaso] = useState<Paso>("dni");
   const [dni, setDni] = useState("");
   const [nombre, setNombre] = useState("");
-  const [demo, setDemo] = useState<ClienteDemo[]>([]);
   const [clave, setClave] = useState("");
   const [error, setError] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -40,7 +39,6 @@ export default function Entrar() {
       setNombre(u.nombre);
       setPaso("clave");
     }
-    api<ClienteDemo[]>("/auth/clientes-demo").then(setDemo).catch(() => {});
   }, []);
 
   async function despuesDeEntrar() {
@@ -181,26 +179,7 @@ export default function Entrar() {
           </p>
         )}
 
-        {enDni ? (
-          demo.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <p className={`text-center text-sm ${sombra}`}>O elige un cliente de prueba:</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {demo.map((c) => (
-                  <button
-                    key={c.dni}
-                    type="button"
-                    onClick={() => elegirDni(c.dni, c.nombre)}
-                    className="min-h-10! rounded-full bg-white/90 px-3 text-sm font-medium text-[var(--cp-brand)] active:bg-white"
-                    title={c.descripcion}
-                  >
-                    {c.nombre.split(" ")[0]}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )
-        ) : (
+        {!enDni && (
           <Link href="/servicio?n=Recuperar%20clave&v=/entrar" className={`self-center px-2 text-sm ${sombra}`}>
             ¿Olvidaste tu clave?
           </Link>
