@@ -94,7 +94,7 @@ async function verSaldo(ctx: Ctx): Promise<Resultado> {
   const total = cuentas.reduce((s, k) => s + aNumero(k.saldo), 0);
   return {
     respuesta: t(ctx, {
-      calido: `${ctx.nombre}, en tu cuenta tienes ${soles(total)}. Todo está en orden.`,
+      calido: `${ctx.nombre}, en tu cuenta tienes ${soles(total)}.`,
       corto: `Tienes ${soles(total)} en tu cuenta.`,
       directo: `Saldo disponible: ${soles(total)}.`,
     }),
@@ -106,7 +106,7 @@ async function verDeuda(ctx: Ctx): Promise<Resultado> {
   const partes: string[] = [];
   const opciones: { texto: string; ruta: string }[] = [];
   if (ctx.cuota) {
-    partes.push(`tu cuota de ${soles(ctx.cuota.monto)} vence ${cuandoVence(ctx.hoy, ctx.cuota.vencimiento)}`);
+    partes.push(`Cuota: ${soles(ctx.cuota.monto)}, vence ${cuandoVence(ctx.hoy, ctx.cuota.vencimiento)}`);
     opciones.push({ texto: "Pagar mi cuota", ruta: rutaCuota(ctx.cuota.id) });
   }
   for (const f of ctx.frecuentes) {
@@ -119,19 +119,20 @@ async function verDeuda(ctx: Ctx): Promise<Resultado> {
   if (!partes.length) {
     return {
       respuesta: t(ctx, {
-        calido: `¡Buenas noticias, ${ctx.nombre}! No tienes pagos pendientes.`,
+        calido: `${ctx.nombre}, no tienes pagos pendientes. Estás al día.`,
         corto: "No tienes pagos pendientes.",
         directo: "Sin pagos pendientes.",
       }),
       accion: ninguna,
     };
   }
-  const lista = partes.join(" · ");
+  // Un pago por línea (la burbuja respeta los saltos de línea).
+  const lista = partes.map((p) => `• ${p}`).join("\n");
   return {
     respuesta: t(ctx, {
-      calido: `${ctx.nombre}, esto tienes pendiente: ${lista}. ¿Cuál quieres pagar?`,
-      corto: `Tienes pendiente: ${lista}.`,
-      directo: `Pendiente: ${lista}.`,
+      calido: `${ctx.nombre}, tienes pendiente:\n${lista}\n¿Cuál quieres pagar?`,
+      corto: `Tienes pendiente:\n${lista}`,
+      directo: `Pendiente:\n${lista}`,
     }),
     accion: opciones.length === 1 ? { tipo: "NAVEGAR", ruta: opciones[0].ruta } : { tipo: "OPCIONES", opciones },
   };
@@ -139,7 +140,7 @@ async function verDeuda(ctx: Ctx): Promise<Resultado> {
 
 function prepararCuota(ctx: Ctx): Resultado {
   if (!ctx.cuota) {
-    return { respuesta: t(ctx, { calido: `${ctx.nombre}, no tienes cuotas pendientes. ¡Estás al día!`, corto: "No tienes cuotas pendientes.", directo: "Sin cuotas pendientes." }), accion: ninguna };
+    return { respuesta: t(ctx, { calido: `${ctx.nombre}, no tienes cuotas pendientes. Estás al día.`, corto: "No tienes cuotas pendientes.", directo: "Sin cuotas pendientes." }), accion: ninguna };
   }
   const m = soles(ctx.cuota.monto);
   return {
@@ -165,7 +166,7 @@ async function prepararFrecuente(ctx: Ctx, ids: number[]): Promise<Resultado> {
   const r = await deudaDeFrecuente(f);
   if (!r) {
     return {
-      respuesta: t(ctx, { calido: `${ctx.nombre}, "${f.alias}" no tiene deuda pendiente. ¡Está al día!`, corto: `"${f.alias}" no tiene deuda.`, directo: `"${f.alias}": sin deuda pendiente.` }),
+      respuesta: t(ctx, { calido: `${ctx.nombre}, "${f.alias}" no tiene nada pendiente.`, corto: `"${f.alias}" no tiene deuda.`, directo: `"${f.alias}": sin deuda pendiente.` }),
       accion: ninguna,
     };
   }
@@ -184,7 +185,7 @@ function prepararRecibo(ctx: Ctx, rubro?: Rubro): Resultado {
   const que = rubro ? `${RUBRO_TXT[rubro]} ` : "";
   return {
     respuesta: t(ctx, {
-      calido: `Vamos a pagar ${que ? que + "con " : "con "}una foto del recibo, ${ctx.nombre}. Solo necesito leer el código.`,
+      calido: `${ctx.nombre}, tómale una foto al recibo${que ? " de " + que.trim() : ""}. Yo leo el código.`,
       corto: `Toma una foto del recibo${que ? " de " + que.trim() : ""}.`,
       directo: "Toma una foto del recibo para leer el código.",
     }),
@@ -211,7 +212,7 @@ const respuestaSegura = (): Resultado => ({ respuesta: RESPUESTA_CLAVE, accion: 
 function fueraDeAlcance(ctx: Ctx): Resultado {
   return {
     respuesta: t(ctx, {
-      calido: `${ctx.nombre}, eso todavía no lo puedo hacer. Puedo ayudarte con tu cuota, tus pagos frecuentes y recibos.`,
+      calido: `${ctx.nombre}, eso no lo puedo hacer desde aquí. Te ayudo con tu cuota, tus pagos de siempre y tus recibos.`,
       corto: "Eso no lo puedo hacer. Te ayudo con tu cuota, frecuentes o recibos.",
       directo: "Eso no lo hago desde aquí. Te ayudo con cuota, frecuentes y recibos.",
     }),
@@ -221,7 +222,7 @@ function fueraDeAlcance(ctx: Ctx): Resultado {
 
 function opcionesNoEntendi(ctx: Ctx): Resultado {
   return {
-    respuesta: t(ctx, { calido: `Perdona, ${ctx.nombre}, no te entendí bien. ¿Quisiste decir…?`, corto: "No te entendí. ¿Quisiste decir…?", directo: "¿Quisiste decir…?" }),
+    respuesta: t(ctx, { calido: `No te entendí, ${ctx.nombre}. ¿Es alguna de estas?`, corto: "No te entendí. ¿Es alguna de estas?", directo: "Elige una opción:" }),
     accion: { tipo: "OPCIONES", opciones: OPCIONES_BASE },
   };
 }
@@ -291,7 +292,7 @@ async function problemaPago(ctx: Ctx, problema: ProblemaPago): Promise<Resultado
   const ref = pagos.find((p) => p.estado === "EXITOSO") ?? ultimo;
   return {
     respuesta: t(ctx, {
-      calido: `No te preocupes, ${ctx.nombre}. Yo no puedo devolver un pago, pero en una agencia o llamando a Caja Piura lo revisan con tu n.º de operación ${ref.operacion} (${detalle(ref)}).`,
+      calido: `${ctx.nombre}, yo no puedo devolver un pago, pero en una agencia o llamando a Caja Piura lo revisan con tu n.º de operación ${ref.operacion} (${detalle(ref)}).`,
       corto: `Yo no puedo devolverlo. En la agencia o por teléfono lo revisan con tu operación ${ref.operacion} (${detalle(ref)}).`,
       directo: `La app no revierte pagos. Reclama en agencia o por teléfono con la operación ${ref.operacion} (${detalle(ref)}).`,
     }),

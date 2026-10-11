@@ -9,7 +9,7 @@
   --color-marca-claro: #1a2c52;  /* fondo de realce azul sobre tema oscuro */
   --color-marca-texto: #5b93ff;  /* azul de iconos y textos de acción (5.6:1 sobre el fondo) */
   --color-institucional: #00549f;/* azul del logo */
-  --color-acento: #e5631b;       /* naranja de acción ("Listo") */
+  --color-acento: #d97706;       /* naranja de acción (Manual visual: --cp-action-focus) */
   --color-lila: #eae1f4;         /* pantallas de acceso */
   --color-fondo: #1c1f24;
   --color-fondo-hondo: #121417;  /* barra inferior */
@@ -26,8 +26,37 @@
   --color-error: #ff7a6e;
   --color-error-claro: #3a1a18;
 
+  --color-afuera: #0b0d10;       /* costados en pantallas anchas (fuera de la app) */
+  --container-app: 35rem;        /* ancho de la columna de la app: max-w-app */
+
   --font-sans: var(--font-roboto), Roboto, "Segoe UI", system-ui, sans-serif;
   --radius-boton: 10px;
+}
+
+/* Modo claro (Ajustes › Apariencia): mismos nombres de color, otros valores. Se activa con <html data-tema="claro">.
+   El azul de la barra superior y de los botones no cambia: es la marca. */
+@layer base {
+  html { color-scheme: dark; }
+  html[data-tema="claro"] {
+    color-scheme: light;
+    --color-marca-claro: #e6edfd;
+    --color-marca-texto: #0b4ed4;
+    --color-fondo: #f3f5f9;
+    --color-fondo-hondo: #ffffff;
+    --color-superficie: #ffffff;
+    --color-superficie-2: #eef1f6;
+    --color-tinta: #14202e;
+    --color-tenue: #556070;
+    --color-linea: #d6dce5;
+    --color-linea-fuerte: #8e98a6;
+    --color-exito: #157347;
+    --color-exito-claro: #e6f4ec;
+    --color-aviso: #8a5300;
+    --color-aviso-claro: #fff3dc;
+    --color-error: #b42318;
+    --color-error-claro: #fdecea;
+    --color-afuera: #c9cfd8;
+  }
 }
 
 /* Sobre tema oscuro, el azul app como texto no se lee: text-marca usa el azul claro de acentos. */
@@ -40,8 +69,9 @@
 html { font-size: 16px; }
 html[data-vista="ASISTIDA"] { font-size: 18px; }
 
+/* En pantallas anchas la app queda al centro y los costados se oscurecen. */
 body {
-  background: var(--color-fondo);
+  background: var(--color-afuera);
   color: var(--color-tinta);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
@@ -102,6 +132,18 @@ body {
   0% { transform: scale(1); opacity: 1; }
   70%, 100% { transform: scale(1.04, 1.12); opacity: 0; }
 }
+
+/* Vista previa de la bienvenida: aparece con un leve zoom al cambiar de vista. */
+@keyframes previa { from { opacity: 0; transform: scale(.96) translateY(6px); } to { opacity: 1; transform: none; } }
+.anim-previa { animation: previa .35s ease-out; }
+
+/* Manito de la vista previa: baja, toca y vuelve. */
+@keyframes tap { 0%, 100% { transform: translate(6px, 8px); } 45% { transform: translate(0, 0) scale(1); } 55% { transform: translate(0, 0) scale(.88); } 70% { transform: translate(0, 0) scale(1); } }
+.anim-tap { animation: tap 1.8s ease-in-out infinite; transform-origin: 30% 20%; }
+
+/* Puntitos de "Pía está respondiendo". */
+@keyframes punto { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+.anim-punto { animation: punto 1s ease-in-out infinite; }
 
 @keyframes rebote { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 .anim-rebote { animation: rebote 1.8s ease-in-out infinite; }

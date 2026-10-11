@@ -5,7 +5,7 @@
 export default function ErrorPantalla({ retry }: { error: Error & { digest?: string }; retry: () => void }) {
   const sinRed = typeof navigator !== "undefined" && navigator.onLine === false;
   return (
-    <div role="alert" className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-5 px-4 py-8">
+    <div role="alert" className="mx-auto flex min-h-dvh w-full max-w-app flex-col bg-fondo justify-center gap-5 px-4 py-8">
       <p className="text-2xl font-bold">{sinRed ? "Sin conexión." : "Algo no salió bien al abrir esta pantalla."}</p>
       <p className="text-lg">No se cobró nada. {sinRed ? "Cuando vuelva la señal, vuelve a intentar." : "Vuelve a intentar."}</p>
       <button

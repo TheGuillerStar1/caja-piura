@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Boton, Cargando, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { api, esSinSesion } from "@/lib/api";
 import { track } from "@/lib/track";
+import { useTema } from "@/lib/tema";
 import { useVista } from "@/lib/vista";
 import {
   guardarRecordatorios,
@@ -21,6 +22,7 @@ const P = "ajustes";
 export default function Ajustes() {
   const router = useRouter();
   const { vista, setVista } = useVista();
+  const { tema, setTema } = useTema();
   const [me, setMe] = useState<MeRes | null>(null);
   const [error, setError] = useState("");
   const [aviso, setAviso] = useState("");
@@ -87,6 +89,31 @@ export default function Ajustes() {
                 {aviso}
               </p>
             )}
+          </section>
+          <section className="flex flex-col gap-3" aria-labelledby="titulo-apariencia">
+            <h2 id="titulo-apariencia" className="text-xl font-bold">
+              Colores de la pantalla
+            </h2>
+            <div role="radiogroup" aria-label="Colores de la pantalla" className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  ["oscuro", "Oscuro", "🌙"],
+                  ["claro", "Claro", "☀️"],
+                ] as const
+              ).map(([t, texto, icono]) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={tema === t}
+                  onClick={() => (track(P, "tocar"), setTema(t))}
+                  className={`flex min-h-14 items-center justify-center gap-2 rounded-2xl border-2 px-2 text-lg font-bold ${tema === t ? "border-marca bg-marca-claro text-marca" : "border-linea bg-superficie"}`}
+                >
+                  <span aria-hidden>{icono}</span>
+                  {texto}
+                </button>
+              ))}
+            </div>
           </section>
           <section className="flex flex-col gap-3" aria-labelledby="titulo-recordatorios">
             <h2 id="titulo-recordatorios" className="text-xl font-bold">

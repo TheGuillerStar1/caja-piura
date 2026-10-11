@@ -2,7 +2,8 @@
 export type Beneficio = { puntos: number; nombre: string; detalle: string };
 
 export const BENEFICIOS: Beneficio[] = [
-  { puntos: 50, nombre: "Sorteo mensual", detalle: "Participas en el sorteo de premios del mes" },
+  // Sin sorteos: un sorteo necesita autorización previa del Ministerio del Interior (DS 006-2000-IN).
+  { puntos: 50, nombre: "S/ 2 menos en tu cuota", detalle: "Se descuenta solo en tu próxima cuota" },
   { puntos: 120, nombre: "Descuento en comisión", detalle: "Una comisión con descuento en tu próximo trámite" },
   { puntos: 250, nombre: "Prioridad en agencia", detalle: "Te atienden primero cuando vayas a la agencia" },
 ];

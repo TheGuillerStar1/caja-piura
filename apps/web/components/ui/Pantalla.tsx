@@ -4,7 +4,7 @@ import { Cabecera } from "@/components/app/Cabecera";
 import { BarraInferior, type Pestana } from "@/components/BarraInferior";
 
 type Props = {
-  titulo?: string;
+  titulo?: React.ReactNode;
   volver?: string;
   subtitulo?: React.ReactNode;
   pestana?: Pestana;
@@ -17,7 +17,7 @@ type Props = {
 
 export function Pantalla({ titulo, volver, subtitulo, pestana, sinPia, plano, children, pie }: Props) {
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col bg-fondo">
+    <div className="mx-auto flex min-h-dvh w-full max-w-app flex-col bg-fondo shadow-[0_0_48px_rgb(0_0_0/0.45)]">
       {(titulo || volver || pestana) && <Cabecera titulo={titulo} volver={volver} subtitulo={subtitulo} />}
       <main className={`flex flex-1 flex-col gap-4 ${plano ? "py-3" : "px-4 py-5"}`}>{children}</main>
       {pie && <footer className="sticky bottom-0 border-t border-linea bg-fondo/95 px-4 pb-5 pt-3">{pie}</footer>}

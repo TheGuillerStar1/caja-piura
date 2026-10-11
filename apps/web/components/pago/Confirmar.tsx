@@ -85,7 +85,7 @@ export function Confirmar() {
       setEstado({ fase: "listo" });
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
-      const f = e instanceof ApiFallo ? e : new ApiFallo(0, "INTERNO", "Ocurrió un error. Inténtalo de nuevo.");
+      const f = e instanceof ApiFallo ? e : new ApiFallo(0, "INTERNO", "No pudimos preparar el pago. Vuelve a intentar.");
       if (f.codigo === "YA_PAGADO") borrarKey(tipo, ref);
       setEstado({ fase: "error", codigo: f.codigo, mensaje: f.message });
       track("confirmar", "error", { flujo });
@@ -148,7 +148,7 @@ export function Confirmar() {
         router.replace("/pagar/exito");
       } catch (e) {
         if (esSinSesion(e)) return router.replace("/entrar");
-        const f = e instanceof ApiFallo ? e : new ApiFallo(0, "INTERNO", "Ocurrió un error. Inténtalo de nuevo.");
+        const f = e instanceof ApiFallo ? e : new ApiFallo(0, "INTERNO", "No tenemos respuesta del pago todavía.");
         track("confirmar", "error", { flujo });
         if (f.codigo === "SALDO_INSUFICIENTE") {
           setSaldoInsuficiente(true);
@@ -263,8 +263,18 @@ export function Confirmar() {
             <p className="text-2xl font-bold">{yaPagado ? "Este pago ya está hecho" : "No tienes deuda pendiente"}</p>
             <p className="mt-2 text-lg">{yaPagado ? "No se volverá a cobrar." : estado.mensaje}</p>
           </Tarjeta>
+        ) : pago ? (
+          // Se intentó confirmar y no hubo respuesta: no sabemos si se cobró. La key se conserva, así que revisar no cobra dos veces.
+          <>
+            <Tarjeta tono="aviso" className="text-center">
+              <p className="text-2xl font-bold">Estamos verificando tu pago</p>
+              <p className="mt-2 text-lg">No vuelvas a pagar todavía.</p>
+            </Tarjeta>
+            <p className="text-center text-tenue">Toca «Revisar el pago» en un momento. Aunque lo toques varias veces, no se cobra dos veces.</p>
+            <Boton onClick={() => enviar(metodo.current)}>Revisar el pago</Boton>
+          </>
         ) : (
-          <MensajeError mensaje={estado.mensaje} reintentar={pago ? () => setEstado({ fase: "listo" }) : preparar} />
+          <MensajeError mensaje={estado.mensaje} reintentar={preparar} />
         )}
         <Boton variante={yaPagado || sinDeuda ? "primario" : "secundario"} href="/inicio">
           Volver al inicio

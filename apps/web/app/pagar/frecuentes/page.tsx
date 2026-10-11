@@ -26,7 +26,7 @@ export default function PagarFrecuentes() {
       setLista(await api<FrecuenteRes[]>("/frecuentes"));
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
-      setError(e instanceof ApiFallo ? e.message : "Ocurrió un error. Inténtalo de nuevo.");
+      setError(e instanceof ApiFallo ? e.message : "No pudimos cargar tus datos. Vuelve a intentar.");
       track("pagar-frecuentes", "error", { flujo: "FRECUENTE" });
     }
   }, [router]);

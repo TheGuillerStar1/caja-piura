@@ -29,7 +29,7 @@ export function HojaAutenticacion({ onOk, onCancelar, asistida }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Confirma que eres tú">
-      <div className="anim-hoja w-full max-w-md rounded-t-3xl bg-superficie px-5 pb-6 pt-5 shadow-2xl">
+      <div className="anim-hoja w-full max-w-app rounded-t-3xl bg-superficie px-5 pb-6 pt-5 shadow-2xl">
         {escaneando ? (
           <div className="flex flex-col items-center gap-4 py-6" role="status">
             <span className="anim-escanea rounded-full bg-marca-claro p-5 text-marca">

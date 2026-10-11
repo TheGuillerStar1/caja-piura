@@ -69,7 +69,7 @@ export default function Inicio() {
       api<CuotaRes | null>("/cuotas/proxima").then(setCuota, () => setCuota(null));
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/");
-      setError(e instanceof ApiFallo ? e.message : "Ocurrió un error. Inténtalo de nuevo.");
+      setError(e instanceof ApiFallo ? e.message : "No pudimos cargar tus datos. Vuelve a intentar.");
       track("inicio", "error");
     }
     // vista no va en dependencias: solo se sincroniza al cargar
@@ -141,13 +141,13 @@ export default function Inicio() {
               <Mascota tamano={30} />
             </span>
             <div className="flex-1">
-              <p className="text-xs font-bold uppercase tracking-wide text-aviso">Pía te recuerda · {cuando(a)}</p>
-              <p className="font-medium leading-snug">{nombreAviso(a)}</p>
+              <p className="font-bold leading-snug">{nombreAviso(a)}</p>
+              <p className="text-sm font-bold text-aviso">{cuando(a)}</p>
             </div>
             <p className="text-xl font-bold">{soles(a.monto)}</p>
           </div>
           <Boton guia={asistida && i === 0} onClick={() => pagarAviso(a)} className={asistida ? "" : "min-h-11! py-2 text-base"}>
-            Pagar
+            Pagar {soles(a.monto)}
           </Boton>
         </section>
       ))}
@@ -246,22 +246,15 @@ export default function Inicio() {
                 <Mascota tamano={52} />
               </span>
               <h2 id="anuncio-titulo" className="text-xl font-bold leading-tight">
-                Te damos la bienvenida al nuevo Caja Piura
+                Ahora tienes a Pía
               </h2>
             </div>
-            <p>
-              Tu app es la misma de siempre: abajo están <b>Mis productos, Transferencias, Pagos, Frecuentes</b> y <b>Para ti</b>.
-            </p>
-            <p>
-              Lo nuevo es <b>Pía</b>, el botón <b>«¿Necesitas ayuda?»</b>. Sirve para:
-            </p>
-            <ul className="flex flex-col gap-1.5 text-tenue">
-              <li>• Pagar tu cuota y tus recibos en 2 toques.</li>
-              <li>• Avisarte antes de que venza un pago.</li>
-              <li>• Resolver dudas: “¿cuánto debo?”, “¿se hizo mi pago?”.</li>
-              <li>• La IA prepara, tú confirmas. Nunca te pedirá tu clave.</li>
+            <p>Tu app es la misma. Lo nuevo es el botón <b>«¿Necesitas ayuda?»</b>, abajo a la derecha.</p>
+            <ul className="flex flex-col gap-2">
+              <li className="flex gap-2"><span aria-hidden>✓</span>Paga tu cuota y tus recibos en 2 toques.</li>
+              <li className="flex gap-2"><span aria-hidden>✓</span>Te avisa antes de que venza un pago.</li>
+              <li className="flex gap-2"><span aria-hidden>🔒</span>Nunca te pide tu clave. Tú confirmas cada pago.</li>
             </ul>
-            <p className="text-center font-bold text-marca">Búscalo abajo, a la derecha 👇</p>
             <Boton onClick={cerrarAnuncio}>Entendido</Boton>
           </div>
         </div>
