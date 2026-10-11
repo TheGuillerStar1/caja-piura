@@ -438,3 +438,26 @@ export const CampanaRes = z.object({
   costo: z.number(),
 });
 export type CampanaRes = z.infer<typeof CampanaRes>;
+
+// ── «¿Está funcionando?» (/gestion y /panel): los 4 KPIs que prueban la solución ──
+/** Metas PROPUESTAS para el piloto (ajustarlas con Caja Piura). Se muestran en pantalla como «meta». */
+export const METAS_FUNCIONA = {
+  /** Pagos terminados sin ayuda */
+  sinAyuda: 0.8,
+  /** Clientes que vuelven a pagar por la app otro mes */
+  repiten: 0.6,
+  /** Cuotas pagadas por la app el día del vencimiento o antes */
+  aTiempo: 0.95,
+} as const;
+
+export const FuncionaRes = z.object({
+  /** Pagan solos: pagos exitosos sin ayuda ÷ intentos (pagos registrados + abandonos en la confirmación) */
+  sinAyuda: z.object({ tasa: z.number(), exitososSinAyuda: z.number(), intentos: z.number(), meta: z.number() }),
+  /** Vuelven a pagar: tasa null si nadie tuvo aún tiempo de repetir (en la demo: «Adelantar 30 días») */
+  repiten: z.object({ tasa: z.number().nullable(), repitieron: z.number(), elegibles: z.number(), conPago: z.number(), meta: z.number() }),
+  /** Pagan a tiempo: cuotas pagadas por la app el día del vencimiento o antes */
+  aTiempo: z.object({ tasa: z.number().nullable(), aTiempo: z.number(), cuotas: z.number(), diasAnticipacion: z.number().nullable(), meta: z.number() }),
+  /** Le cuesta menos a la Caja: ahorro estimado al mes (supuestos de SUPUESTOS_GESTION) */
+  ahorro: z.object({ actualMes: z.number(), potencialMes: z.number(), opsAppMes: z.number(), opsMigrablesMes: z.number(), ahorroPorOp: z.number() }),
+});
+export type FuncionaRes = z.infer<typeof FuncionaRes>;

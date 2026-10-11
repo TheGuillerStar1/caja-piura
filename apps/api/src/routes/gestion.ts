@@ -1,4 +1,5 @@
 // Centro de mando (/gestion), público como el panel del jurado: solo agregados de perfiles ficticios, sin datos personales.
+// GET  /gestion/funciona              «¿Está funcionando?»: pagan solos, vuelven a pagar, pagan a tiempo, ahorro (caché 5 s)
 // GET  /gestion/resumen               KPIs del negocio, por distrito y por segmento (caché 10 s)
 // POST /gestion/segmento              cuántos clientes alcanza un segmento
 // GET  /gestion/campanas              campañas con su resultado proyectado
@@ -7,11 +8,13 @@
 // DELETE /gestion/campanas/:id
 import {
   CrearCampanaReq,
+  METAS_FUNCIONA,
   SegmentoCampana,
   SUPUESTOS_GESTION,
   type AlcanceSegmentoRes,
   type CampanaRes,
   type DistritoGestion,
+  type FuncionaRes,
   type ResumenGestionRes,
 } from "@cp/shared";
 import { Router } from "express";
@@ -19,7 +22,7 @@ import { HttpError, validar } from "../lib/errores.js";
 import { aNumero, diasEntre } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { recomendar } from "../motor/index.js";
-import { alcance, type PerfilGestion, proyectarCampana, ubigeoDe } from "../gestion/logica.js";
+import { AHORRO_POR_OP, alcance, pagosATiempo, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "../gestion/logica.js";
 import { tasaExitoSinAyuda } from "../retencion/logica.js";
 
 export const router = Router();
@@ -175,6 +178,56 @@ let cacheResumen: { hasta: number; datos: ResumenGestionRes } | null = null;
 router.get("/gestion/resumen", async (_req, res) => {
   if (!cacheResumen || cacheResumen.hasta < Date.now()) cacheResumen = { hasta: Date.now() + CACHE_MS, datos: await calcularResumen() };
   res.set("Cache-Control", "no-store").json(cacheResumen.datos);
+});
+
+async function calcularFunciona(): Promise<FuncionaRes> {
+  const [ps, pagos, pagosRegistrados, exitososSinAyuda, abandonosConfirmar] = await Promise.all([
+    perfiles(),
+    // creadoEn es la fecha simulada del cliente (pagos/confirmar.ts): «Adelantar 30 días» cuenta como otro mes.
+    prisma.pago.findMany({ where: { estado: "EXITOSO" }, select: { clienteId: true, creadoEn: true, tipo: true, referenciaId: true } }),
+    prisma.pago.count(),
+    prisma.pago.count({ where: { estado: "EXITOSO", conAyuda: false } }),
+    prisma.evento.count({ where: { pantalla: "confirmar", accion: "abandonar" } }),
+  ]);
+
+  const hoyDe = new Map(ps.map((p) => [p.id, p.fechaSimulada]));
+  const porCliente = new Map<number, Date[]>();
+  for (const p of pagos) porCliente.set(p.clienteId, [...(porCliente.get(p.clienteId) ?? []), p.creadoEn]);
+  const repiten = vuelvenAPagar([...porCliente].map(([id, fechas]) => ({ hoy: hoyDe.get(id) ?? new Date(), pagos: fechas })));
+
+  const pagosCuota = pagos.filter((p) => p.tipo === "CUOTA");
+  const cuotas = await prisma.cuota.findMany({ where: { id: { in: pagosCuota.map((p) => p.referenciaId) } }, select: { id: true, vencimiento: true } });
+  const vence = new Map(cuotas.map((q) => [q.id, q.vencimiento]));
+  const aTiempo = pagosATiempo(
+    pagosCuota.filter((p) => vence.has(p.referenciaId)).map((p) => ({ pagado: p.creadoEn, vencimiento: vence.get(p.referenciaId)! })),
+  );
+
+  let opsAppMes = 0;
+  let opsMigrablesMes = 0;
+  for (const p of ps) {
+    opsAppMes += p.opsDigitalesMes;
+    if (p.gamaDispositivo !== "BAJA") opsMigrablesMes += p.opsPresencialesMes;
+  }
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+
+  return {
+    sinAyuda: {
+      tasa: tasaExitoSinAyuda(exitososSinAyuda, pagosRegistrados, abandonosConfirmar),
+      exitososSinAyuda,
+      intentos: pagosRegistrados + abandonosConfirmar,
+      meta: METAS_FUNCIONA.sinAyuda,
+    },
+    repiten: { ...repiten, conPago: porCliente.size, meta: METAS_FUNCIONA.repiten },
+    aTiempo: { ...aTiempo, meta: METAS_FUNCIONA.aTiempo },
+    ahorro: { actualMes: r2(opsAppMes * AHORRO_POR_OP), potencialMes: r2(opsMigrablesMes * AHORRO_POR_OP), opsAppMes, opsMigrablesMes, ahorroPorOp: AHORRO_POR_OP },
+  };
+}
+
+let cacheFunciona: { hasta: number; datos: FuncionaRes } | null = null;
+
+router.get("/gestion/funciona", async (_req, res) => {
+  if (!cacheFunciona || cacheFunciona.hasta < Date.now()) cacheFunciona = { hasta: Date.now() + 5_000, datos: await calcularFunciona() };
+  res.set("Cache-Control", "no-store").json(cacheFunciona.datos);
 });
 
 router.post("/gestion/segmento", async (req, res) => {

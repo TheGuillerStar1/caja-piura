@@ -1,6 +1,6 @@
 import { SegmentoCampana } from "@cp/shared";
 import { describe, expect, it } from "vitest";
-import { alcance, enSegmento, type PerfilGestion, proyectarCampana, ubigeoDe } from "./logica.js";
+import { alcance, enSegmento, pagosATiempo, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "./logica.js";
 
 const base: PerfilGestion = {
   id: 1,
@@ -86,5 +86,33 @@ describe("centro de mando: proyección de campañas", () => {
     const doble = campana(60, "CASHBACK_DOBLE");
     expect(doble.embudo.pagaron).toBeGreaterThan(aviso.embudo.pagaron);
     expect(doble.costo).toBeGreaterThan(aviso.costo);
+  });
+});
+
+describe("¿está funcionando?: vuelven a pagar y pagan a tiempo", () => {
+  const d = (s: string) => new Date(`${s}T15:00:00Z`);
+
+  it("vuelven a pagar: solo cuenta a quien ya tuvo tiempo de repetir, y exige otro pago ≥ 20 días después", () => {
+    const r = vuelvenAPagar([
+      { hoy: d("2026-11-12"), pagos: [d("2026-10-12"), d("2026-11-11")] }, // repitió al mes siguiente
+      { hoy: d("2026-11-12"), pagos: [d("2026-10-12"), d("2026-10-13")] }, // dos pagos el mismo mes: no repitió
+      { hoy: d("2026-11-12"), pagos: [d("2026-10-12")] }, // un solo pago hace un mes: no repitió
+      { hoy: d("2026-10-20"), pagos: [d("2026-10-12")] }, // pagó hace 8 días: aún no tuvo oportunidad
+      { hoy: d("2026-11-12"), pagos: [] },
+    ]);
+    expect(r).toEqual({ elegibles: 3, repitieron: 1, tasa: 1 / 3 });
+    expect(vuelvenAPagar([{ hoy: d("2026-10-13"), pagos: [d("2026-10-12")] }]).tasa).toBeNull();
+  });
+
+  it("pagan a tiempo: el mismo día del vencimiento cuenta como a tiempo", () => {
+    const r = pagosATiempo([
+      { pagado: d("2026-10-10"), vencimiento: d("2026-10-15") }, // 5 días antes
+      { pagado: d("2026-10-15"), vencimiento: d("2026-10-15") }, // el mismo día
+      { pagado: d("2026-10-18"), vencimiento: d("2026-10-15") }, // tarde
+    ]);
+    expect(r).toEqual({ cuotas: 3, aTiempo: 2, tasa: 2 / 3, diasAnticipacion: 1.7 });
+    expect(pagosATiempo([])).toEqual({ cuotas: 0, aTiempo: 0, tasa: null, diasAnticipacion: null });
+    // Adelantar una cuota de dentro de 3 meses cuenta como a tiempo, pero su anticipación se limita a 31 días.
+    expect(pagosATiempo([{ pagado: d("2026-10-10"), vencimiento: d("2027-01-21") }]).diasAnticipacion).toBe(31);
   });
 });

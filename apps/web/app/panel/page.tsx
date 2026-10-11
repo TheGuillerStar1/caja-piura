@@ -1,9 +1,13 @@
 "use client";
 // Dueño: Agente D. Panel del jurado (público): indicadores en vivo, se actualiza cada 5 s.
+// Mismo estilo de marca que el Centro de mando (/gestion): ver components/gestion/Marca.tsx.
 import type { KpisRes } from "@cp/shared";
-import Link from "next/link";
+import { Activity, ArrowLeftRight, ChevronRight, CircleCheck, Filter, Smartphone, Sparkles, Timer, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Cargando } from "@/components/ui";
+import { DEGRADADO_BARRA, DEGRADADO_MARCA, TARJETA } from "@/components/gestion/formato";
+import { Funciona } from "@/components/gestion/Funciona";
+import { Encabezado, PieMarca, Portada, Tile } from "@/components/gestion/Marca";
 import { api } from "@/lib/api";
 
 const NOMBRES: Record<string, string> = {
@@ -13,7 +17,15 @@ const NOMBRES: Record<string, string> = {
   "pagar-recibo": "Pagar recibo (foto)",
   confirmar: "Confirmar pago",
   exito: "Pago exitoso",
+  entrar: "Ingreso (DNI y clave)",
+  "guardar-frecuente": "Guardar pago frecuente",
+  "pago-fallido": "Pago fallido",
+  "leer-recibo": "Leer recibo con foto",
+  "pagar-servicios": "Pagar servicios",
+  "pagar-creditos": "Pagar créditos",
 };
+/** Nombre legible de una pantalla; si no está en la lista, «guardar-frecuente» → «Guardar frecuente». */
+const nombreDe = (p: string) => NOMBRES[p] ?? (p.charAt(0).toUpperCase() + p.slice(1)).replace(/-/g, " ");
 const FLUJOS: { id: keyof KpisRes["tiempoMedioSeg"]; nombre: string }[] = [
   { id: "CUOTA", nombre: "Cuota" },
   { id: "FRECUENTE", nombre: "Frecuente" },
@@ -22,6 +34,7 @@ const FLUJOS: { id: keyof KpisRes["tiempoMedioSeg"]; nombre: string }[] = [
 
 const pct = (x: number) => `${Math.round(x * 100)} %`;
 const seg = (s: number) => (s >= 60 ? `${Math.floor(s / 60)} min ${Math.round(s % 60)} s` : `${Math.round(s)} s`);
+const LILA = "bg-[color-mix(in_srgb,var(--cp-login-light)_45%,var(--color-superficie))]";
 
 export default function PanelPage() {
   const [kpis, setKpis] = useState<KpisRes | null>(null);
@@ -48,61 +61,99 @@ export default function PanelPage() {
   }, []);
 
   return (
-    <div className="mx-auto flex min-h-dvh w-full max-w-5xl flex-col gap-5 px-4 py-6">
-      <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm font-bold uppercase tracking-wide text-marca">Caja Piura · Modo Acompaña</p>
-          <h1 className="text-2xl font-bold sm:text-3xl">Panel de indicadores</h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-          <p className="flex items-center gap-2 text-tenue">
-            <span className={`inline-block h-2.5 w-2.5 rounded-full ${error ? "bg-error" : "bg-exito"}`} aria-hidden />
-            {error ? "Sin conexión, reintentando…" : actualizado ? `En vivo · ${actualizado.toLocaleTimeString("es-PE")}` : "Conectando…"}
-          </p>
-          <Link href="/gestion" className="flex items-center font-bold text-marca underline underline-offset-4">
-            Centro de mando →
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-dvh bg-fondo">
+      <Portada
+        etiqueta="Panel del jurado"
+        titulo="¿Lo logran solos y más rápido?"
+        texto="Indicadores en vivo de quienes prueban la app ahora mismo: si terminan el pago sin ayuda, cuánto tardan y dónde se traban."
+        secciones={[
+          { href: "#funciona", texto: "¿Funciona?", icono: Activity },
+          { href: "#antes-ahora", texto: "Hoy vs. con Pía", icono: ArrowLeftRight },
+          { href: "#indicadores", texto: "Rapidez", icono: Timer },
+          { href: "#embudo", texto: "Abandono", icono: Filter },
+          { href: "#vistas", texto: "Vistas", icono: Users },
+        ]}
+        insignia="Modo Acompaña · prototipo"
+        enlace={{ href: "/gestion", texto: "Centro de mando →" }}
+        actualizado={actualizado}
+        error={error}
+      />
 
-      <AntesYAhora />
+      <main className="relative mx-auto -mt-36 flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 sm:px-8 lg:px-12">
+        <Funciona />
+        <AntesYAhora />
+        {!kpis ? (
+          <div className={`${TARJETA} py-6`}>
+            <Cargando texto="Cargando indicadores…" />
+          </div>
+        ) : (
+          <Contenido k={kpis} />
+        )}
+      </main>
 
-      {!kpis ? <Cargando texto="Cargando indicadores…" /> : <Contenido k={kpis} />}
-
-      <footer className="mt-auto border-t border-linea pt-3 text-xs leading-relaxed text-tenue">
+      <PieMarca>
         <p>
           <b>Éxito sin ayuda</b> = pagos exitosos sin asistente ni guía ÷ intentos de pago (pagos registrados + abandonos en la confirmación).{" "}
           <b>Tiempo</b> = promedio desde que se inicia la operación hasta la constancia. <b>Referencia actual</b>: tiempo estimado del flujo de la app
           actual (provisional). Prototipo con datos ficticios.
         </p>
-      </footer>
+      </PieMarca>
     </div>
   );
 }
 
 /** Pagar la cuota en la app de hoy (según capturas de la app oficial del 10 oct) frente a la ayuda de Pía. */
 function AntesYAhora() {
+  const hoy = ["Pagos", "Pago de créditos propios", "«Pagaré»", "«Cuenta origen»", "«Operación»", "Continuar", "Confirmar"];
+  const pia = ["¿Necesitas ayuda?", "Pagar mi cuota", "Sí, prepáralo tú", "Confirmar pago"];
   return (
-    <section aria-labelledby="antes-ahora" className="grid gap-3 sm:grid-cols-2">
-      <h2 id="antes-ahora" className="sr-only">
+    <section id="antes-ahora" aria-labelledby="t-antes" className="flex scroll-mt-4 flex-col gap-4">
+      <h2 id="t-antes" className="sr-only">
         Pagar la cuota: hoy y con Pía
       </h2>
-      <div className="flex flex-col gap-2 rounded-2xl border-2 border-linea bg-superficie p-4">
-        <p className="text-sm font-bold uppercase tracking-wide text-tenue">Hoy en la app</p>
-        <p className="text-3xl font-bold">~10 toques</p>
-        <p>
-          Pagos › Pago de créditos propios › elegir <b>«Pagaré»</b>, <b>«Cuenta origen»</b> y <b>«Operación»</b> (pago interés, amortización,
-          cancelación) › Continuar › Confirmar. Cada lista son 2 toques.
-        </p>
-        <p className="text-sm text-tenue">3 palabras técnicas antes de pagar. Muchos abandonan aquí y vuelven a la ventanilla.</p>
-      </div>
-      <div className="flex flex-col gap-2 rounded-2xl border-2 border-marca bg-marca-claro p-4">
-        <p className="text-sm font-bold uppercase tracking-wide text-marca">Con Pía, sin cambiar la app</p>
-        <p className="text-3xl font-bold">4 toques</p>
-        <p>
-          «¿Necesitas ayuda?» › <b>Pagar mi cuota</b> › «Sí, prepáralo tú» › <b>Confirmar pago</b>. Sin palabras técnicas.
-        </p>
-        <p className="text-sm text-tenue">O «Guíame»: Pía le señala cada paso en la app de siempre, para que aprenda a hacerlo solo.</p>
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
+        <div className={`${TARJETA} flex flex-col gap-3 p-5`}>
+          <p className="text-xs font-bold uppercase tracking-wider text-tenue">Hoy en la app</p>
+          <p className="text-4xl font-bold">
+            ~10 <span className="text-xl font-medium text-tenue">toques</span>
+          </p>
+          <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Pasos hoy">
+            {hoy.map((p, i) => (
+              <li key={p} className="flex items-center gap-1">
+                <span className={`rounded-lg px-2 py-1 ${p.startsWith("«") ? "bg-error-claro font-bold text-error" : "bg-fondo"}`}>{p}</span>
+                {i < hoy.length - 1 && <ChevronRight className="h-3.5 w-3.5 text-tenue" aria-hidden />}
+              </li>
+            ))}
+          </ol>
+          <p className="text-sm text-tenue">
+            <b className="text-error">3 palabras técnicas</b> antes de pagar, y cada lista son 2 toques. Muchos abandonan aquí y vuelven a la ventanilla.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-center" aria-hidden>
+          <span className="flex items-center gap-1 rounded-full bg-acento px-4 py-2 text-sm font-bold text-white shadow-md lg:flex-col lg:px-3 lg:py-4">
+            −60 %<span className="lg:text-xs"> toques</span>
+          </span>
+        </div>
+
+        <div className="relative flex flex-col gap-3 overflow-hidden rounded-2xl p-5 text-white shadow-[0_14px_32px_-12px_rgb(0_84_159/0.6)]" style={{ background: DEGRADADO_MARCA }}>
+          <Sparkles className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 text-white/10" aria-hidden />
+          <p className="text-xs font-bold uppercase tracking-wider text-white/85">Con Pía, sin cambiar la app</p>
+          <p className="text-4xl font-bold">
+            4 <span className="text-xl font-medium text-white/80">toques</span>
+          </p>
+          <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Pasos con Pía">
+            {pia.map((p, i) => (
+              <li key={p} className="flex items-center gap-1">
+                <span className="rounded-lg bg-white/18 px-2 py-1 font-bold">{p}</span>
+                {i < pia.length - 1 && <ChevronRight className="h-3.5 w-3.5 text-white/70" aria-hidden />}
+              </li>
+            ))}
+          </ol>
+          <p className="relative text-sm text-white/90">
+            Sin palabras técnicas. O «Guíame»: Pía le señala cada paso en la app de siempre, para que aprenda a hacerlo solo.
+          </p>
+        </div>
       </div>
     </section>
   );
@@ -115,59 +166,51 @@ function Contenido({ k }: { k: KpisRes }) {
 
   return (
     <>
-      <section className="grid gap-3 sm:grid-cols-3" aria-label="Indicadores principales">
-        <Indicador titulo="Éxito sin ayuda" valor={pct(k.tasaExitoSinAyuda)} nota="de los intentos de pago terminaron sin ayuda">
-          <Barra valor={k.tasaExitoSinAyuda} color="bg-exito" />
-        </Indicador>
-
-        <Indicador
-          titulo="Tiempo medio por operación"
-          valor={tiempoMedio != null ? seg(tiempoMedio) : "—"}
-          nota={
-            mejora != null
-              ? mejora >= 0
-                ? `${Math.round(mejora * 100)} % más rápido que hoy (${seg(k.tiempoReferenciaActualSeg)})`
-                : `${Math.round(-mejora * 100)} % más lento que hoy (${seg(k.tiempoReferenciaActualSeg)})`
-              : `Referencia actual: ${seg(k.tiempoReferenciaActualSeg)}`
-          }
-        >
-          <ul className="mt-1 flex flex-col gap-0.5 text-sm text-tenue">
-            {FLUJOS.map((f) => (
-              <li key={f.id} className="flex justify-between">
-                <span>{f.nombre}</span>
-                <span className="font-bold text-tinta">{k.tiempoMedioSeg[f.id] != null ? seg(k.tiempoMedioSeg[f.id]!) : "—"}</span>
-              </li>
-            ))}
-          </ul>
-        </Indicador>
-
-        <Indicador titulo="Pagos desde el celular" valor={String(k.pagosTotales)} nota="pagos exitosos en el prototipo" />
+      <section id="indicadores" className="flex scroll-mt-4 flex-col gap-4" aria-labelledby="t-ind">
+        <Encabezado
+          icono={CircleCheck}
+          id="t-ind"
+          antetitulo="Rapidez y uso"
+          titulo="Más rápido que la app de hoy"
+          texto="Tiempo desde que empieza el pago hasta la constancia, y pagos hechos en el prototipo. Se actualizan cada 5 segundos."
+        />
+        <div className="grid items-start gap-4 md:grid-cols-2">
+          <Tile
+            icono={Timer}
+            titulo="Tiempo medio por operación"
+            valor={tiempoMedio != null ? seg(tiempoMedio) : "—"}
+            nota={
+              mejora != null
+                ? mejora >= 0
+                  ? `${Math.round(mejora * 100)} % más rápido que hoy (${seg(k.tiempoReferenciaActualSeg)})`
+                  : `${Math.round(-mejora * 100)} % más lento que hoy (${seg(k.tiempoReferenciaActualSeg)})`
+                : `Referencia actual: ${seg(k.tiempoReferenciaActualSeg)}`
+            }
+          >
+            <ul className="mt-2 flex flex-col gap-1 text-sm">
+              {FLUJOS.map((f) => (
+                <li key={f.id} className={`flex justify-between rounded-lg ${LILA} px-2.5 py-1`}>
+                  <span className="text-tenue">{f.nombre}</span>
+                  <span className="font-bold tabular-nums">{k.tiempoMedioSeg[f.id] != null ? seg(k.tiempoMedioSeg[f.id]!) : "—"}</span>
+                </li>
+              ))}
+            </ul>
+          </Tile>
+          <Tile destacado etiqueta="En vivo" icono={Smartphone} titulo="Pagos desde el celular" valor={String(k.pagosTotales)} nota="pagos exitosos en el prototipo" />
+        </div>
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-[3fr_2fr]">
-        <Embudo filas={k.embudo} />
-        <Distribucion d={k.distribucionVistas} />
-      </section>
+      <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-4">
+        <section id="embudo" className="flex scroll-mt-4 flex-col gap-4" aria-labelledby="t-emb">
+          <Encabezado icono={Filter} id="t-emb" antetitulo="Embudo" titulo="¿Dónde se abandona?" texto="Visitas y abandonos en cada pantalla del pago." />
+          <Embudo filas={k.embudo} />
+        </section>
+        <section id="vistas" className="flex scroll-mt-4 flex-col gap-4 self-start" aria-labelledby="t-vis">
+          <Encabezado icono={Users} id="t-vis" antetitulo="Personalización" titulo="Vista recomendada" texto="Lo que el motor recomienda a cada perfil." />
+          <Distribucion d={k.distribucionVistas} />
+        </section>
+      </div>
     </>
-  );
-}
-
-function Indicador({ titulo, valor, nota, children }: { titulo: string; valor: string; nota: string; children?: React.ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1 rounded-2xl border-2 border-linea bg-superficie p-4">
-      <h2 className="text-sm font-bold text-tenue">{titulo}</h2>
-      <p className="text-4xl font-bold tabular-nums text-tinta sm:text-5xl">{valor}</p>
-      <p className="text-sm leading-snug text-tenue">{nota}</p>
-      {children}
-    </div>
-  );
-}
-
-function Barra({ valor, color }: { valor: number; color: string }) {
-  return (
-    <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-fondo">
-      <div className={`h-full rounded-full ${color} transition-[width] duration-500`} style={{ width: `${Math.min(100, valor * 100)}%` }} />
-    </div>
   );
 }
 
@@ -177,34 +220,30 @@ function Embudo({ filas }: { filas: KpisRes["embudo"] }) {
     .filter((f) => f.abandonos > 0)
     .sort((a, b) => b.abandonos / Math.max(1, b.vistas) - a.abandonos / Math.max(1, a.vistas))[0];
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border-2 border-linea bg-superficie p-4">
-      <div>
-        <h2 className="text-lg font-bold">¿Dónde se abandona?</h2>
-        <p className="text-sm text-tenue">
-          {peor ? (
-            <>
-              Más abandono en <b className="text-tinta">{NOMBRES[peor.pantalla] ?? peor.pantalla}</b> ({pct(peor.abandonos / Math.max(1, peor.vistas))} de
-              sus visitas)
-            </>
-          ) : (
-            "Aún no hay abandonos registrados"
-          )}
-        </p>
-      </div>
-      <ul className="flex flex-col gap-2.5">
+    <div className={`${TARJETA} flex flex-1 flex-col gap-4 p-5`}>
+      <p className={`rounded-xl px-3 py-2 text-sm ${peor ? "bg-error-claro" : LILA}`}>
+        {peor ? (
+          <>
+            Más abandono en <b className="text-error">{nombreDe(peor.pantalla)}</b>: {pct(peor.abandonos / Math.max(1, peor.vistas))} de sus visitas
+          </>
+        ) : (
+          "Aún no hay abandonos registrados"
+        )}
+      </p>
+      <ul className="flex flex-col gap-3">
         {filas.map((f) => (
           <li key={f.pantalla} className="flex flex-col gap-1">
             <div className="flex justify-between gap-2 text-sm">
-              <span className="font-bold">{NOMBRES[f.pantalla] ?? f.pantalla}</span>
+              <span className="font-bold">{nombreDe(f.pantalla)}</span>
               <span className="tabular-nums text-tenue">
                 {f.vistas} {f.vistas === 1 ? "visita" : "visitas"}
-                {f.abandonos > 0 && <span className="font-bold text-error"> · {f.abandonos} abandonos</span>}
+                {f.abandonos > 0 && <span className="font-bold text-error"> · {f.abandonos} {f.abandonos === 1 ? "abandono" : "abandonos"}</span>}
               </span>
             </div>
-            <div className="relative h-4 overflow-hidden rounded bg-fondo" aria-hidden>
-              <div className="absolute inset-y-0 left-0 rounded bg-marca/80 transition-[width] duration-500" style={{ width: `${(f.vistas / max) * 100}%` }} />
+            <div className="relative h-4 overflow-hidden rounded-full bg-fondo" aria-hidden>
+              <div className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-500" style={{ width: `${(f.vistas / max) * 100}%`, background: DEGRADADO_BARRA }} />
               <div
-                className="absolute inset-y-0 rounded-r bg-error transition-[width] duration-500"
+                className="absolute inset-y-0 rounded-r-full bg-error transition-[width] duration-500"
                 style={{ left: `${(Math.max(0, f.vistas - f.abandonos) / max) * 100}%`, width: `${(Math.min(f.abandonos, f.vistas) / max) * 100}%` }}
               />
             </div>
@@ -212,11 +251,11 @@ function Embudo({ filas }: { filas: KpisRes["embudo"] }) {
         ))}
       </ul>
       <p className="flex gap-4 text-xs text-tenue">
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-marca/80" /> visitas
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-4 rounded-full" style={{ background: DEGRADADO_BARRA }} /> visitas
         </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block h-2.5 w-2.5 rounded-sm bg-error" /> abandonos
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2.5 w-4 rounded-full bg-error" /> abandonos
         </span>
       </p>
     </div>
@@ -227,31 +266,26 @@ function Distribucion({ d }: { d: KpisRes["distribucionVistas"] }) {
   const total = d.ASISTIDA + d.ESTANDAR;
   const pa = total ? d.ASISTIDA / total : 0;
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border-2 border-linea bg-superficie p-4">
-      <div>
-        <h2 className="text-lg font-bold">Vista recomendada por el motor</h2>
-        <p className="text-sm text-tenue">Sobre {total} perfiles de clientes (datos ficticios con el esquema de Caja Piura)</p>
-      </div>
-      <div className="flex h-8 overflow-hidden rounded-lg" aria-hidden>
-        <div className="flex items-center justify-center bg-marca text-sm font-bold text-white" style={{ width: `${pa * 100}%` }}>
+    <div className={`${TARJETA} flex flex-col gap-4 p-5`}>
+      <p className="text-sm text-tenue">Sobre {total} perfiles de clientes (datos ficticios con el esquema de Caja Piura)</p>
+      <div className="flex h-10 gap-0.5 overflow-hidden rounded-xl" aria-hidden>
+        <div className="flex items-center justify-center text-sm font-bold text-white" style={{ width: `${pa * 100}%`, background: DEGRADADO_MARCA }}>
           {pa >= 0.12 && pct(pa)}
         </div>
-        <div className="flex items-center justify-center bg-marca-claro text-sm font-bold text-marca" style={{ width: `${(1 - pa) * 100}%` }}>
+        <div className={`flex items-center justify-center text-sm font-bold text-[var(--cp-brand)] ${LILA}`} style={{ width: `${(1 - pa) * 100}%` }}>
           {1 - pa >= 0.12 && pct(1 - pa)}
         </div>
       </div>
-      <dl className="grid grid-cols-2 gap-2 text-sm">
-        <div className="rounded-xl bg-fondo p-2">
-          <dt className="flex items-center gap-1 text-tenue">
-            <span className="inline-block h-2.5 w-2.5 rounded-sm bg-marca" /> Asistida
-          </dt>
-          <dd className="text-2xl font-bold tabular-nums">{d.ASISTIDA}</dd>
+      <dl className="grid grid-cols-2 gap-3 text-sm">
+        <div className="rounded-xl p-3 text-white" style={{ background: DEGRADADO_MARCA }}>
+          <dt className="text-white/85">Asistida</dt>
+          <dd className="text-3xl font-bold tabular-nums">{d.ASISTIDA}</dd>
+          <dd className="text-xs text-white/80">pantallas simples, paso a paso</dd>
         </div>
-        <div className="rounded-xl bg-fondo p-2">
-          <dt className="flex items-center gap-1 text-tenue">
-            <span className="inline-block h-2.5 w-2.5 rounded-sm border border-marca/40 bg-marca-claro" /> Estándar
-          </dt>
-          <dd className="text-2xl font-bold tabular-nums">{d.ESTANDAR}</dd>
+        <div className={`rounded-xl p-3 ${LILA}`}>
+          <dt className="text-tenue">Estándar</dt>
+          <dd className="text-3xl font-bold tabular-nums">{d.ESTANDAR}</dd>
+          <dd className="text-xs text-tenue">todas las opciones a la vista</dd>
         </div>
       </dl>
       <p className="text-xs text-tenue">El motor solo recomienda: cada cliente elige su vista y puede cambiarla cuando quiera.</p>

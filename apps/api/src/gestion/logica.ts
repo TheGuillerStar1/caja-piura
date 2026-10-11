@@ -4,6 +4,7 @@
 // determinista y explicable (abajo, MODELO) que usa lo que ya sabemos de cada cliente: qué parte de sus operaciones
 // hace por el celular y la gama de su celular.
 import { SUPUESTOS_GESTION, type AccionCampana, type AlcanceSegmentoRes, type CampanaRes, type SegmentoCampana } from "@cp/shared";
+import { diasEntre } from "../lib/formato.js";
 import { tasaDigital } from "../motor/index.js";
 
 /** Distrito de la base → ubigeo INEI del polígono en /geo/piura-distritos.geojson. */
@@ -127,5 +128,43 @@ export function proyectarCampana(
     opsMigradasMes: Math.round(opsMigradasMes * 10) / 10,
     ahorroMes: r2(opsMigradasMes * AHORRO_POR_OP),
     costo: r2(costo),
+  };
+}
+
+// ── «¿Está funcionando?»: los 4 KPIs que prueban la solución ──
+/** Días mínimos entre dos pagos para contar que el cliente «volvió a pagar otro mes». */
+export const DIAS_OTRO_MES = 20;
+
+/**
+ * Vuelven a pagar: de los clientes que ya tuvieron la oportunidad de repetir (su primer pago por la app fue hace
+ * DIAS_OTRO_MES días o más, en su fecha simulada), cuántos hicieron otro pago al menos DIAS_OTRO_MES días después.
+ * El primer pago puede ser curiosidad o ayuda; el segundo, en otro mes, es hábito.
+ */
+export function vuelvenAPagar(clientes: { hoy: Date; pagos: Date[] }[]) {
+  let elegibles = 0;
+  let repitieron = 0;
+  for (const c of clientes) {
+    if (!c.pagos.length) continue;
+    const t = c.pagos.map((d) => d.getTime());
+    const primero = Math.min(...t);
+    if (diasEntre(new Date(primero), c.hoy) < DIAS_OTRO_MES) continue;
+    elegibles++;
+    if (diasEntre(new Date(primero), new Date(Math.max(...t))) >= DIAS_OTRO_MES) repitieron++;
+  }
+  return { elegibles, repitieron, tasa: elegibles ? repitieron / elegibles : null };
+}
+
+/**
+ * Pagan a tiempo: cuotas pagadas por la app el día del vencimiento o antes, y anticipación promedio en días.
+ * La anticipación de cada pago se limita a 31 días: adelantar cuotas de meses futuros no debe inflar el promedio.
+ */
+export function pagosATiempo(pagos: { pagado: Date; vencimiento: Date }[]) {
+  const dias = pagos.map((p) => diasEntre(p.pagado, p.vencimiento));
+  const aTiempo = dias.filter((d) => d >= 0).length;
+  return {
+    cuotas: pagos.length,
+    aTiempo,
+    tasa: pagos.length ? aTiempo / pagos.length : null,
+    diasAnticipacion: pagos.length ? Math.round((dias.reduce((a, b) => a + Math.min(31, Math.max(0, b)), 0) / pagos.length) * 10) / 10 : null,
   };
 }

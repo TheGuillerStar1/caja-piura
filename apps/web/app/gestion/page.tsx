@@ -4,15 +4,14 @@
 // Estilo de la marca (Manual visual «Caja Piura Contigo»): azul institucional → azul app, lila de acceso, naranja de acción.
 import type { DistritoGestion, ResumenGestionRes } from "@cp/shared";
 import {
+  Activity,
   ArrowLeftRight,
   CalendarClock,
-  Coins,
   Gift,
   Grid3x3,
   type LucideIcon,
   MapPinned,
   Megaphone,
-  PiggyBank,
   Smartphone,
   Store,
   TrendingUp,
@@ -20,9 +19,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LogoCajaPiura } from "@/app/_entrada/Logo";
 import { Cargando } from "@/components/ui";
 import { Campanas } from "@/components/gestion/Campanas";
+import { Funciona } from "@/components/gestion/Funciona";
+import { Encabezado, PieMarca, Portada } from "@/components/gestion/Marca";
 import { MapaPiura } from "@/components/gestion/MapaPiura";
 import {
   ahorroPorOp,
@@ -70,9 +70,25 @@ export default function GestionPage() {
 
   return (
     <div className="min-h-dvh bg-fondo">
-      <Portada r={r} actualizado={actualizado} error={error} />
+      <Portada
+        etiqueta="Centro de mando"
+        titulo="Adopción digital en la región Piura"
+        texto="Dónde están los clientes que aún van a ventanilla, cuánto ahorra la Caja si pasan a la app y qué campaña los mueve."
+        secciones={[
+          { href: "#funciona", texto: "¿Funciona?", icono: Activity },
+          { href: "#kpis", texto: "Indicadores", icono: TrendingUp },
+          { href: "#mapa", texto: "Mapa", icono: MapPinned },
+          { href: "#segmentos", texto: "Segmentos", icono: Grid3x3 },
+          { href: "#campanas", texto: "Campañas", icono: Megaphone },
+        ]}
+        insignia={`Datos ficticios · ${r ? entero(r.totales.clientes) : "…"} perfiles`}
+        enlace={{ href: "/panel", texto: "Panel del jurado →" }}
+        actualizado={actualizado}
+        error={error}
+      />
 
-      <main className="relative mx-auto -mt-20 flex w-full max-w-7xl flex-col gap-10 px-4 pb-10">
+      <main className="relative mx-auto -mt-36 flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 sm:px-8 lg:px-12">
+        <Funciona />
         {!r ? (
           <div className={`${TARJETA} py-6`}>
             <Cargando texto="Cargando el centro de mando…" />
@@ -82,10 +98,8 @@ export default function GestionPage() {
         )}
       </main>
 
-      <footer className="border-t border-linea bg-superficie">
-        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-6 sm:flex-row sm:items-start">
-          <LogoCajaPiura className="h-10 shrink-0" />
-          <p className="text-xs leading-relaxed text-tenue">
+      <PieMarca>
+          <p>
             <b>Supuestos provisionales</b> (reemplazar por los costos reales de Caja Piura): una operación en ventanilla cuesta{" "}
             {r ? soles(r.supuestos.costoOpVentanilla) : "…"} y por la app {r ? soles(r.supuestos.costoOpDigital) : "…"}; un SMS{" "}
             {r ? soles(r.supuestos.costoSms) : "…"}; el cashback doble cuesta {r ? soles(r.supuestos.cashbackExtraPorPago) : "…"} extra por pago.{" "}
@@ -93,95 +107,8 @@ export default function GestionPage() {
             celular y la gama de su equipo), no medidos. <b>Mapa</b>: límites distritales del INEI; Veintiséis de Octubre se muestra dentro de
             Piura. Prototipo con 500 perfiles ficticios con el esquema de datos de Caja Piura.
           </p>
-        </div>
-      </footer>
+      </PieMarca>
     </div>
-  );
-}
-
-/** Cabecera azul de marca con el logo blanco y una ilustración de línea (como las pantallas de acceso de la app). */
-function Portada({ r, actualizado, error }: { r: ResumenGestionRes | null; actualizado: Date | null; error: boolean }) {
-  return (
-    <header className="relative overflow-hidden text-white" style={{ background: DEGRADADO_MARCA }}>
-      <Ilustracion />
-      <div className="relative mx-auto flex max-w-7xl flex-col gap-6 px-4 pb-28 pt-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <LogoCajaPiura variante="blanco" className="h-9 sm:h-10" />
-            <span className="h-8 w-px bg-white/35" aria-hidden />
-            <span className="text-sm font-bold uppercase tracking-wider text-white/90">Centro de mando</span>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <p className="flex min-h-9 items-center gap-2 rounded-full bg-white/15 px-3 font-medium backdrop-blur-sm">
-              <span className="relative flex h-2.5 w-2.5" aria-hidden>
-                {!error && <span className="absolute inset-0 animate-ping rounded-full bg-[#6ee7a8] opacity-70" />}
-                <span className={`relative inline-block h-2.5 w-2.5 rounded-full ${error ? "bg-[#ffb4a8]" : "bg-[#6ee7a8]"}`} />
-              </span>
-              {error ? "Sin conexión, reintentando…" : actualizado ? `En vivo · ${actualizado.toLocaleTimeString("es-PE")}` : "Conectando…"}
-            </p>
-            <Link href="/panel" className="flex min-h-9 items-center rounded-full bg-white px-4 font-bold text-[var(--cp-brand)] shadow-sm hover:bg-[var(--cp-login-light)]">
-              Panel del jurado →
-            </Link>
-          </div>
-        </div>
-
-        <div className="max-w-3xl">
-          <h1 className="text-3xl font-bold leading-tight [text-shadow:0_1px_3px_rgb(0_30_80/0.35)] sm:text-[2.6rem]">Adopción digital en la región Piura</h1>
-          <p className="mt-2 text-base text-white/90 sm:text-lg">
-            Dónde están los clientes que aún van a ventanilla, cuánto ahorra la Caja si pasan a la app y qué campaña los mueve.
-          </p>
-        </div>
-
-        <nav aria-label="Secciones" className="flex flex-wrap gap-2 text-sm font-bold">
-          {(
-            [
-              ["#kpis", "Indicadores", TrendingUp],
-              ["#mapa", "Mapa", MapPinned],
-              ["#segmentos", "Segmentos", Grid3x3],
-              ["#campanas", "Campañas", Megaphone],
-            ] as const
-          ).map(([href, t, I]) => (
-            <a key={href} href={href} className="flex min-h-10 items-center gap-1.5 rounded-full bg-white/15 px-4 backdrop-blur-sm transition-colors hover:bg-white/25">
-              <I className="h-4 w-4" aria-hidden />
-              {t}
-            </a>
-          ))}
-          <span className="flex min-h-10 items-center rounded-full bg-acento px-4 text-white shadow-sm">
-            Datos ficticios · {r ? entero(r.totales.clientes) : "…"} perfiles
-          </span>
-        </nav>
-      </div>
-    </header>
-  );
-}
-
-/** Trazos de línea: pin del mapa, barras, moneda y celular. Decorativo. */
-function Ilustracion() {
-  return (
-    <svg
-      viewBox="0 0 600 260"
-      aria-hidden
-      className="pointer-events-none absolute -right-10 top-0 h-full w-[46rem] max-w-none opacity-25"
-      fill="none"
-      stroke="var(--cp-login-light)"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M120 40c-26 0-46 20-46 45 0 34 46 80 46 80s46-46 46-80c0-25-20-45-46-45z" />
-      <circle cx="120" cy="86" r="16" />
-      <path d="M40 210c40-30 80 10 120-20s70-40 110-10 60 30 100 0" strokeDasharray="6 8" />
-      <path d="M300 200v-50M335 200v-80M370 200v-110M405 200v-70" strokeWidth="14" />
-      <path d="M285 200h135" />
-      <circle cx="500" cy="70" r="30" />
-      <text x="500" y="79" fontSize="24" fill="var(--cp-login-light)" stroke="none" textAnchor="middle" fontWeight="700">
-        S/
-      </text>
-      <rect x="470" y="130" width="70" height="120" rx="12" />
-      <path d="M490 150h30M488 225h34" />
-      <path d="M210 70l30-22 30 14 34-30" />
-      <path d="M296 32h10v10" />
-    </svg>
   );
 }
 
@@ -263,64 +190,20 @@ function Contenido({ r }: { r: ResumenGestionRes }) {
   );
 }
 
-function Encabezado({
-  icono: I,
-  id,
-  antetitulo,
-  titulo,
-  texto,
-  children,
-}: {
-  icono: LucideIcon;
-  id: string;
-  antetitulo: string;
-  titulo: string;
-  texto: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-      <div className="flex items-start gap-3">
-        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-white shadow-md" style={{ background: DEGRADADO_MARCA }} aria-hidden>
-          <I className="h-6 w-6" />
-        </span>
-        <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-marca">{antetitulo}</p>
-          <h2 id={id} className="text-2xl font-bold leading-tight">
-            {titulo}
-          </h2>
-          <p className="text-sm text-tenue">{texto}</p>
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
 function Kpis({ r }: { r: ResumenGestionRes }) {
   const t = r.totales;
-  const a = ahorroPorOp(r.supuestos);
   return (
-    <section id="kpis" className="flex scroll-mt-4 flex-col gap-4" aria-label="Indicadores del negocio">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile icono={Smartphone} titulo="Adopción digital" valor={pct(t.adopcion)} nota={`de ${entero(t.clientes)} clientes usan la app al menos 1 vez al mes`} barra={t.adopcion} />
-        <Tile
-          icono={ArrowLeftRight}
-          titulo="Operaciones por la app"
-          valor={pct(t.tasaDigital)}
-          nota={`${entero(t.opsDigitalesMes)} de ${entero(t.opsDigitalesMes + t.opsVentanillaMes)} operaciones al mes`}
-          barra={t.tasaDigital}
-        />
-        <Tile icono={PiggyBank} titulo="Ahorro actual" valor={soles(t.opsDigitalesMes * a)} nota="al mes, por lo que ya se hace en la app en vez de ventanilla" />
-        <Tile
-          destacado
-          icono={TrendingUp}
-          titulo="Ahorro potencial"
-          valor={`+${soles(t.oportunidad * a)}`}
-          nota={`al mes, si pasan a la app las ${entero(t.oportunidad)} operaciones en ventanilla de clientes con celular apto`}
-        />
-      </div>
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <section id="kpis" className="flex scroll-mt-4 flex-col gap-4" aria-labelledby="t-kpis">
+      <Encabezado
+        icono={TrendingUp}
+        id="t-kpis"
+        antetitulo="Más indicadores"
+        titulo="Uso de canales y cartera"
+        texto="Contexto para entender los 4 números de arriba: cuánto se usa la app, qué queda en ventanilla y cómo vienen las cuotas."
+      />
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <Mini icono={Smartphone} titulo="Adopción digital" valor={pct(t.adopcion)} nota="usa la app" />
+        <Mini icono={ArrowLeftRight} titulo="Operaciones por la app" valor={pct(t.tasaDigital)} />
         <Mini icono={Store} titulo="En ventanilla al mes" valor={entero(t.opsVentanillaMes)} />
         <Mini icono={CalendarClock} titulo="Vencen en 7 días" valor={entero(t.porVencer)} nota={soles(t.montoPorVencer)} />
         <Mini icono={TriangleAlert} titulo="Cuotas vencidas" valor={entero(t.vencidas)} nota="mora temprana" />
@@ -328,52 +211,6 @@ function Kpis({ r }: { r: ResumenGestionRes }) {
         <Mini icono={Gift} titulo="Cashback entregado" valor={soles(t.cashbackEntregado)} />
       </dl>
     </section>
-  );
-}
-
-function Tile({
-  icono: I,
-  titulo,
-  valor,
-  nota,
-  barra,
-  destacado,
-}: {
-  icono: LucideIcon;
-  titulo: string;
-  valor: string;
-  nota: string;
-  barra?: number;
-  destacado?: boolean;
-}) {
-  if (destacado)
-    return (
-      <div className="relative flex flex-col gap-1 overflow-hidden rounded-2xl p-5 text-white shadow-[0_14px_32px_-12px_rgb(0_84_159/0.6)]" style={{ background: DEGRADADO_MARCA }}>
-        <Coins className="pointer-events-none absolute -bottom-5 -right-5 h-28 w-28 text-white/10" aria-hidden />
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-bold text-white/90">{titulo}</h3>
-          <span className="rounded-full bg-acento px-2.5 py-0.5 text-xs font-bold">Oportunidad</span>
-        </div>
-        <p className="text-4xl font-bold tabular-nums">{valor}</p>
-        <p className="relative text-sm leading-snug text-white/85">{nota}</p>
-      </div>
-    );
-  return (
-    <div className={`${TARJETA} flex flex-col gap-1 p-5`}>
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-tenue">{titulo}</h3>
-        <span className="grid h-9 w-9 place-items-center rounded-xl bg-marca-claro text-marca" aria-hidden>
-          <I className="h-5 w-5" />
-        </span>
-      </div>
-      <p className="text-4xl font-bold tabular-nums">{valor}</p>
-      <p className="text-sm leading-snug text-tenue">{nota}</p>
-      {barra != null && (
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-fondo" aria-hidden>
-          <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${barra * 100}%`, background: DEGRADADO_BARRA }} />
-        </div>
-      )}
-    </div>
   );
 }
 
