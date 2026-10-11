@@ -11,7 +11,7 @@ import { useVista } from "@/lib/vista";
 import { callar, hablar, montoHablado } from "@/lib/voz";
 import { cargarCliente } from "@/lib/cliente";
 import { borrarKey, guardarKey, guardarResultado, leerKey, rutaConfirmar } from "./almacen";
-import { ElegirOpcion } from "./ElegirOpcion";
+import { CuentaOrigen } from "./CuentaOrigen";
 import { EstilosPago } from "./EstilosPago";
 import { HojaAutenticacion, type MetodoAuth } from "./HojaAutenticacion";
 import { IconoX } from "./Iconos";
@@ -391,26 +391,17 @@ export function Confirmar() {
 
       <section ref={registrar("cuenta")} className={`rounded-2xl bg-superficie p-4 ${marcar("cuenta")}`}>
         <p className="text-tenue">Desde tu cuenta</p>
-        {cuentasPago.length > 1 ? (
-          // Cuenta de origen elegible aquí también (pagos frecuentes, recibo con foto y lo que prepara Pía).
-          <div className="mt-1">
-            <ElegirOpcion
-              nombre="cuenta-confirmar"
-              valor={String(pago.cuenta.id)}
-              onCambio={(v) => {
-                if (v === String(pago.cuenta.id)) return;
-                track("confirmar", "tocar", { flujo });
-                router.replace(`${rutaConfirmar(tipo!, ref)}&cuenta=${v}${operacion ? `&op=${operacion}${cantidad ? `&cant=${cantidad}` : ""}` : ""}`);
-              }}
-              opciones={cuentasPago.map((k) => ({ valor: String(k.id), texto: `${k.tipo} ${k.numeroOculto}`, detalle: `Saldo ${soles(k.saldo)}` }))}
-            />
-          </div>
-        ) : (
-          <p className="text-2xl font-bold">
-            {pago.cuenta.tipo} {pago.cuenta.numeroOculto}
-          </p>
-        )}
-        <p className="text-tenue">Saldo disponible: {soles(pago.cuenta.saldo)}</p>
+        <div className="mt-1">
+          <CuentaOrigen
+            nombre="cuenta-confirmar"
+            cuentas={cuentasPago}
+            actual={pago.cuenta}
+            onCambio={(id) => {
+              track("confirmar", "tocar", { flujo });
+              router.replace(`${rutaConfirmar(tipo!, ref)}&cuenta=${id}${operacion ? `&op=${operacion}${cantidad ? `&cant=${cantidad}` : ""}` : ""}`);
+            }}
+          />
+        </div>
       </section>
 
       {saldoInsuficiente && (

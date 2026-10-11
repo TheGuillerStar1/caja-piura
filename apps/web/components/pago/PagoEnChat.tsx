@@ -10,7 +10,7 @@ import { cargarCliente } from "@/lib/cliente";
 import { soles } from "@/lib/formato";
 import { track } from "@/lib/track";
 import { borrarKey, guardarKey, leerKey } from "./almacen";
-import { ElegirOpcion } from "./ElegirOpcion";
+import { CuentaOrigen } from "./CuentaOrigen";
 import { EstilosPago } from "./EstilosPago";
 import { OpcionesCredito, type EleccionCredito } from "./OpcionesCredito";
 import { HojaAutenticacion, type MetodoAuth } from "./HojaAutenticacion";
@@ -120,19 +120,7 @@ export function PagoEnChat({ tipo, refId, asistida, alPagar }: Props) {
       </p>
       <div className="flex flex-col gap-1">
         <span className="text-tenue">Desde tu cuenta</span>
-        {cuentas.length > 1 ? (
-          <ElegirOpcion
-            nombre={`cuenta-chat-${refId}`}
-            valor={String(pago.cuenta.id)}
-            onCambio={(v) => setCuentaId(Number(v))}
-            opciones={cuentas.map((k) => ({ valor: String(k.id), texto: `${k.tipo} ${k.numeroOculto}`, detalle: `Saldo ${soles(k.saldo)}` }))}
-          />
-        ) : (
-          <b className="text-lg">
-            {pago.cuenta.tipo} {pago.cuenta.numeroOculto}
-          </b>
-        )}
-        {cuentas.length <= 1 && <span className="text-sm text-tenue">Saldo disponible: {soles(pago.cuenta.saldo)}</span>}
+        <CuentaOrigen nombre={`cuenta-chat-${refId}`} cuentas={cuentas} actual={pago.cuenta} onCambio={(id) => setCuentaId(id)} />
       </div>
 
       {!pago.saldoSuficiente ? (

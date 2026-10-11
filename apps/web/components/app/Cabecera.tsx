@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { olvidarCliente, useCliente } from "@/lib/cliente";
 import { useTema } from "@/lib/tema";
 import { track } from "@/lib/track";
+import { ponerVoz, vozActiva } from "@/lib/voz";
 import {
   IcAtras,
   IcCambio,
@@ -43,12 +44,36 @@ export function Cabecera({ titulo, volver, subtitulo }: Props) {
               <IcMenu />
             </button>
           )}
-          <h1 className="flex-1 truncate pr-3 text-xl font-medium">{titulo}</h1>
+          <h1 className="flex-1 truncate pr-1 text-xl font-medium">{titulo}</h1>
+          <BotonVoz />
         </div>
         {subtitulo && <div className="px-4 pb-2.5 text-center text-sm font-medium">{subtitulo}</div>}
       </header>
       {abierto && <MenuLateral cerrar={() => setAbierto(false)} />}
     </>
+  );
+}
+
+/** Silenciar o activar la voz de Pía (con texto: el manual pide no usar íconos sin etiqueta). */
+function BotonVoz() {
+  const [activa, setActiva] = useState(true);
+  useEffect(() => {
+    const f = () => setActiva(vozActiva());
+    f();
+    addEventListener("cp-voz", f);
+    return () => removeEventListener("cp-voz", f);
+  }, []);
+  return (
+    <button
+      type="button"
+      onClick={() => (track("voz", "tocar"), ponerVoz(!activa))}
+      aria-pressed={!activa}
+      aria-label={activa ? "Silenciar la voz de Pía" : "Activar la voz de Pía"}
+      className="mr-2 flex min-h-10! shrink-0 items-center gap-1 rounded-full bg-white/15 px-3 text-sm font-bold"
+    >
+      <span aria-hidden className="text-base leading-none">{activa ? "🔊" : "🔇"}</span>
+      {activa ? "Voz" : "Silencio"}
+    </button>
   );
 }
 

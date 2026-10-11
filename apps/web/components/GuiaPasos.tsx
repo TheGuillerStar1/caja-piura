@@ -73,7 +73,7 @@ export function GuiaPasos() {
       <button
         type="button"
         onClick={terminarGuia}
-        className="fixed inset-x-0 top-16 z-[72] mx-auto flex min-h-11 w-max items-center gap-2 rounded-full bg-black/80 px-4 text-sm font-bold text-white"
+        className="fixed inset-x-0 bottom-24 z-[72] mx-auto flex min-h-11 w-max items-center gap-2 rounded-full bg-black/80 px-4 text-sm font-bold text-white"
       >
         Guía de Pía en pausa · <span aria-hidden>✕</span> Salir
       </button>
