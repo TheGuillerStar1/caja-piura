@@ -2,7 +2,7 @@
 // Dueño: Agente D. Panel del jurado (público): indicadores en vivo, se actualiza cada 5 s.
 // Mismo estilo de marca que el Centro de mando (/gestion): ver components/gestion/Marca.tsx.
 import type { KpisRes } from "@cp/shared";
-import { Activity, ArrowLeftRight, ChevronRight, CircleCheck, Filter, Smartphone, Sparkles, Timer, Users } from "lucide-react";
+import { Activity, ArrowLeftRight, ChevronRight, CircleCheck, Compass, Hand, ShieldCheck, Filter, Smartphone, Sparkles, Timer, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Cargando } from "@/components/ui";
 import { DEGRADADO_BARRA, DEGRADADO_MARCA, TARJETA } from "@/components/gestion/formato";
@@ -64,11 +64,11 @@ export default function PanelPage() {
     <div className="min-h-dvh bg-fondo">
       <Portada
         etiqueta="Panel del jurado"
-        titulo="¿Lo logran solos y más rápido?"
-        texto="Indicadores en vivo de quienes prueban la app ahora mismo: si terminan el pago sin ayuda, cuánto tardan y dónde se traban."
+        titulo="¿Esto funciona?"
+        texto="Indicadores en vivo de quienes prueban la app ahora mismo: si pagan solos, si vuelven a pagar, cuánto tardan y dónde se traban."
         secciones={[
           { href: "#funciona", texto: "¿Funciona?", icono: Activity },
-          { href: "#antes-ahora", texto: "Hoy vs. con Pía", icono: ArrowLeftRight },
+          { href: "#antes-ahora", texto: "Hoy vs. con PÍA", icono: ArrowLeftRight },
           { href: "#indicadores", texto: "Rapidez", icono: Timer },
           { href: "#embudo", texto: "Abandono", icono: Filter },
           { href: "#vistas", texto: "Vistas", icono: Users },
@@ -81,7 +81,7 @@ export default function PanelPage() {
 
       <main className="relative mx-auto -mt-36 flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 sm:px-8 lg:px-12">
         <Funciona jurado />
-        <AntesYAhora />
+        <AntesYAhora k={kpis} />
         {!kpis ? (
           <div className={`${TARJETA} py-6`}>
             <Cargando texto="Cargando indicadores…" />
@@ -93,29 +93,40 @@ export default function PanelPage() {
 
       <PieMarca>
         <p>
-          <b>Éxito sin ayuda</b> = pagos exitosos sin asistente ni guía ÷ intentos de pago (pagos registrados + abandonos en la confirmación).{" "}
-          <b>Tiempo</b> = promedio desde que se inicia la operación hasta la constancia. <b>Referencia actual</b>: tiempo estimado del flujo de la app
-          actual (provisional). Prototipo con datos ficticios.
+          <b>Los datos de la demo son ficticios:</b> 500 perfiles armados con el esquema de datos de Caja Piura. Los costos por operación, las metas y
+          los resultados de las campañas son supuestos y proyecciones, no mediciones. <b>Tiempo</b> = promedio desde que se inicia la operación hasta
+          la constancia; los ~3 min de la app de hoy son una referencia provisional.
         </p>
       </PieMarca>
     </div>
   );
 }
 
-/** Pagar la cuota en la app de hoy (según capturas de la app oficial del 10 oct) frente a la ayuda de Pía. */
-function AntesYAhora() {
+/** Pagar la cuota en la app de hoy (capturas de la app oficial del 10 oct) frente a PÍA, y las 3 barreras que resuelve. */
+function AntesYAhora({ k }: { k: KpisRes | null }) {
   const hoy = ["Pagos", "Pago de créditos propios", "«Pagaré»", "«Cuenta origen»", "«Operación»", "Continuar", "Confirmar"];
   const pia = ["¿Necesitas ayuda?", "Pagar mi cuota", "Sí, prepáralo tú", "Confirmar pago"];
+  const tiempos = k ? FLUJOS.map((f) => k.tiempoMedioSeg[f.id]).filter((t): t is number => t != null) : [];
+  const tiempoPia = tiempos.length ? tiempos.reduce((a, b) => a + b, 0) / tiempos.length : null;
   return (
     <section id="antes-ahora" aria-labelledby="t-antes" className="flex scroll-mt-4 flex-col gap-4">
-      <h2 id="t-antes" className="sr-only">
-        Pagar la cuota: hoy y con Pía
-      </h2>
+      <Encabezado
+        icono={ArrowLeftRight}
+        id="t-antes"
+        antetitulo="Hoy vs. con PÍA"
+        titulo="El problema no es que falte tecnología, es que falta alguien que acompañe"
+        texto="Pagar la cuota en la app de hoy frente a hacerlo con PÍA, que vive dentro de la app que ya tienen: no hay que descargar nada."
+      />
       <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-stretch">
         <div className={`${TARJETA} flex flex-col gap-3 p-5`}>
           <p className="text-xs font-bold uppercase tracking-wider text-tenue">Hoy en la app</p>
-          <p className="text-4xl font-bold">
-            ~10 <span className="text-xl font-medium text-tenue">toques</span>
+          <p className="flex flex-wrap items-baseline gap-x-4 text-4xl font-bold">
+            <span>
+              ~10 <span className="text-xl font-medium text-tenue">toques</span>
+            </span>
+            <span className="text-2xl">
+              ~3 <span className="text-base font-medium text-tenue">min</span>
+            </span>
           </p>
           <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Pasos hoy">
             {hoy.map((p, i) => (
@@ -126,7 +137,8 @@ function AntesYAhora() {
             ))}
           </ol>
           <p className="text-sm text-tenue">
-            <b className="text-error">3 palabras técnicas</b> antes de pagar, y cada lista son 2 toques. Muchos abandonan aquí y vuelven a la ventanilla.
+            <b className="text-error">3 palabras que Rosa no usa nunca</b> antes de pagar. Muchos se rinden aquí y vuelven a la ventanilla: entre el
+            viaje y la cola se les va la mañana.
           </p>
         </div>
 
@@ -138,11 +150,18 @@ function AntesYAhora() {
 
         <div className="relative flex flex-col gap-3 overflow-hidden rounded-2xl p-5 text-white shadow-[0_14px_32px_-12px_rgb(0_84_159/0.6)]" style={{ background: DEGRADADO_MARCA }}>
           <Sparkles className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 text-white/10" aria-hidden />
-          <p className="text-xs font-bold uppercase tracking-wider text-white/85">Con Pía, sin cambiar la app</p>
-          <p className="text-4xl font-bold">
-            4 <span className="text-xl font-medium text-white/80">toques</span>
+          <p className="text-xs font-bold uppercase tracking-wider text-white/85">Con PÍA, dentro de la app que ya tienen</p>
+          <p className="flex flex-wrap items-baseline gap-x-4 text-4xl font-bold">
+            <span>
+              4 <span className="text-xl font-medium text-white/80">toques</span>
+            </span>
+            {tiempoPia != null && (
+              <span className="text-2xl">
+                {seg(tiempoPia)} <span className="text-base font-medium text-white/80">en promedio</span>
+              </span>
+            )}
           </p>
-          <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Pasos con Pía">
+          <ol className="flex flex-wrap items-center gap-1 text-sm" aria-label="Pasos con PÍA">
             {pia.map((p, i) => (
               <li key={p} className="flex items-center gap-1">
                 <span className="rounded-lg bg-white/18 px-2 py-1 font-bold">{p}</span>
@@ -150,10 +169,36 @@ function AntesYAhora() {
               </li>
             ))}
           </ol>
-          <p className="relative text-sm text-white/90">
-            Sin palabras técnicas. O «Guíame»: Pía le señala cada paso en la app de siempre, para que aprenda a hacerlo solo.
+          <p className="relative rounded-xl bg-white/15 px-3 py-2 text-sm">
+            <b>PÍA prepara, tú confirmas y Caja Piura procesa.</b> Ninguna palabra técnica, y la decisión siempre es del cliente.
           </p>
         </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {(
+          [
+            [ShieldCheck, "Desconfianza", "7 de cada 10 peruanos desconfían del sistema financiero: nadie confía en lo que no entiende.", "Tú siempre confirmas. PÍA prepara la operación, pero no mueve un sol sin tu sí."],
+            [Hand, "Dificultad de uso", "Diez toques, listas desplegables y palabras de banco.", "4 toques y botones grandes. La vista asistida para quien la necesita; la estándar para quien quiere ir directo."],
+            [Compass, "Falta de orientación", "Nadie te dice qué tocar después de que el asesor te instala la app.", "Pasos guiados, uno por uno, o «Guíame»: PÍA señala cada paso en la app de siempre."],
+          ] as const
+        ).map(([I, barrera, hoy, pia]) => (
+          <article key={barrera} className={`${TARJETA} flex flex-col gap-2 p-5`}>
+            <div className="flex items-center gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-marca-claro text-marca" aria-hidden>
+                <I className="h-5 w-5" />
+              </span>
+              <h3 className="text-lg font-bold">{barrera}</h3>
+            </div>
+            <p className="text-sm text-tenue">{hoy}</p>
+            <p className="mt-auto flex items-start gap-1.5 rounded-xl bg-[color-mix(in_srgb,var(--cp-login-light)_45%,var(--color-superficie))] px-3 py-2 text-sm">
+              <CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-exito" aria-hidden />
+              <span>
+                <b>Con PÍA:</b> {pia}
+              </span>
+            </p>
+          </article>
+        ))}
       </div>
     </section>
   );

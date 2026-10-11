@@ -482,7 +482,31 @@ export const FuncionaRes = z.object({
   aTiempo: z.object({ tasa: z.number().nullable(), aTiempo: z.number(), cuotas: z.number(), diasAnticipacion: z.number().nullable(), meta: z.number() }),
   /** Operaciones simuladas incluidas (prisma/actividad-simulada.ts, marcadas «sim-»); 0 = solo actividad real */
   simulados: z.number(),
-  /** Le cuesta menos a la Caja: ahorro estimado al mes (supuestos de SUPUESTOS_GESTION) */
-  ahorro: z.object({ actualMes: z.number(), potencialMes: z.number(), opsAppMes: z.number(), opsMigrablesMes: z.number(), ahorroPorOp: z.number() }),
+  /**
+   * Le cuesta menos a la Caja: ahorro NETO del último mes por las operaciones que dejaron la ventanilla (pagos y
+   * transferencias por la app) menos el cashback devuelto. Estimado con los costos supuestos de SUPUESTOS_GESTION.
+   */
+  ahorro: z.object({
+    netoMes: z.number(),
+    opsMes: z.number(),
+    cashbackMes: z.number(),
+    ahorroPorOp: z.number(),
+    /** Soles ahorrados por cada S/ 1 de cashback (null si no hubo cashback) */
+    porSolCashback: z.number().nullable(),
+    /** Si pasan a la app las operaciones en ventanilla de clientes con celular apto */
+    potencialMes: z.number(),
+    opsMigrablesMes: z.number(),
+  }),
+  /** Últimas operaciones de los clientes de la demo (Rosa, Javier…): para ver en vivo el pago que hace el jurado. */
+  enVivo: z.array(
+    z.object({
+      id: z.string(),
+      nombre: z.string(),
+      accion: z.string(),
+      sinAyuda: z.boolean(),
+      /** Ya había pagado por la app al menos 20 días antes: «volvió a pagar» */
+      volvio: z.boolean(),
+    }),
+  ),
 });
 export type FuncionaRes = z.infer<typeof FuncionaRes>;

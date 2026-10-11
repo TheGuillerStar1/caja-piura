@@ -1,6 +1,6 @@
 import { SegmentoCampana } from "@cp/shared";
 import { describe, expect, it } from "vitest";
-import { alcance, enSegmento, grupoDePago, pagosATiempo, pagosSinAyuda, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "./logica.js";
+import { ahorroNetoMes, alcance, enSegmento, grupoDePago, pagosATiempo, pagosSinAyuda, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "./logica.js";
 
 const base: PerfilGestion = {
   id: 1,
@@ -145,5 +145,19 @@ describe("¿está funcionando?: desglose por tipo de operación", () => {
     expect(r.desglose.map((f) => f.tasa)).toEqual([null, null, null]);
     expect(grupoDePago("RECIBO")).toBe("SERVICIOS");
     expect(grupoDePago("LOGIN")).toBeNull();
+  });
+});
+
+describe("¿está funcionando?: le cuesta menos (ahorro neto del mes)", () => {
+  const d = (s: string) => new Date(`${s}T15:00:00Z`);
+  it("cuenta solo las operaciones de los últimos 30 días y descuenta el cashback del mes", () => {
+    const hoy = d("2026-10-10");
+    const r = ahorroNetoMes({
+      ops: [{ hoy, fecha: d("2026-10-10") }, { hoy, fecha: d("2026-09-20") }, { hoy, fecha: d("2026-09-05") /* hace 35 días: no */ }],
+      cashback: [{ hoy, fecha: d("2026-10-01"), monto: 1.5 }, { hoy, fecha: d("2026-08-01"), monto: 9 /* fuera del mes */ }],
+      ahorroPorOp: 5,
+    });
+    expect(r).toEqual({ opsMes: 2, cashbackMes: 1.5, netoMes: 8.5, porSolCashback: 6.7 });
+    expect(ahorroNetoMes({ ops: [], cashback: [], ahorroPorOp: 5 }).porSolCashback).toBeNull();
   });
 });

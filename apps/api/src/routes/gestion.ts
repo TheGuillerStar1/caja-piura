@@ -22,7 +22,7 @@ import { HttpError, validar } from "../lib/errores.js";
 import { aNumero, diasEntre } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { recomendar } from "../motor/index.js";
-import { AHORRO_POR_OP, alcance, grupoDePago, pagosATiempo, pagosSinAyuda, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "../gestion/logica.js";
+import { AHORRO_POR_OP, ahorroNetoMes, alcance, DIAS_OTRO_MES, grupoDePago, pagosATiempo, pagosSinAyuda, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "../gestion/logica.js";
 import { tasaExitoSinAyuda } from "../retencion/logica.js";
 
 export const router = Router();
@@ -193,9 +193,12 @@ async function calcularFunciona(): Promise<FuncionaRes> {
     prisma.transferencia.count({ where: { tipo: "CONTACTO", conAyuda: false } }),
   ]);
   // Actividad simulada (prisma/actividad-simulada.ts): se avisa en pantalla mientras exista.
-  const [pagosSim, yapeosSim] = await Promise.all([
+  const [pagosSim, yapeosSim, transferencias, cashbacks, demo] = await Promise.all([
     prisma.pago.count({ where: { idempotencyKey: { startsWith: "sim-" } } }),
     prisma.transferencia.count({ where: { idempotencyKey: { startsWith: "sim-" } } }),
+    prisma.transferencia.findMany({ select: { id: true, clienteId: true, creadoEn: true, tipo: true, conAyuda: true } }),
+    prisma.cashback.findMany({ select: { clienteId: true, creadoEn: true, monto: true } }),
+    prisma.cliente.findMany({ where: { esDemo: true }, select: { id: true, nombre: true } }),
   ]);
 
   const sinAyudaDe = new Map(sinAyudaPorTipo.map((g) => [g.tipo, g._count._all]));
@@ -227,13 +230,39 @@ async function calcularFunciona(): Promise<FuncionaRes> {
     pagosCuota.filter((p) => vence.has(p.referenciaId)).map((p) => ({ pagado: p.creadoEn, vencimiento: vence.get(p.referenciaId)! })),
   );
 
-  let opsAppMes = 0;
   let opsMigrablesMes = 0;
-  for (const p of ps) {
-    opsAppMes += p.opsDigitalesMes;
-    if (p.gamaDispositivo !== "BAJA") opsMigrablesMes += p.opsPresencialesMes;
-  }
+  for (const p of ps) if (p.gamaDispositivo !== "BAJA") opsMigrablesMes += p.opsPresencialesMes;
   const r2 = (n: number) => Math.round(n * 100) / 100;
+  const hoy = (clienteId: number) => hoyDe.get(clienteId) ?? new Date();
+  const ahorro = ahorroNetoMes({
+    ops: [...pagos, ...transferencias].map((o) => ({ hoy: hoy(o.clienteId), fecha: o.creadoEn })),
+    cashback: cashbacks.map((c) => ({ hoy: hoy(c.clienteId), fecha: c.creadoEn, monto: aNumero(c.monto) })),
+    ahorroPorOp: AHORRO_POR_OP,
+  });
+
+  // «Ahora en la demo»: las últimas operaciones de los clientes de la demo, para ver en vivo lo que hace el jurado.
+  const nombreDemo = new Map(demo.map((c) => [c.id, c.nombre]));
+  const ACCION: Record<string, string> = { CUOTA: "pagó su cuota", FRECUENTE: "pagó un servicio", RECIBO: "pagó su recibo", CONTACTO: "yapeó a un celular" };
+  const pagosDemo = await prisma.pago.findMany({
+    where: { estado: "EXITOSO", clienteId: { in: demo.map((c) => c.id) } },
+    select: { id: true, clienteId: true, tipo: true, conAyuda: true, creadoEn: true },
+  });
+  const primerPago = new Map<number, number>();
+  for (const p of pagosDemo) primerPago.set(p.clienteId, Math.min(primerPago.get(p.clienteId) ?? Infinity, p.creadoEn.getTime()));
+  const enVivo = [
+    ...pagosDemo.map((p) => ({ ...p, esPago: true, clave: `p${p.id}` })),
+    ...transferencias.filter((t) => nombreDemo.has(t.clienteId)).map((t) => ({ ...t, conAyuda: t.conAyuda ?? true, esPago: false, clave: `t${t.id}` })),
+  ]
+    // Más reciente primero (fecha simulada); a igual fecha, el id más alto.
+    .sort((a, b) => b.creadoEn.getTime() - a.creadoEn.getTime() || b.id - a.id)
+    .slice(0, 4)
+    .map((o) => ({
+      id: o.clave,
+      nombre: nombreDemo.get(o.clienteId) ?? "Cliente",
+      accion: ACCION[o.tipo] ?? "transfirió",
+      sinAyuda: !o.conAyuda,
+      volvio: o.esPago && diasEntre(new Date(primerPago.get(o.clienteId) ?? o.creadoEn.getTime()), o.creadoEn) >= DIAS_OTRO_MES,
+    }));
 
   return {
     sinAyuda: { ...sinAyuda, meta: METAS_FUNCIONA.sinAyuda },
@@ -247,7 +276,8 @@ async function calcularFunciona(): Promise<FuncionaRes> {
     },
     aTiempo: { ...aTiempo, meta: METAS_FUNCIONA.aTiempo },
     simulados: pagosSim + yapeosSim,
-    ahorro: { actualMes: r2(opsAppMes * AHORRO_POR_OP), potencialMes: r2(opsMigrablesMes * AHORRO_POR_OP), opsAppMes, opsMigrablesMes, ahorroPorOp: AHORRO_POR_OP },
+    ahorro: { ...ahorro, ahorroPorOp: AHORRO_POR_OP, potencialMes: r2(opsMigrablesMes * AHORRO_POR_OP), opsMigrablesMes },
+    enVivo,
   };
 }
 

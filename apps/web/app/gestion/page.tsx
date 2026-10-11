@@ -73,7 +73,7 @@ export default function GestionPage() {
       <Portada
         etiqueta="Centro de mando"
         titulo="Adopción digital en la región Piura"
-        texto="Dónde están los clientes que aún van a ventanilla, cuánto ahorra la Caja si pasan a la app y qué campaña los mueve."
+        texto="Caja Piura atiende a más de 2,8 millones de clientes en más de 100 agencias. Aquí se ve dónde están los que aún hacen cola en ventanilla y cómo llevarlos a la app, distrito por distrito."
         secciones={[
           { href: "#funciona", texto: "¿Funciona?", icono: Activity },
           { href: "#kpis", texto: "Indicadores", icono: TrendingUp },
@@ -99,14 +99,13 @@ export default function GestionPage() {
       </main>
 
       <PieMarca>
-          <p>
-            <b>Supuestos provisionales</b> (reemplazar por los costos reales de Caja Piura): una operación en ventanilla cuesta{" "}
-            {r ? soles(r.supuestos.costoOpVentanilla) : "…"} y por la app {r ? soles(r.supuestos.costoOpDigital) : "…"}; un SMS{" "}
-            {r ? soles(r.supuestos.costoSms) : "…"}; el cashback doble cuesta {r ? soles(r.supuestos.cashbackExtraPorPago) : "…"} extra por pago.{" "}
-            <b>Campañas</b>: resultados proyectados con un modelo fijo (abrir el aviso, pagar y seguir usando la app según cuánto usa ya el
-            celular y la gama de su equipo), no medidos. <b>Mapa</b>: límites distritales del INEI; Veintiséis de Octubre se muestra dentro de
-            Piura. Prototipo con 500 perfiles ficticios con el esquema de datos de Caja Piura.
-          </p>
+        <p>
+          <b>Los datos de la demo son ficticios:</b> 500 perfiles armados con el esquema de datos de Caja Piura. Los costos por operación, las metas y
+          los resultados de las campañas son supuestos y proyecciones, no mediciones. Costos supuestos: una operación en ventanilla{" "}
+          {r ? soles(r.supuestos.costoOpVentanilla) : "…"} y por la app {r ? soles(r.supuestos.costoOpDigital) : "…"}; un SMS{" "}
+          {r ? soles(r.supuestos.costoSms) : "…"}; el cashback doble {r ? soles(r.supuestos.cashbackExtraPorPago) : "…"} extra por pago. Mapa: límites
+          distritales del INEI; Veintiséis de Octubre se muestra dentro de Piura.
+        </p>
       </PieMarca>
     </div>
   );

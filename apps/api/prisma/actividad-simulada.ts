@@ -150,8 +150,8 @@ async function main() {
           if (azar() < 0.5) continue;
         }
         const exitoso = azar() > 0.02;
-        const seg = { CUOTA: [20, 45], FRECUENTE: [9, 22], RECIBO: [16, 34] }[flujo];
-        const ms = Math.round((entre(seg[0], seg[1]) + (conAyuda ? entre(10, 25) : 0)) * 1000 * (mes === 0 ? 1.15 : 1));
+        const seg = { CUOTA: [16, 32], FRECUENTE: [8, 20], RECIBO: [14, 28] }[flujo];
+        const ms = Math.round((entre(seg[0], seg[1]) + (conAyuda ? entre(6, 12) : 0)) * 1000 * (mes === 0 ? 1.1 : 1));
         let cashback = 0;
         if (exitoso) {
           const cb = calcularCashback({ tipo: flujo, monto, conAyuda, diasAlVencimiento, acumuladoMes });

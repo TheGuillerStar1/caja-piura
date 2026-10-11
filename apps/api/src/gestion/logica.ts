@@ -213,3 +213,24 @@ export function pagosSinAyuda(d: {
     desglose: [fila("CREDITO", g.CREDITO), fila("SERVICIOS", g.SERVICIOS), fila("YAPEO", { logrados: d.yapeos.sinAyuda, total: d.yapeos.total })],
   };
 }
+
+/**
+ * Le cuesta menos: ahorro NETO del último mes por las operaciones que dejaron la ventanilla (pagos y transferencias
+ * por la app en los 30 días previos a la fecha simulada de cada cliente), menos el cashback que la Caja devolvió en ese mes.
+ */
+export function ahorroNetoMes(d: { ops: { hoy: Date; fecha: Date }[]; cashback: { hoy: Date; fecha: Date; monto: number }[]; ahorroPorOp: number }) {
+  const enMes = (hoy: Date, fecha: Date) => {
+    const dias = diasEntre(fecha, hoy);
+    return dias >= 0 && dias < 30;
+  };
+  const opsMes = d.ops.filter((o) => enMes(o.hoy, o.fecha)).length;
+  const cashbackMes = Math.round(d.cashback.filter((c) => enMes(c.hoy, c.fecha)).reduce((s, c) => s + c.monto, 0) * 100) / 100;
+  const bruto = opsMes * d.ahorroPorOp;
+  return {
+    opsMes,
+    cashbackMes,
+    netoMes: Math.round((bruto - cashbackMes) * 100) / 100,
+    /** Soles ahorrados por cada S/ 1 de cashback (null si no se entregó cashback). */
+    porSolCashback: cashbackMes > 0 ? Math.round((bruto / cashbackMes) * 10) / 10 : null,
+  };
+}
