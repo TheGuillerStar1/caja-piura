@@ -9,6 +9,7 @@ import { IconoCuota, IconoFrecuente, IconoProgreso, IconoRecibo, IconoSaldo } fr
 import { Boton, Mascota, Pantalla } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { iniciarFlujo, marcarAyuda, track } from "@/lib/track";
+import { empezarGuia, type IdGuia } from "@/lib/guiaPasos";
 import { hablar } from "@/lib/voz";
 
 type Mensaje = { id: number; de: "pia" | "yo"; texto: string; accion?: AccionUI };
@@ -39,7 +40,7 @@ const OPCIONES_RESPALDO = [
 
 /** El botón dice lo que va a pasar. */
 function textoBoton(ruta: string) {
-  if (ruta.startsWith("/pagar/confirmar")) return "Revisar y pagar";
+  if (ruta.startsWith("/pagar/confirmar")) return "Sí, prepáralo tú";
   if (ruta.startsWith("/pagar/recibo")) return "Tomar foto del recibo";
   if (ruta.startsWith("/pagar/cuota")) return "Ver mi cuota";
   if (ruta.startsWith("/pagar/frecuentes")) return "Ver mis pagos de siempre";
@@ -47,6 +48,14 @@ function textoBoton(ruta: string) {
   if (ruta.startsWith("/ajustes")) return "Abrir Ajustes";
   if (ruta.startsWith("/inicio")) return "Ir al inicio";
   return "Abrir";
+}
+
+/** Qué guía paso a paso corresponde a cada pago (lib/guiaPasos.ts). */
+function guiaDe(ruta: string): IdGuia | null {
+  if (ruta.includes("tipo=CUOTA") || ruta.startsWith("/pagar/cuota")) return "CUOTA";
+  if (ruta.includes("tipo=FRECUENTE") || ruta.startsWith("/pagar/frecuentes")) return "FRECUENTE";
+  if (ruta.includes("tipo=RECIBO") || ruta.startsWith("/pagar/recibo")) return "RECIBO";
+  return null;
 }
 
 function IcParlante({ className = "h-5 w-5" }: { className?: string }) {
@@ -88,8 +97,6 @@ export default function Ayuda() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
-  const [llevando, setLlevando] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const fin = useRef<HTMLDivElement>(null);
   const sigId = useRef(1);
 
@@ -98,7 +105,6 @@ export default function Ayuda() {
   const reconocedor = useRef<{ stop: () => void } | null>(null);
 
   const tono: Tono = me?.recomendacion.tono ?? "CALIDO";
-  const autoNavegar = tono === "CALIDO" || tono === "CORTO";
 
   useEffect(() => {
     iniciarFlujo("ASISTENTE");
@@ -112,7 +118,6 @@ export default function Ayuda() {
         if (esSinSesion(e)) router.replace("/entrar");
         else setMensajes([{ id: 0, de: "pia", texto: "Hola, soy Pía. ¿Qué necesitas?" }]);
       });
-    return () => clearTimeout(timer.current);
   }, [router]);
 
   useEffect(() => {
@@ -123,11 +128,16 @@ export default function Ayuda() {
 
   useEffect(() => {
     if (mensajes.length > 1 || pensando) fin.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [mensajes, pensando, llevando]);
+  }, [mensajes, pensando]);
+
+  /** «Guíame»: en vez de pagar desde el chat, Pía lleva al inicio y señala cada paso en la app de siempre. */
+  function guiarme(id: IdGuia) {
+    track("ayuda", "tocar", { flujo: "ASISTENTE" });
+    empezarGuia(id);
+    router.push("/inicio");
+  }
 
   function ir(ruta: string) {
-    clearTimeout(timer.current);
-    setLlevando(null);
     track("ayuda", "tocar", { flujo: "ASISTENTE" });
     router.push(ruta);
   }
@@ -135,8 +145,6 @@ export default function Ayuda() {
   async function enviar(t: string) {
     const msg = t.trim().slice(0, 500);
     if (!msg || pensando) return;
-    clearTimeout(timer.current);
-    setLlevando(null);
     marcarAyuda();
     track("ayuda", "ayuda", { flujo: "ASISTENTE", ayudaUsada: true });
     setTexto("");
@@ -145,11 +153,6 @@ export default function Ayuda() {
     try {
       const r = await api<AsistenteRes>("/asistente", { cuerpo: { mensaje: msg } });
       setMensajes((m) => [...m, { id: sigId.current++, de: "pia", texto: r.respuesta, accion: r.accion }]);
-      if (r.accion.tipo === "NAVEGAR" && autoNavegar) {
-        const ruta = r.accion.ruta;
-        setLlevando(ruta);
-        timer.current = setTimeout(() => ir(ruta), 2500);
-      }
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
       track("ayuda", "error", { flujo: "ASISTENTE" });
@@ -311,23 +314,11 @@ export default function Ayuda() {
               <Burbuja texto={m.texto} escuchar={() => hablar(m.texto)} />
               {m.accion?.tipo === "NAVEGAR" && (
                 <div className="ml-10 flex flex-col gap-2">
-                  <Boton guia={m === ultimoPia} onClick={() => ir((m.accion as { ruta: string }).ruta)}>
-                    {textoBoton(m.accion.ruta)}
-                  </Boton>
-                  {m === ultimoPia && llevando && (
-                    <p className="flex items-center justify-between gap-2 text-tenue">
-                      <span>Te llevo en 2 segundos…</span>
-                      <button
-                        type="button"
-                        className="font-bold text-marca underline underline-offset-4"
-                        onClick={() => {
-                          clearTimeout(timer.current);
-                          setLlevando(null);
-                        }}
-                      >
-                        Quedarme aquí
-                      </button>
-                    </p>
+                  <Boton onClick={() => ir((m.accion as { ruta: string }).ruta)}>{textoBoton(m.accion.ruta)}</Boton>
+                  {guiaDe(m.accion.ruta) && (
+                    <Boton variante="secundario" onClick={() => guiarme(guiaDe((m.accion as { ruta: string }).ruta)!)}>
+                      Guíame paso a paso en la app
+                    </Boton>
                   )}
                 </div>
               )}
@@ -344,6 +335,15 @@ export default function Ayuda() {
                       <span aria-hidden className="text-2xl leading-none">›</span>
                     </button>
                   ))}
+                  {guiaDe(m.accion.opciones[0]?.ruta ?? "") && (
+                    <button
+                      type="button"
+                      onClick={() => guiarme(guiaDe(m.accion?.tipo === "OPCIONES" ? m.accion.opciones[0].ruta : "")!)}
+                      className="min-h-12 font-bold text-marca underline underline-offset-4"
+                    >
+                      Prefiero que me guíes en la app
+                    </button>
+                  )}
                 </div>
               )}
             </div>

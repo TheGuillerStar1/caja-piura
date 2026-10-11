@@ -24,6 +24,7 @@ export function BarraInferior({ activa, sinPia }: { activa?: Pestana; sinPia?: b
       {!sinPia && (
         <Link
           href="/ayuda"
+          data-paso="pia"
           onClick={() => track("barra-pia", "tocar")}
           aria-label="¿Necesitas ayuda? Habla con Pía, tu asistente"
           className="fixed bottom-[4.75rem] z-30 flex items-center gap-2 rounded-full bg-marca py-1.5 pl-1.5 pr-4 font-bold text-white shadow-[0_4px_14px_rgb(0_0_0/0.45)] ring-2 ring-white/15 active:bg-marca-oscuro"
@@ -47,6 +48,7 @@ export function BarraInferior({ activa, sinPia }: { activa?: Pestana; sinPia?: b
               key={id}
               href={ruta}
               aria-current={on ? "page" : undefined}
+              data-paso={`tab-${id}`}
               onClick={() => track(`barra-${id}`, "tocar")}
               className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-center text-[0.68rem] leading-tight ${
                 on ? "font-medium text-marca" : "text-tinta/90"

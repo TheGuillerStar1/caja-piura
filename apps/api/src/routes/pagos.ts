@@ -12,10 +12,10 @@ export const router = Router();
 
 /** Resumen del pago (monto, a quién, desde qué cuenta) + key de idempotencia. No mueve dinero. */
 router.post("/pagos/preparar", requiereSesion, async (req, res) => {
-  const { tipo, referenciaId } = validar(PrepararPagoReq, req.body);
+  const { tipo, referenciaId, cuentaId } = validar(PrepararPagoReq, req.body);
   const clienteId = req.clienteId!;
   const obj = await resolverObjetivo(clienteId, tipo, referenciaId);
-  const cuenta = await cuentaPrincipal(clienteId);
+  const cuenta = await cuentaPrincipal(clienteId, cuentaId);
   const r: PrepararPagoRes = {
     tipo,
     referenciaId,

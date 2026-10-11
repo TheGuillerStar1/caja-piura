@@ -15,17 +15,10 @@ import { hablar } from "@/lib/voz";
 
 const P = "bienvenida";
 
-const CHIPS: Record<Vista, { icono: string; texto: string }[]> = {
-  ASISTIDA: [
-    { icono: "🔠", texto: "Letra grande" },
-    { icono: "🔊", texto: "Te leemos los montos" },
-    { icono: "👆", texto: "Te guiamos paso a paso" },
-  ],
-  ESTANDAR: [
-    { icono: "📋", texto: "Todo a la vista" },
-    { icono: "⚡", texto: "Menos pasos" },
-    { icono: "🔤", texto: "Letra normal" },
-  ],
+/** Qué va a encontrar en cada vista, en 1-2-3 (en vez de rasgos sueltos que confundían). */
+const PASOS: Record<Vista, string[]> = {
+  ASISTIDA: ["Tu app de siempre, con letra más grande.", "Pía, tu asistente, te ayuda con tus pagos desde «¿Necesitas ayuda?».", "Te muestra paso a paso dónde tocar. Tú confirmas cada pago."],
+  ESTANDAR: ["Tu app de siempre, con todas las opciones.", "Pía está en «¿Necesitas ayuda?» cuando la necesites.", "Tú confirmas cada pago."],
 };
 
 export default function Bienvenida() {
@@ -138,20 +131,21 @@ export default function Bienvenida() {
 
       <CelularPrevia vista={previa} />
 
-      <ul key={previa} className="anim-previa grid grid-cols-3 gap-2" aria-live="polite">
-        {CHIPS[previa].map((c) => (
-          <li key={c.texto} className="flex flex-col items-center justify-center gap-1 rounded-xl border border-linea bg-superficie px-1.5 py-2 text-center text-sm font-bold leading-tight">
-            <span aria-hidden className="text-xl leading-none">
-              {c.icono}
+      <ol key={previa} className="anim-previa flex flex-col gap-2" aria-live="polite">
+        {PASOS[previa].map((p, k) => (
+          <li key={p} className="flex items-start gap-3 text-lg leading-snug">
+            <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-marca text-base font-bold text-white">
+              {k + 1}
             </span>
-            {c.texto}
+            {p}
           </li>
         ))}
-      </ul>
+      </ol>
 
+      {previa === rec && (
       <details className="group rounded-2xl border border-linea bg-superficie px-4">
         <summary className="flex cursor-pointer list-none items-center justify-between font-bold text-marca">
-          ¿Por qué te recomendamos la {rec === "ASISTIDA" ? "asistida" : "estándar"}?
+          ¿Por qué te recomendamos esta vista?
           <span aria-hidden className="transition-transform group-open:rotate-180">⌄</span>
         </summary>
         <ul className="flex flex-col gap-1 pb-3">
@@ -163,6 +157,7 @@ export default function Bienvenida() {
           ))}
         </ul>
       </details>
+      )}
     </Pantalla>
   );
 }

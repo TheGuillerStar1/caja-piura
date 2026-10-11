@@ -349,7 +349,7 @@ function EscribirCodigo({
           cambiar empresa
         </button>
       </p>
-      <TecladoCodigo valor={codigo} largo={largo} onCambio={setCodigo} />
+      <TecladoCodigo valor={codigo} largo={largo} onCambio={setCodigo} etiqueta={elegido.rubro === "TELEFONIA" ? "Número de celular" : "Código"} />
       <Boton guia={asistida && completo} disabled={!completo} onClick={() => onBuscar(codigo, elegido.id)}>
         {completo ? "Buscar mi recibo" : `Faltan ${largo - codigo.length} números`}
       </Boton>

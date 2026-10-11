@@ -11,9 +11,9 @@ export async function obtenerCliente(clienteId: number) {
   return c;
 }
 
-/** Cuenta principal = la primera cuenta del cliente. */
-export async function cuentaPrincipal(clienteId: number) {
-  const c = await prisma.cuenta.findFirst({ where: { clienteId }, orderBy: { id: "asc" } });
+/** Cuenta de origen: la elegida (si es del cliente) o, si no viene, la principal = la primera cuenta del cliente. */
+export async function cuentaPrincipal(clienteId: number, cuentaId?: number) {
+  const c = await prisma.cuenta.findFirst({ where: { clienteId, ...(cuentaId !== undefined ? { id: cuentaId } : {}) }, orderBy: { id: "asc" } });
   if (!c) throw new HttpError(422, "SIN_CUENTA", "No encontramos una cuenta para pagar");
   return c;
 }

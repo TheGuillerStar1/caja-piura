@@ -3,14 +3,14 @@ import Link from "next/link";
 import { IcChevron, IcEstrella } from "./IconosApp";
 
 type Icono = (p: { className?: string }) => React.ReactNode;
-export type ItemLista = { texto: string; ruta: string; Icono: Icono; nuevo?: string; onClick?: () => void };
+export type ItemLista = { texto: string; ruta: string; Icono: Icono; nuevo?: string; onClick?: () => void; paso?: string };
 
 export function PanelLista({ items }: { items: ItemLista[] }) {
   return (
     <ul className="mx-3 overflow-hidden rounded-lg bg-superficie shadow-[0_1px_4px_rgb(0_0_0/0.35)]">
-      {items.map(({ texto, ruta, Icono, nuevo, onClick }) => (
+      {items.map(({ texto, ruta, Icono, nuevo, onClick, paso }) => (
         <li key={texto} className="border-b border-linea/70 last:border-0">
-          <Link href={ruta} onClick={onClick} className="flex min-h-15 items-center gap-4 px-5 text-[0.95rem] font-medium text-tinta active:bg-superficie-2 in-data-[vista=ASISTIDA]:min-h-17 in-data-[vista=ASISTIDA]:text-lg">
+          <Link href={ruta} onClick={onClick} data-paso={paso} className="flex min-h-15 items-center gap-4 px-5 text-[0.95rem] font-medium text-tinta active:bg-superficie-2 in-data-[vista=ASISTIDA]:min-h-17 in-data-[vista=ASISTIDA]:text-lg">
             <Icono className="h-6 w-6 shrink-0 text-marca in-data-[vista=ASISTIDA]:h-7 in-data-[vista=ASISTIDA]:w-7" />
             <span className="flex-1">
               {texto}

@@ -50,7 +50,7 @@ export async function confirmarPago(clienteId: number, b: ConfirmarPagoReq): Pro
 
   const cliente = await obtenerCliente(clienteId);
   const obj = await resolverObjetivo(clienteId, b.tipo, b.referenciaId);
-  const cuenta = await cuentaPrincipal(clienteId);
+  const cuenta = await cuentaPrincipal(clienteId, b.cuentaId);
   const fecha = fechaOperacion(cliente.fechaSimulada);
 
   // Fallo simulado (demo): se registra, no se toca el saldo. Un reintento con la misma key podrá cobrar.

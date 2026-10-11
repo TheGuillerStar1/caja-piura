@@ -1,17 +1,18 @@
 // Dueño: Agente C. Teclado numérico propio para escribir el código del recibo (no abre el teclado del celular).
-type Props = { valor: string; largo: number; onCambio: (v: string) => void };
+/** etiqueta: cómo se llama el código en el recibo (p. ej. "Número de celular" en telefonía). */
+type Props = { valor: string; largo: number; onCambio: (v: string) => void; etiqueta?: string };
 
 const TECLAS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "borrar"];
 
-export function TecladoCodigo({ valor, largo, onCambio }: Props) {
+export function TecladoCodigo({ valor, largo, onCambio, etiqueta = "Código" }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <div
         className="flex min-h-16 items-center justify-center rounded-2xl border-2 border-marca bg-superficie px-3 text-3xl font-bold tracking-[0.2em] tabular-nums"
         aria-live="polite"
-        aria-label={`Código: ${valor || "vacío"}. ${valor.length} de ${largo} números`}
+        aria-label={`${etiqueta}: ${valor || "vacío"}. ${valor.length} de ${largo} números`}
       >
-        {valor || <span className="text-xl font-normal tracking-normal text-tenue">Escribe el código</span>}
+        {valor || <span className="text-xl font-normal tracking-normal text-tenue">Escribe el {etiqueta.toLowerCase()}</span>}
       </div>
       <p className="text-center text-tenue">
         {valor.length} de {largo} números

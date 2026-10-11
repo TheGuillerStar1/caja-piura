@@ -54,6 +54,8 @@ export function Confirmar() {
   const tipo = TIPOS.includes(tipoParam) ? tipoParam : null;
   const ref = Number(params.get("ref"));
   const fallar = params.get("fallar") === "1";
+  // Cuenta de origen elegida en el paso 1 (Pago de créditos propios / Pago de servicios), como en la app oficial.
+  const cuentaId = Number(params.get("cuenta")) || undefined;
   const flujo = tipo ?? undefined;
 
   const [estado, setEstado] = useState<Estado>({ fase: "cargando" });
@@ -76,7 +78,7 @@ export function Confirmar() {
     }
     setEstado({ fase: "cargando" });
     try {
-      const p = await api<PrepararPagoRes>("/pagos/preparar", { cuerpo: { tipo, referenciaId: ref } });
+      const p = await api<PrepararPagoRes>("/pagos/preparar", { cuerpo: { tipo, referenciaId: ref, ...(cuentaId ? { cuentaId } : {}) } });
       // Si hubo un intento anterior (falló o se recargó la página), se reutiliza su key: nunca se cobra dos veces.
       const previa = leerKey(tipo, ref);
       if (!previa) guardarKey(tipo, ref, p.idempotencyKey);
@@ -130,6 +132,7 @@ export function Confirmar() {
           cuerpo: {
             tipo,
             referenciaId: ref,
+            ...(cuentaId ? { cuentaId } : {}),
             idempotencyKey: pago.idempotencyKey,
             autenticacion: m,
             conAyuda: usoAyuda(),
@@ -299,6 +302,7 @@ export function Confirmar() {
             <p className="text-center font-medium">Revisa el monto y la cuenta. El pago se hará solo cuando confirmes.</p>
             <div ref={registrar("boton")} className={`rounded-boton ${marcar("boton")}`}>
               <Boton
+                data-paso="confirmar"
                 guia={asistida && guia === null}
                 onClick={() => {
                   callar();

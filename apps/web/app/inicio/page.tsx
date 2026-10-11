@@ -2,39 +2,25 @@
 // "Mis productos": réplica de la pantalla principal de la app oficial (saludo, tipo de cambio, Cuentas / Tarjetas /
 // Créditos desplegables y Mis servicios). Lo único nuevo son los recordatorios de Pía arriba y, en la vista
 // asistida, los accesos grandes "¿Qué necesitas hacer hoy?".
-import type { Aviso, CuotaRes, InicioRes, MeRes, Sugerencia } from "@cp/shared";
+import type { Aviso, CuotaRes, InicioRes, MeRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { IcCelular, IcChevronArriba, IcCreditos, IcCuentas, IcTarjeta } from "@/components/app/IconosApp";
 import { rutaConfirmar } from "@/components/pago/almacen";
 import { EstilosPago } from "@/components/pago/EstilosPago";
-import { IconoCuota, IconoFrecuente, IconoRecibo } from "@/components/pago/Iconos";
 import { filtrarAvisos, guardarRecordatorios, leerRecordatorios, RECORDATORIOS_INICIALES, type Recordatorios } from "@/components/retencion/recordatorios";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla } from "@/components/ui";
+import { Foco } from "@/components/ui/Foco";
+import { leerGuia } from "@/lib/guiaPasos";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { cargarCliente } from "@/lib/cliente";
 import { fechaCorta, soles } from "@/lib/formato";
 import { iniciarFlujo, track } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 
-type Rapido = { id: Sugerencia["id"]; texto: string; ayuda: string; ruta: string; flujo: "CUOTA" | "FRECUENTE" | "RECIBO"; Icono: (p: { className?: string }) => React.ReactNode };
-const RAPIDOS: Rapido[] = [
-  { id: "PAGAR_CUOTA", texto: "Pagar mi cuota", ayuda: "Tu crédito de Caja Piura", ruta: "/pagar/cuota", flujo: "CUOTA", Icono: IconoCuota },
-  { id: "PAGAR_RECIBO", texto: "Pagar un recibo", ayuda: "Luz, agua o teléfono", ruta: "/pagar/recibo", flujo: "RECIBO", Icono: IconoRecibo },
-  { id: "FRECUENTES", texto: "Mis pagos frecuentes", ayuda: "Lo que pagas cada mes", ruta: "/pagar/frecuentes", flujo: "FRECUENTE", Icono: IconoFrecuente },
-];
-
-/** Las sugeridas por el motor primero. */
-function ordenar(sugeridos: Sugerencia[]) {
-  const pos = (id: Sugerencia["id"]) => {
-    const i = sugeridos.findIndex((s) => s.id === id);
-    return i === -1 ? 100 : i;
-  };
-  return [...RAPIDOS].sort((a, b) => pos(a.id) - pos(b.id));
-}
-
 const ANUNCIO = "cp_anuncio_pia_v3";
+const FOCO = "cp_foco_pia";
 
 function nombreAviso(a: Aviso) {
   return a.tipo === "CUOTA" ? "Cuota de tu crédito" : a.titulo.split(" · ")[0];
@@ -58,6 +44,8 @@ export default function Inicio() {
   const [error, setError] = useState<string | null>(null);
   const [anuncio, setAnuncio] = useState(false);
   const [rec, setRec] = useState<Recordatorios>(RECORDATORIOS_INICIALES);
+  const [focoPia, setFocoPia] = useState(false);
+  const [guiaActiva, setGuiaActiva] = useState(false);
   const [abierta, setAbierta] = useState<Seccion | null>(null);
 
   const cargar = useCallback(async () => {
@@ -81,6 +69,10 @@ export default function Inicio() {
     track("inicio", "ver");
     cargar();
     setRec(leerRecordatorios());
+    setGuiaActiva(Boolean(leerGuia()));
+    try {
+      if (!sessionStorage.getItem(FOCO)) setFocoPia(true);
+    } catch {}
     try {
       if (!localStorage.getItem(ANUNCIO)) setAnuncio(true);
     } catch {}
@@ -95,6 +87,14 @@ export default function Inicio() {
   };
 
   // Manual visual (retención): «Tu próxima cuota vence el 12. ¿Quieres que te recordemos?». Se pregunta una sola vez.
+  const cerrarFoco = () => {
+    setFocoPia(false);
+    track("inicio-foco-pia", "tocar");
+    try {
+      sessionStorage.setItem(FOCO, "1");
+    } catch {}
+  };
+
   const decidirAvisos = (si: boolean) => {
     track("inicio-avisos", "tocar");
     const nuevo = { ...rec, activos: si, pausados: false };
@@ -143,8 +143,13 @@ export default function Inicio() {
     <Pantalla titulo={`Hola, ${me.nombre}`} subtitulo={cambio} pestana="productos">
       <EstilosPago />
 
+      {/* Vista asistida: el inicio es el mismo de siempre; todo se oscurece y solo queda resaltado «¿Necesitas ayuda?». */}
+      {asistida && focoPia && !guiaActiva && (
+        <Foco selector='[data-paso="pia"]' mensaje="¿Necesitas ayuda? Toca aquí para que te acompañemos." alSalir={cerrarFoco} />
+      )}
+
       {/* Primera vez: Pía se presenta sin tapar la pantalla (Manual: nada de ventanas que bloqueen operaciones). */}
-      {anuncio && (
+      {anuncio && !asistida && (
         <section aria-labelledby="anuncio-titulo" className="anim-aparece flex flex-col gap-3 rounded-2xl border-2 border-marca bg-marca-claro p-4">
           <div className="flex items-start gap-3">
             <span className="shrink-0 rounded-full bg-white p-0.5">
@@ -187,7 +192,7 @@ export default function Inicio() {
       )}
 
       {/* Lo nuevo: recordatorios de Pía (opt-in y configurables en Ajustes). */}
-      {avisos.map((a, i) => (
+      {avisos.map((a) => (
         <section key={`${a.tipo}-${a.referenciaId}`} className="flex flex-col gap-3 rounded-lg border-l-4 border-acento bg-superficie p-4" aria-label="Recordatorio de pago">
           <div className="flex items-start gap-3">
             <span className="shrink-0 rounded-full bg-white p-0.5">
@@ -199,33 +204,11 @@ export default function Inicio() {
             </div>
             <p className="text-xl font-bold">{soles(a.monto)}</p>
           </div>
-          <Boton guia={asistida && i === 0} onClick={() => pagarAviso(a)} className={asistida ? "" : "min-h-11! py-2 text-base"}>
+          <Boton onClick={() => pagarAviso(a)} className={asistida ? "" : "min-h-11! py-2 text-base"}>
             Pagar {soles(a.monto)}
           </Boton>
         </section>
       ))}
-
-      {asistida && (
-        <section className="flex flex-col gap-3" aria-label="Qué necesitas hacer hoy">
-          <h2 className="text-xl font-bold">¿Qué necesitas hacer hoy?</h2>
-          {ordenar(datos.accesos).map((r, i) => (
-            <Link
-              key={r.id}
-              href={r.ruta}
-              onClick={() => (iniciarFlujo(r.flujo), track("inicio", "tocar", { flujo: r.flujo }))}
-              className={`${!avisos.length && i === 0 ? "guia-toca guia-etiqueta " : ""}flex min-h-20 items-center gap-4 rounded-xl border border-linea-fuerte bg-superficie px-4 active:bg-superficie-2`}
-            >
-              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-marca text-white">
-                <r.Icono className="h-7 w-7" />
-              </span>
-              <span className="flex-1">
-                <span className="block text-xl font-bold">{r.texto}</span>
-                <span className="block text-tenue">{r.ayuda}</span>
-              </span>
-            </Link>
-          ))}
-        </section>
-      )}
 
       <section aria-label="Mis productos">
         <h2 className={`${asistida ? "text-xl" : "text-lg"} mb-1 font-bold`}>Mis productos</h2>

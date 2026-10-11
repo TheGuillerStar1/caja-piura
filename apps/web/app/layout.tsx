@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Roboto } from "next/font/google";
 import { AvisoSinConexion } from "@/components/ui/AvisoSinConexion";
 import { DemoBarDiferida } from "@/components/ui/DemoBarDiferida";
+import { GuiaPasos } from "@/components/GuiaPasos";
 import { VistaProvider } from "@/lib/vista";
 import "./globals.css";
 
@@ -24,7 +25,7 @@ export const viewport: Viewport = { themeColor: "#0b4ed4", width: "device-width"
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     // suppressHydrationWarning: SCRIPT_VISTA cambia data-vista antes de que React hidrate.
-    <html lang="es" data-vista="ESTANDAR" data-tema="oscuro" className={roboto.variable} suppressHydrationWarning>
+    <html lang="es" data-vista="ESTANDAR" data-tema="claro" className={roboto.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_VISTA }} />
       </head>
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <VistaProvider>
           {children}
           <AvisoSinConexion />
+          <GuiaPasos />
           {/* La barra de demo se descarga aparte, después de la pantalla (no pesa en la primera carga). */}
           <DemoBarDiferida />
         </VistaProvider>

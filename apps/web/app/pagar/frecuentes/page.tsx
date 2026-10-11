@@ -63,6 +63,7 @@ export default function PagarFrecuentes() {
                 <button
                   type="button"
                   disabled={!f.deuda}
+                  data-paso={f.id === primeroConDeuda ? "frecuente" : undefined}
                   onClick={() => {
                     track("pagar-frecuentes", "tocar", { flujo: "FRECUENTE" });
                     router.push(rutaConfirmar("FRECUENTE", f.id));

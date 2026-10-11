@@ -49,6 +49,8 @@ type DemoCliente = {
   gama: "BAJA" | "MEDIA" | "ALTA";
   cuentaTipo: string;
   saldo: number;
+  /** Cuentas adicionales (para elegir la cuenta de origen, como en la app oficial). */
+  otrasCuentas?: { tipo: string; saldo: number }[];
   credito: string;
   totalCuotas: number;
   montoCuota: number;
@@ -60,7 +62,7 @@ type DemoCliente = {
 export const CLIENTES_DEMO: DemoCliente[] = [
   {
     dni: "40000001", nombre: "Rosa", apellido: "Huamán", edad: 63, ocupacion: "COMERCIANTE", zona: "URBANA", distrito: "Castilla",
-    presenciales: 9, digitales: 0, gama: "BAJA", cuentaTipo: "Ahorro emprendedor", saldo: 1200,
+    presenciales: 9, digitales: 0, gama: "BAJA", cuentaTipo: "Ahorro emprendedor", saldo: 1200, otrasCuentas: [{ tipo: "Ahorro soles", saldo: 280 }],
     credito: "0012345", totalCuotas: 12, montoCuota: 350, pagadas: 7, diasSiguiente: 3,
     frecuentes: [{ alias: "Luz de mamá", empresa: "Enosa", codigo: "45781236", esPropio: false, titular: "MARIA PEREZ", monto: 85.4, dias: 5 }],
   },
@@ -148,6 +150,11 @@ export async function sembrarDemo(prisma: PrismaClient) {
     await prisma.cuenta.create({
       data: { clienteId: cliente.id, numero: `0011020000${String(i + 1).padStart(4, "0")}`, tipo: c.cuentaTipo, saldo: c.saldo },
     });
+    for (const [k, o] of (c.otrasCuentas ?? []).entries()) {
+      await prisma.cuenta.create({
+        data: { clienteId: cliente.id, numero: `0011030000${String(i + 1).padStart(2, "0")}${String(k + 1).padStart(2, "0")}`, tipo: o.tipo, saldo: o.saldo },
+      });
+    }
     // Cuotas: la n.º (pagadas + 1) vence en vencSiguiente; el resto, mes a mes.
     await prisma.cuota.createMany({
       data: Array.from({ length: c.totalCuotas }, (_, k) => {

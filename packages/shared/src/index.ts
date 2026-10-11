@@ -138,7 +138,8 @@ export const ReciboDemo = z.object({ key: z.string(), url: z.string(), empresa: 
 export const RecibosDemoRes = z.array(ReciboDemo);
 
 // ── Pagos ────────────────────────────────────────────
-export const PrepararPagoReq = z.object({ tipo: TipoPago, referenciaId: z.number() });
+/** cuentaId: cuenta de origen elegida (como en la app oficial). Si no viene, se usa la cuenta principal. */
+export const PrepararPagoReq = z.object({ tipo: TipoPago, referenciaId: z.number(), cuentaId: z.number().optional() });
 /** CUOTA → id de Cuota · FRECUENTE → id de Frecuente · RECIBO → id de Recibo */
 export const PrepararPagoRes = z.object({
   tipo: TipoPago,
@@ -159,6 +160,8 @@ export const ConfirmarPagoReq = z.object({
   idempotencyKey: z.string(),
   autenticacion: z.enum(["ROSTRO", "HUELLA", "CLAVE"]),
   conAyuda: z.boolean().default(false),
+  /** Cuenta de origen elegida; si no viene, la principal. */
+  cuentaId: z.number().optional(),
   /** Solo demo: fuerza un fallo para mostrar "No se cobró nada" */
   simularFallo: z.boolean().optional(),
 });
