@@ -141,7 +141,7 @@ export default function Bienvenida() {
         ))}
       </ol>
 
-      <CelularPrevia vista={previa} />
+      <CelularPrevia vista={previa} nombre={nombre} cuentas={me.cuentas.length} />
 
 
 

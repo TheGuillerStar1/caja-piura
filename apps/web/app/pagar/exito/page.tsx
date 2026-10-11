@@ -73,7 +73,7 @@ export default function PagoExito() {
     <Pantalla titulo="Pago realizado">
       <EstilosPago />
       <div className="anim-aparece flex flex-col items-center gap-2 pt-2 text-center">
-        <IconoCheck className="h-24 w-24" />
+        <IconoCheck className="h-24 w-24 text-exito" />
         <h2 className="text-2xl font-bold text-exito">¡Pago realizado!</h2>
         <p className="text-5xl font-bold tracking-tight">{soles(r.monto)}</p>
         <p className="text-lg">{r.descripcion}</p>

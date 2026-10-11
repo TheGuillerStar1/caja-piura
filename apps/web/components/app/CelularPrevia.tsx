@@ -18,7 +18,7 @@ const PESTANAS = [
   { t: "Para ti", I: IcParaTi },
 ];
 
-export function CelularPrevia({ vista }: { vista: Vista }) {
+export function CelularPrevia({ vista, nombre = "Rosa", cuentas = 2 }: { vista: Vista; nombre?: string; cuentas?: number }) {
   const asistida = vista === "ASISTIDA";
   const caja = useRef<HTMLDivElement>(null);
   const [escala, setEscala] = useState(1);
@@ -50,13 +50,13 @@ export function CelularPrevia({ vista }: { vista: Vista }) {
         <div key={vista} className="anim-previa relative isolate flex h-[250px] flex-col overflow-hidden rounded-[1.25rem] bg-fondo">
           <div className="bg-marca px-3 pb-2 pt-2.5 text-white">
             <div className="flex items-center gap-2 text-[13px] font-medium">
-              <Menu className="h-4 w-4" aria-hidden /> Hola, Rosa
+              <Menu className="h-4 w-4" aria-hidden /> Hola, {nombre}
             </div>
             <p className="mt-0.5 text-center text-[8px] opacity-90">Tipo de cambio ref. Compra: 3.30 Venta: 3.60</p>
           </div>
           <div className="flex flex-1 flex-col p-2.5">
             <p className={`mb-0.5 font-bold ${asistida ? "text-[14px]" : "text-[12px]"}`}>Mis productos</p>
-            {fila(IcCuentas, "Cuentas (2)")}
+            {fila(IcCuentas, `Cuentas (${cuentas})`)}
             {fila(IcTarjeta, "Tarjetas (1)")}
             {fila(IcCreditos, "Créditos (1)")}
             <p className={`mb-1 mt-2.5 font-bold ${asistida ? "text-[14px]" : "text-[12px]"}`}>Mis servicios</p>

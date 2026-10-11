@@ -304,7 +304,7 @@ export default function Ayuda() {
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
               maxLength={500}
-              placeholder={escuchando ? "Te escucho… habla ahora" : hayVoz ? "Escribe o toca el micrófono" : "Escribe tu pregunta"}
+              placeholder={escuchando ? "Te escucho…" : "Escribe aquí"}
               aria-label="Escribe tu pregunta para Pía"
               enterKeyHint="send"
               className="max-h-40 min-h-14 min-w-0 flex-1 resize-none overflow-y-auto rounded-3xl border-2 border-linea bg-superficie px-5 py-3 text-lg leading-snug focus:border-marca focus:outline-none"
