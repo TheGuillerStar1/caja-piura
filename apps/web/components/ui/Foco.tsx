@@ -4,7 +4,7 @@
 // Las 4 franjas oscuras bloquean el resto de la pantalla; el hueco deja tocar el elemento real.
 import { useEffect, useState } from "react";
 
-type Rect = { top: number; left: number; width: number; height: number };
+type Rect = { top: number; left: number; width: number; height: number; radio: number };
 type Props = {
   selector: string;
   mensaje: React.ReactNode;
@@ -33,7 +33,9 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }
       }
       const b = el.getBoundingClientRect();
       if (!b.width) return setR(null);
-      setR({ top: b.top - MARGEN, left: b.left - MARGEN, width: b.width + MARGEN * 2, height: b.height + MARGEN * 2 });
+      // El hueco copia la forma del elemento (p. ej. el botón redondo de Pía): sin esquinas que asomen.
+      const radio = Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, b.height / 2) + MARGEN;
+      setR({ top: b.top - MARGEN, left: b.left - MARGEN, width: b.width + MARGEN * 2, height: b.height + MARGEN * 2, radio });
     };
     medir();
     // El contenido carga después y la página se mueve: se vuelve a medir.
@@ -50,7 +52,8 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }
 
   if (!r) return null;
   const abajo = r.top + r.height / 2 < window.innerHeight / 2; // el globo va del lado con más espacio
-  const franja = "fixed z-[70] bg-black/65";
+  // Las franjas solo bloquean los toques fuera del hueco; el oscurecido lo pone la sombra del hueco (respeta las curvas).
+  const franja = "fixed z-[70]";
   return (
     <div aria-live="polite">
       <div className={franja} style={{ top: 0, left: 0, right: 0, height: Math.max(0, r.top) }} />
@@ -59,8 +62,8 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }
       <div className={franja} style={{ top: r.top, left: r.left + r.width, right: 0, height: r.height }} />
       <div
         aria-hidden
-        className="pointer-events-none fixed z-[71] rounded-2xl ring-4 ring-acento"
-        style={{ top: r.top, left: r.left, width: r.width, height: r.height }}
+        className="pointer-events-none fixed z-[71]"
+        style={{ top: r.top, left: r.left, width: r.width, height: r.height, borderRadius: r.radio, boxShadow: "inset 0 0 0 4px var(--color-acento), 0 0 0 200vmax rgb(0 0 0 / 0.65)" }}
       />
       <div
         role="dialog"
