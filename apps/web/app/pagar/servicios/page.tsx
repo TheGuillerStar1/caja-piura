@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ICONO_RUBRO, largoCodigo, type ServicioOpcion } from "@/components/ia/tipos";
 import { TecladoCodigo } from "@/components/ia/TecladoCodigo";
+import { ElegirOpcion } from "@/components/pago/ElegirOpcion";
 import { CampoApp, claseSelect, PasosApp } from "@/components/pago/PasosApp";
 import { rutaConfirmar } from "@/components/pago/almacen";
 import { Boton, Cargando, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
@@ -100,14 +101,18 @@ export default function PagoServicios() {
             <>
               <h2 className="text-center text-xl font-bold text-marca">Ingresa tus datos</h2>
               <CampoApp etiqueta="Filtrar por rubro">
-                <select data-paso="rubro" value={rubro} onChange={(e) => setRubro(e.target.value)} className={claseSelect}>
-                  <option value="">Elige un rubro</option>
+                <div role="radiogroup" data-paso="rubro" className="grid grid-cols-2 gap-2">
                   {rubros.map((r) => (
-                    <option key={r} value={r}>
+                    <label
+                      key={r}
+                      className={`flex min-h-13 cursor-pointer items-center gap-2 rounded-xl border-2 px-3 font-bold ${rubro === r ? "border-marca bg-marca-claro" : "border-linea bg-superficie"}`}
+                    >
+                      <input type="radio" name="rubro" checked={rubro === r} onChange={() => setRubro(r)} className="sr-only" />
+                      <span aria-hidden>{ICONO_RUBRO[r] ?? "🧾"}</span>
                       {RUBROS[r] ?? r}
-                    </option>
+                    </label>
                   ))}
-                </select>
+                </div>
               </CampoApp>
               <CampoApp etiqueta="Filtrar por empresa o institución">
                 <input value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar" className={claseSelect} />
@@ -199,14 +204,13 @@ export default function PagoServicios() {
                 <p className="text-sm text-tenue">Vence el {fechaCorta(recibo.vencimiento)}</p>
               </div>
               <CampoApp etiqueta="Cuenta origen" ayuda="Es la cuenta de la que sale el dinero para pagar.">
-                <select data-paso="cuenta" value={cuenta} onChange={(e) => setCuenta(e.target.value)} className={claseSelect}>
-                  <option value="">Elige tu cuenta</option>
-                  {me.cuentas.filter((k) => k.paraPagar).map((k) => (
-                    <option key={k.id} value={k.id}>
-                      {k.tipo} {k.numeroOculto} · Saldo {soles(k.saldo)}
-                    </option>
-                  ))}
-                </select>
+                <ElegirOpcion
+                  nombre="cuenta"
+                  paso="cuenta"
+                  valor={cuenta}
+                  onCambio={setCuenta}
+                  opciones={me.cuentas.filter((k) => k.paraPagar).map((k) => ({ valor: String(k.id), texto: `${k.tipo} ${k.numeroOculto}`, detalle: `Saldo ${soles(k.saldo)}` }))}
+                />
               </CampoApp>
               {me.cuentas.some((k) => !k.paraPagar) && <p className="-mt-3 text-sm text-tenue">La CTS y los depósitos a plazo fijo no se usan para pagar.</p>}
               <Boton

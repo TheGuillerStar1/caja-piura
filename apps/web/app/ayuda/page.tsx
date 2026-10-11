@@ -381,28 +381,46 @@ export default function Ayuda() {
                   >
                     Ver mi constancia
                   </Boton>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      (() => {
+                        const r = (m.accion as { resultado: ResultadoPago }).resultado;
+                        return `Constancia de pago · Caja Piura\n${r.descripcion}\nMonto: ${soles(r.monto)}\nN.º de operación: ${r.operacion}`;
+                      })(),
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 flex min-h-13 items-center justify-center gap-2 rounded-boton bg-[#1f8f4e] px-5 text-lg font-bold text-white"
+                  >
+                    <span aria-hidden>💬</span> Enviar por WhatsApp
+                  </a>
                 </div>
               )}
-              {m.accion?.tipo === "NAVEGAR" && (
-                <div className="ml-10 flex flex-col gap-2">
+              {m.accion?.tipo === "NAVEGAR" && (() => {
+                const ruta = m.accion.ruta;
+                const guia = guiaDe(ruta);
+                const directo = (
                   <Boton
+                    key="directo"
+                    variante={asistida && guia ? "secundario" : "primario"}
                     onClick={() => {
-                      const ruta = (m.accion as { ruta: string }).ruta;
                       const pago = pagoDe(ruta);
                       // «Sí, prepáralo tú»: el pago se confirma aquí mismo, sin salir del chat.
-                      if (pago) decirPia("Listo. Revisa y confirma aquí mismo:", { tipo: "PAGO_CHAT", ...pago });
+                      if (pago) decirPia("Listo. Elige qué pagar y confirma aquí mismo:", { tipo: "PAGO_CHAT", ...pago });
                       else ir(ruta);
                     }}
                   >
-                    {textoBoton(m.accion.ruta)}
+                    {textoBoton(ruta)}
                   </Boton>
-                  {guiaDe(m.accion.ruta) && (
-                    <Boton variante="secundario" onClick={() => guiarme(guiaDe((m.accion as { ruta: string }).ruta)!)}>
-                      Guíame paso a paso en la app
-                    </Boton>
-                  )}
-                </div>
-              )}
+                );
+                const guiame = guia && (
+                  <Boton key="guia" variante={asistida ? "primario" : "secundario"} onClick={() => guiarme(guia)}>
+                    Guíame paso a paso en la app
+                  </Boton>
+                );
+                // Asistida: lo principal es que Pía te guíe en la app. Estándar: pagar directo en el chat.
+                return <div className="ml-10 flex flex-col gap-2">{asistida ? [guiame, directo] : [directo, guiame]}</div>;
+              })()}
               {m.accion?.tipo === "OPCIONES" && (
                 <div className="ml-10 flex flex-col gap-2">
                   {m.accion.opciones.map((o) => (

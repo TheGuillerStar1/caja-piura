@@ -1,9 +1,10 @@
 // Dueño: Agente B. Acceso a datos compartido por las rutas de cuotas, frecuentes y pagos.
-import type { Cuenta, CuotaRes, FrecuenteRes, TipoPago } from "@cp/shared";
+import type { Cuenta, CuotaRes, FrecuenteRes, OperacionCredito, TipoPago } from "@cp/shared";
 import type { Prisma } from "@prisma/client";
 import { HttpError } from "../lib/errores.js";
 import { aNumero, diasEntre, ocultarCuenta, ocultarNombre } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
+import { ADELANTO_MAXIMO, AMORTIZACION_MINIMA, PORCENTAJE_INTERES, planCredito, type PlanCredito } from "./logica.js";
 
 export async function obtenerCliente(clienteId: number) {
   const c = await prisma.cliente.findUnique({ where: { id: clienteId } });
@@ -79,23 +80,50 @@ export type Objetivo = {
   servicioId?: number;
   codigo?: string;
   vencimiento: Date;
+  /** Solo créditos: cómo quedan las cuotas al pagar (ver planCredito) y datos para elegir la operación. */
+  plan?: PlanCredito;
+  credito?: { interes: number; maxAdelanto: number; deuda: number; amortizacionMinima: number; montoCuota: number };
 };
 
 const yaPagado = () => new HttpError(409, "YA_PAGADO", "Este pago ya fue realizado. No se volverá a cobrar.");
 
-export async function resolverObjetivo(clienteId: number, tipo: TipoPago, referenciaId: number): Promise<Objetivo> {
+export async function resolverObjetivo(
+  clienteId: number,
+  tipo: TipoPago,
+  referenciaId: number,
+  op?: { operacion?: OperacionCredito; cantidad?: number },
+): Promise<Objetivo> {
   if (tipo === "CUOTA") {
     const q = await prisma.cuota.findFirst({ where: { id: referenciaId, clienteId } });
     if (!q) throw new HttpError(404, "NO_ENCONTRADO", "No encontramos esa cuota");
     if (q.estado === "PAGADA") throw yaPagado();
+    // La cuota elegida va primero; después, las siguientes pendientes del mismo crédito.
+    const siguientes = await prisma.cuota.findMany({
+      where: { clienteId, credito: q.credito, estado: "PENDIENTE", id: { not: q.id }, vencimiento: { gte: q.vencimiento } },
+      orderBy: { vencimiento: "asc" },
+    });
+    const pendientes = [q, ...siguientes].map((c) => ({ id: c.id, monto: aNumero(c.monto) }));
+    let plan: PlanCredito;
+    try {
+      plan = planCredito(pendientes, op?.operacion ?? "CUOTA", op?.cantidad);
+    } catch (e) {
+      throw new HttpError(422, "OPERACION_INVALIDA", (e as Error).message);
+    }
     return {
       tipo,
       referenciaId,
-      monto: aNumero(q.monto),
-      descripcion: `Cuota ${q.numero} de ${q.totalCuotas} · Crédito ${q.credito}`,
+      monto: plan.monto,
+      descripcion: `${plan.etiqueta} · Cuota ${q.numero} de ${q.totalCuotas} · Crédito ${q.credito}`.slice(0, 120),
       destinatario: "Caja Piura",
-      cuotaId: q.id,
       vencimiento: q.vencimiento,
+      plan,
+      credito: {
+        interes: Math.round(aNumero(q.monto) * PORCENTAJE_INTERES * 100) / 100,
+        maxAdelanto: Math.min(ADELANTO_MAXIMO, pendientes.length),
+        deuda: Math.round(pendientes.reduce((s, c) => s + c.monto, 0) * 100) / 100,
+        amortizacionMinima: AMORTIZACION_MINIMA,
+        montoCuota: aNumero(q.monto),
+      },
     };
   }
   if (tipo === "FRECUENTE") {

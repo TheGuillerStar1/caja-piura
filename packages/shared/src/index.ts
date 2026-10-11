@@ -140,7 +140,16 @@ export const RecibosDemoRes = z.array(ReciboDemo);
 
 // ── Pagos ────────────────────────────────────────────
 /** cuentaId: cuenta de origen elegida (como en la app oficial). Si no viene, se usa la cuenta principal. */
-export const PrepararPagoReq = z.object({ tipo: TipoPago, referenciaId: z.number(), cuentaId: z.number().optional() });
+/** Operación de un crédito (solo tipo CUOTA): cantidad = n.º de cuotas (ADELANTO) o monto en soles (AMORTIZACION). */
+export const OperacionCredito = z.enum(["CUOTA", "INTERES", "ADELANTO", "AMORTIZACION"]);
+export type OperacionCredito = z.infer<typeof OperacionCredito>;
+export const PrepararPagoReq = z.object({
+  tipo: TipoPago,
+  referenciaId: z.number(),
+  cuentaId: z.number().optional(),
+  operacion: OperacionCredito.optional(),
+  cantidad: z.number().optional(),
+});
 /** CUOTA → id de Cuota · FRECUENTE → id de Frecuente · RECIBO → id de Recibo */
 export const PrepararPagoRes = z.object({
   tipo: TipoPago,
@@ -150,6 +159,10 @@ export const PrepararPagoRes = z.object({
   monto: z.number(),
   cuenta: Cuenta,
   saldoSuficiente: z.boolean(),
+  /** Solo créditos: operaciones posibles y datos para elegirlas (interés estimado, cuotas que se pueden adelantar, deuda). */
+  credito: z
+    .object({ interes: z.number(), maxAdelanto: z.number(), deuda: z.number(), amortizacionMinima: z.number(), montoCuota: z.number() })
+    .optional(),
   /** Generada por el servidor; el cliente la reenvía igual en /confirmar y en cada reintento */
   idempotencyKey: z.string(),
 });
@@ -163,6 +176,9 @@ export const ConfirmarPagoReq = z.object({
   conAyuda: z.boolean().default(false),
   /** Cuenta de origen elegida; si no viene, la principal. */
   cuentaId: z.number().optional(),
+  /** Operación del crédito y cantidad (ver PrepararPagoReq). */
+  operacion: OperacionCredito.optional(),
+  cantidad: z.number().optional(),
   /** Solo demo: fuerza un fallo para mostrar "No se cobró nada" */
   simularFallo: z.boolean().optional(),
 });

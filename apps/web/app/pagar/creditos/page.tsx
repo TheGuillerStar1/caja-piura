@@ -1,24 +1,19 @@
 "use client";
 // "Pago de créditos propios" igual que la app oficial (fotos del 10 oct): paso 1 de 3 con Pagaré, Cuenta origen y
-// Operación; luego la confirmación (pasos 2 y 3). Se mantienen todas las operaciones de la app para no quitar funciones;
-// en la demo solo se procesa "Pago de cuota".
-import type { CuotaRes, MeRes } from "@cp/shared";
+// Operación (cuota, solo interés, adelanto o amortización con monto); luego la confirmación (pasos 2 y 3).
+// Todas las operaciones se procesan. La cancelación total del crédito sigue en la agencia.
+import type { CuotaRes, MeRes, PrepararPagoRes } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { CampoApp, claseSelect, PasosApp } from "@/components/pago/PasosApp";
+import { OpcionesCredito, paramsCredito, type DatosCredito, type EleccionCredito } from "@/components/pago/OpcionesCredito";
+import { ElegirOpcion } from "@/components/pago/ElegirOpcion";
+import { CampoApp, PasosApp } from "@/components/pago/PasosApp";
 import { rutaConfirmar } from "@/components/pago/almacen";
 import { Boton, Cargando, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { fechaCorta, soles } from "@/lib/formato";
 import { iniciarFlujo, track } from "@/lib/track";
 
-const OPERACIONES = [
-  { id: "CUOTA", texto: "Pago de cuota" },
-  { id: "INTERES", texto: "Pago interés" },
-  { id: "ADELANTO", texto: "Adelanto de cuotas" },
-  { id: "AMORTIZACION", texto: "Amortización" },
-  { id: "CANCELACION", texto: "Cancelación" },
-] as const;
 
 export default function PagoCreditos() {
   const router = useRouter();
@@ -27,7 +22,9 @@ export default function PagoCreditos() {
   const [error, setError] = useState<string | null>(null);
   const [pagare, setPagare] = useState("");
   const [cuenta, setCuenta] = useState("");
-  const [operacion, setOperacion] = useState("");
+  const [eleccion, setEleccion] = useState<EleccionCredito | null>(null);
+  const [datos, setDatos] = useState<DatosCredito | undefined>(undefined);
+  const [aPagar, setAPagar] = useState<{ monto: number } | { error: string } | null>(null);
 
   const cargar = useCallback(async () => {
     setError(null);
@@ -41,14 +38,34 @@ export default function PagoCreditos() {
     }
   }, [router]);
 
+  // El monto lo calcula Caja Piura (servidor) según la operación: interés estimado, cuotas adelantadas o monto a amortizar.
+  useEffect(() => {
+    if (!cuota) return;
+    let vivo = true;
+    const t = setTimeout(() => {
+      api<PrepararPagoRes>("/pagos/preparar", {
+        cuerpo: { tipo: "CUOTA", referenciaId: cuota.id, ...(eleccion ? { operacion: eleccion.operacion, cantidad: eleccion.cantidad } : {}) },
+      })
+        .then((p) => {
+          if (!vivo) return;
+          if (p.credito) setDatos(p.credito);
+          setAPagar(eleccion ? { monto: p.monto } : null);
+        })
+        .catch((e) => vivo && setAPagar({ error: e instanceof ApiFallo ? e.message : "No pudimos calcular el monto." }));
+    }, 350);
+    return () => {
+      vivo = false;
+      clearTimeout(t);
+    };
+  }, [cuota, eleccion]);
+
   useEffect(() => {
     iniciarFlujo("CUOTA");
     track("pagar-creditos", "ver", { flujo: "CUOTA" });
     cargar();
   }, [cargar]);
 
-  const listo = Boolean(cuota && pagare && cuenta && operacion === "CUOTA");
-  const otraOperacion = operacion !== "" && operacion !== "CUOTA";
+  const listo = Boolean(cuota && pagare && cuenta && eleccion && aPagar && "monto" in aPagar);
 
   return (
     <Pantalla titulo="Pago de créditos propios" volver="/pagos">
@@ -67,12 +84,13 @@ export default function PagoCreditos() {
           <h2 className="text-center text-xl font-bold text-marca">Ingresa tus datos</h2>
 
           <CampoApp etiqueta="Pagaré">
-            <select data-paso="pagare" value={pagare} onChange={(e) => setPagare(e.target.value)} className={claseSelect}>
-              <option value="">Elige un pagaré</option>
-              <option value={cuota.id}>
-                {cuota.credito} · Cuota a pagar {soles(cuota.monto)}
-              </option>
-            </select>
+            <ElegirOpcion
+              nombre="pagare"
+              paso="pagare"
+              valor={pagare}
+              onCambio={setPagare}
+              opciones={[{ valor: String(cuota.id), texto: `Crédito ${cuota.credito}`, detalle: `Cuota a pagar ${soles(cuota.monto)}` }]}
+            />
           </CampoApp>
           {pagare && (
             <p className="-mt-3 text-sm text-tenue">
@@ -81,39 +99,34 @@ export default function PagoCreditos() {
           )}
 
           <CampoApp etiqueta="Cuenta origen" ayuda="Es la cuenta de la que sale el dinero para pagar.">
-            <select data-paso="cuenta" value={cuenta} onChange={(e) => setCuenta(e.target.value)} className={claseSelect}>
-              <option value="">Elige tu cuenta</option>
-              {me.cuentas.filter((k) => k.paraPagar).map((k) => (
-                <option key={k.id} value={k.id}>
-                  {k.tipo} {k.numeroOculto} · Saldo {soles(k.saldo)}
-                </option>
-              ))}
-            </select>
+            <ElegirOpcion
+              nombre="cuenta"
+              paso="cuenta"
+              valor={cuenta}
+              onCambio={setCuenta}
+              opciones={me.cuentas.filter((k) => k.paraPagar).map((k) => ({ valor: String(k.id), texto: `${k.tipo} ${k.numeroOculto}`, detalle: `Saldo ${soles(k.saldo)}` }))}
+            />
           </CampoApp>
           {me.cuentas.some((k) => !k.paraPagar) && <p className="-mt-3 text-sm text-tenue">La CTS y los depósitos a plazo fijo no se usan para pagar.</p>}
 
-          <CampoApp etiqueta="Operación">
-            <select data-paso="operacion" value={operacion} onChange={(e) => setOperacion(e.target.value)} className={claseSelect}>
-              <option value="">Elige una operación</option>
-              {OPERACIONES.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.texto}
-                </option>
-              ))}
-            </select>
-          </CampoApp>
-          {otraOperacion && (
-            <Tarjeta tono="aviso">
-              <p>Esta operación está en la app de Caja Piura. En esta demo solo se procesa el «Pago de cuota».</p>
-            </Tarjeta>
+          <div data-paso="operacion">
+            <OpcionesCredito datos={datos} valor={eleccion} onCambio={setEleccion} />
+          </div>
+          {!eleccion && <p className="-mt-3 text-sm text-tenue">Elige una operación.</p>}
+          {aPagar && "monto" in aPagar && (
+            <p className="rounded-xl bg-marca-claro px-3 py-2 text-lg">
+              Vas a pagar <b>{soles(aPagar.monto)}</b>
+            </p>
           )}
+          {aPagar && "error" in aPagar && <p className="rounded-xl bg-aviso-claro px-3 py-2 font-bold">{aPagar.error}</p>}
+          <p className="text-sm text-tenue">La cancelación total del crédito se hace en la agencia.</p>
 
           <Boton
             data-paso="continuar"
             disabled={!listo}
             onClick={() => {
               track("pagar-creditos", "tocar", { flujo: "CUOTA" });
-              router.push(`${rutaConfirmar("CUOTA", cuota.id)}&cuenta=${cuenta}`);
+              router.push(`${rutaConfirmar("CUOTA", cuota.id)}&cuenta=${cuenta}${eleccion ? paramsCredito(eleccion) : ""}`);
             }}
           >
             Continuar

@@ -113,6 +113,16 @@ export default function PagoExito() {
             ¿Lo guardo para la próxima?
           </Boton>
         )}
+        {/* La constancia se manda por WhatsApp a quien el cliente elija (abre WhatsApp con el texto listo). */}
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(textoConstancia(r))}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => track("exito-whatsapp", "tocar", { flujo: r.tipo })}
+          className="flex min-h-13 items-center justify-center gap-2 rounded-boton bg-[#1f8f4e] px-5 text-lg font-bold text-white active:bg-[#17733e]"
+        >
+          <span aria-hidden>💬</span> Enviar constancia por WhatsApp
+        </a>
         <Boton variante="secundario" onClick={compartir}>
           {copiado ? "Constancia copiada" : "Compartir constancia"}
         </Boton>

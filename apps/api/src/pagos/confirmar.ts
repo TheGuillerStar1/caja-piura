@@ -49,7 +49,7 @@ export async function confirmarPago(clienteId: number, b: ConfirmarPagoReq): Pro
   if (decision === "DEVOLVER") return desdePago(previo!, true);
 
   const cliente = await obtenerCliente(clienteId);
-  const obj = await resolverObjetivo(clienteId, b.tipo, b.referenciaId);
+  const obj = await resolverObjetivo(clienteId, b.tipo, b.referenciaId, { operacion: b.operacion, cantidad: b.cantidad });
   const cuenta = await cuentaPrincipal(clienteId, b.cuentaId);
   const fecha = fechaOperacion(cliente.fechaSimulada);
 
@@ -116,9 +116,16 @@ export async function confirmarPago(clienteId: number, b: ConfirmarPagoReq): Pro
         });
         if (d.count === 0) throw saldoInsuficiente();
         // 3) Marcar la deuda como pagada (solo si seguía pendiente).
-        if (obj.cuotaId) {
-          const n = await tx.cuota.updateMany({ where: { id: obj.cuotaId, estado: "PENDIENTE" }, data: { estado: "PAGADA" } });
-          if (n.count === 0) throw yaPagado();
+        if (obj.plan) {
+          // Crédito: se cancelan las cuotas del plan y se baja el monto de las otras, solo si siguen como se leyeron.
+          if (obj.plan.pagar.length) {
+            const n = await tx.cuota.updateMany({ where: { id: { in: obj.plan.pagar }, estado: "PENDIENTE" }, data: { estado: "PAGADA" } });
+            if (n.count !== obj.plan.pagar.length) throw yaPagado();
+          }
+          for (const c of obj.plan.restar) {
+            const n = await tx.cuota.updateMany({ where: { id: c.id, estado: "PENDIENTE", monto: c.de }, data: { monto: c.a } });
+            if (n.count === 0) throw yaPagado();
+          }
         }
         if (obj.reciboId) {
           const n = await tx.recibo.updateMany({ where: { id: obj.reciboId, pagado: false }, data: { pagado: true } });

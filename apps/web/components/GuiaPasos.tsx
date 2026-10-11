@@ -6,9 +6,12 @@ import { useEffect, useState } from "react";
 import { Foco } from "@/components/ui/Foco";
 import { GUIAS, irAPaso, leerGuia, terminarGuia } from "@/lib/guiaPasos";
 import { track } from "@/lib/track";
+import { useVista } from "@/lib/vista";
 
 export function GuiaPasos() {
   const ruta = usePathname();
+  // Asistida: pantalla oscura y solo resalta el paso. Estándar: la misma guía, sin oscurecer.
+  const { asistida } = useVista();
   // Se lee después de cargar (el servidor no ve sessionStorage): evita el error de hidratación.
   const [g, setG] = useState<ReturnType<typeof leerGuia>>(null);
   const [listo, setListo] = useState(false);
@@ -83,6 +86,7 @@ export function GuiaPasos() {
       mensaje={paso.texto}
       textoSalir="Salir de la guía"
       alSalir={terminarGuia}
+      suave={!asistida}
     />
   );
 }

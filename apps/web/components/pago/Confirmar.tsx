@@ -11,6 +11,7 @@ import { useVista } from "@/lib/vista";
 import { callar, hablar, montoHablado } from "@/lib/voz";
 import { cargarCliente } from "@/lib/cliente";
 import { borrarKey, guardarKey, guardarResultado, leerKey, rutaConfirmar } from "./almacen";
+import { ElegirOpcion } from "./ElegirOpcion";
 import { EstilosPago } from "./EstilosPago";
 import { HojaAutenticacion, type MetodoAuth } from "./HojaAutenticacion";
 import { IconoX } from "./Iconos";
@@ -57,6 +58,11 @@ export function Confirmar() {
   const fallar = params.get("fallar") === "1";
   // Cuenta de origen elegida en el paso 1 (Pago de créditos propios / Pago de servicios), como en la app oficial.
   const cuentaId = Number(params.get("cuenta")) || undefined;
+  // Operación del crédito elegida en el paso 1 (cuota, interés, adelanto o amortización) y su cantidad.
+  const opParam = params.get("op");
+  const operacion = opParam === "CUOTA" || opParam === "INTERES" || opParam === "ADELANTO" || opParam === "AMORTIZACION" ? opParam : undefined;
+  const cantidad = Number(params.get("cant")) || undefined;
+  const extraCredito = tipo === "CUOTA" && operacion ? { operacion, cantidad } : {};
   const flujo = tipo ?? undefined;
 
   const [estado, setEstado] = useState<Estado>({ fase: "cargando" });
@@ -85,7 +91,7 @@ export function Confirmar() {
     }
     setEstado({ fase: "cargando" });
     try {
-      const p = await api<PrepararPagoRes>("/pagos/preparar", { cuerpo: { tipo, referenciaId: ref, ...(cuentaId ? { cuentaId } : {}) } });
+      const p = await api<PrepararPagoRes>("/pagos/preparar", { cuerpo: { tipo, referenciaId: ref, ...(cuentaId ? { cuentaId } : {}), ...extraCredito } });
       // Si hubo un intento anterior (falló o se recargó la página), se reutiliza su key: nunca se cobra dos veces.
       const previa = leerKey(tipo, ref);
       if (!previa) guardarKey(tipo, ref, p.idempotencyKey);
@@ -99,7 +105,8 @@ export function Confirmar() {
       setEstado({ fase: "error", codigo: f.codigo, mensaje: f.message });
       track("confirmar", "error", { flujo });
     }
-  }, [tipo, ref, router, flujo, cuentaId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipo, ref, router, flujo, cuentaId, operacion, cantidad]);
 
   useEffect(() => {
     // Llegó desde el asistente (Ayuda navega directo aquí): el tiempo se mide desde ahora, sin perder la marca de ayuda.
@@ -140,6 +147,7 @@ export function Confirmar() {
             tipo,
             referenciaId: ref,
             ...(cuentaId ? { cuentaId } : {}),
+            ...extraCredito,
             idempotencyKey: pago.idempotencyKey,
             autenticacion: m,
             conAyuda: usoAyuda(),
@@ -174,7 +182,8 @@ export function Confirmar() {
         setEstado({ fase: "error", codigo: f.codigo, mensaje: f.message });
       }
     },
-    [pago, tipo, ref, fallar, asistida, router, flujo, preparar],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pago, tipo, ref, fallar, asistida, router, flujo, preparar, operacion, cantidad],
   );
 
   const salirDeCancelado = useCallback(() => {
@@ -384,21 +393,18 @@ export function Confirmar() {
         <p className="text-tenue">Desde tu cuenta</p>
         {cuentasPago.length > 1 ? (
           // Cuenta de origen elegible aquí también (pagos frecuentes, recibo con foto y lo que prepara Pía).
-          <select
-            aria-label="Cuenta de origen"
-            value={pago.cuenta.id}
-            onChange={(e) => {
-              track("confirmar", "tocar", { flujo });
-              router.replace(`${rutaConfirmar(tipo!, ref)}&cuenta=${e.target.value}`);
-            }}
-            className="mt-1 min-h-13 w-full rounded-lg border-2 border-linea-fuerte bg-superficie px-3 text-lg font-bold"
-          >
-            {cuentasPago.map((k) => (
-              <option key={k.id} value={k.id}>
-                {k.tipo} {k.numeroOculto}
-              </option>
-            ))}
-          </select>
+          <div className="mt-1">
+            <ElegirOpcion
+              nombre="cuenta-confirmar"
+              valor={String(pago.cuenta.id)}
+              onCambio={(v) => {
+                if (v === String(pago.cuenta.id)) return;
+                track("confirmar", "tocar", { flujo });
+                router.replace(`${rutaConfirmar(tipo!, ref)}&cuenta=${v}${operacion ? `&op=${operacion}${cantidad ? `&cant=${cantidad}` : ""}` : ""}`);
+              }}
+              opciones={cuentasPago.map((k) => ({ valor: String(k.id), texto: `${k.tipo} ${k.numeroOculto}`, detalle: `Saldo ${soles(k.saldo)}` }))}
+            />
+          </div>
         ) : (
           <p className="text-2xl font-bold">
             {pago.cuenta.tipo} {pago.cuenta.numeroOculto}

@@ -13,11 +13,13 @@ type Props = {
   /** Botón para salir: siempre con texto (Manual visual: nada de íconos sin etiqueta). */
   textoSalir?: string;
   alSalir: () => void;
+  /** Vista estándar: sin oscurecer la pantalla ni bloquearla; solo el borde y el globo. */
+  suave?: boolean;
 };
 
 const MARGEN = 6;
 
-export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }: Props) {
+export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir, suave }: Props) {
   const [r, setR] = useState<Rect | null>(null);
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }
   if (!r) return null;
   const abajo = r.top + r.height / 2 < window.innerHeight / 2; // el globo va del lado con más espacio
   // Las franjas solo bloquean los toques fuera del hueco; el oscurecido lo pone la sombra del hueco (respeta las curvas).
-  const franja = "fixed z-[70]";
+  const franja = suave ? "hidden" : "fixed z-[70]";
   // El globo va centrado; su punta apunta al centro del elemento resaltado (así se ve dónde es «aquí»).
   const anchoGlobo = Math.min(window.innerWidth * 0.92, 416);
   const izqGlobo = (window.innerWidth - anchoGlobo) / 2;
@@ -65,7 +67,7 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }
       <div className={franja} style={{ top: r.top, left: 0, width: Math.max(0, r.left), height: r.height }} />
       <div className={franja} style={{ top: r.top, left: r.left + r.width, right: 0, height: r.height }} />
       {/* Oscurecido con el hueco recortado a la forma del elemento (máscara SVG: respeta las curvas, sin esquinas). */}
-      <svg aria-hidden className="pointer-events-none fixed inset-0 z-[70] h-full w-full">
+      <svg aria-hidden className={`pointer-events-none fixed inset-0 z-[70] h-full w-full ${suave ? "hidden" : ""}`}>
         <defs>
           <mask id="cp-foco-hueco">
             <rect width="100%" height="100%" fill="white" />

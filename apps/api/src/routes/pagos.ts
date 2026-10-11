@@ -12,9 +12,9 @@ export const router = Router();
 
 /** Resumen del pago (monto, a quién, desde qué cuenta) + key de idempotencia. No mueve dinero. */
 router.post("/pagos/preparar", requiereSesion, async (req, res) => {
-  const { tipo, referenciaId, cuentaId } = validar(PrepararPagoReq, req.body);
+  const { tipo, referenciaId, cuentaId, operacion, cantidad } = validar(PrepararPagoReq, req.body);
   const clienteId = req.clienteId!;
-  const obj = await resolverObjetivo(clienteId, tipo, referenciaId);
+  const obj = await resolverObjetivo(clienteId, tipo, referenciaId, { operacion, cantidad });
   const cuenta = await cuentaPrincipal(clienteId, cuentaId);
   const r: PrepararPagoRes = {
     tipo,
@@ -24,6 +24,7 @@ router.post("/pagos/preparar", requiereSesion, async (req, res) => {
     monto: obj.monto,
     cuenta: aCuentaRes(cuenta),
     saldoSuficiente: aNumero(cuenta.saldo) >= obj.monto,
+    ...(obj.credito ? { credito: obj.credito } : {}),
     idempotencyKey: randomUUID(),
   };
   res.json(r);

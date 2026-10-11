@@ -10,7 +10,9 @@ import { cargarCliente } from "@/lib/cliente";
 import { soles } from "@/lib/formato";
 import { track } from "@/lib/track";
 import { borrarKey, guardarKey, leerKey } from "./almacen";
+import { ElegirOpcion } from "./ElegirOpcion";
 import { EstilosPago } from "./EstilosPago";
+import { OpcionesCredito, type EleccionCredito } from "./OpcionesCredito";
 import { HojaAutenticacion, type MetodoAuth } from "./HojaAutenticacion";
 
 type Fase = "cargando" | "listo" | "auth" | "procesando" | "fallido" | "incierto" | "cancelado" | "error" | "hecho";
@@ -27,17 +29,26 @@ export function PagoEnChat({ tipo, refId, asistida, alPagar }: Props) {
   const [cuentas, setCuentas] = useState<Cuenta[]>([]);
   const [mensaje, setMensaje] = useState("");
 
+  // Créditos: la misma elección que en la app (cuota, interés, adelanto, amortización); por defecto, la cuota del mes.
+  const [eleccion, setEleccion] = useState<EleccionCredito>({ operacion: "CUOTA" });
+  const [cuentaId, setCuentaId] = useState<number | undefined>(undefined);
+  const [aviso, setAviso] = useState("");
+
   const preparar = useCallback(
-    async (cuentaId?: number) => {
-      setFase("cargando");
+    async (cuenta?: number, e?: EleccionCredito) => {
+      setAviso("");
       try {
-        const p = await api<PrepararPagoRes>("/pagos/preparar", { cuerpo: { tipo, referenciaId: refId, ...(cuentaId ? { cuentaId } : {}) } });
+        const extra = tipo === "CUOTA" && e ? { operacion: e.operacion, cantidad: e.cantidad } : {};
+        const p = await api<PrepararPagoRes>("/pagos/preparar", { cuerpo: { tipo, referenciaId: refId, ...(cuenta ? { cuentaId: cuenta } : {}), ...extra } });
         const previa = leerKey(tipo, refId);
         if (!previa) guardarKey(tipo, refId, p.idempotencyKey);
         setPago(previa ? { ...p, idempotencyKey: previa } : p);
         setFase("listo");
-      } catch (e) {
-        setMensaje(e instanceof ApiFallo ? e.message : "No pude preparar el pago. Vuelve a intentar.");
+      } catch (err) {
+        const f = err instanceof ApiFallo ? err : null;
+        // Un monto fuera de rango no rompe el pago: se avisa y el cliente corrige.
+        if (f?.codigo === "OPERACION_INVALIDA") return setAviso(f.message);
+        setMensaje(f ? f.message : "No pude preparar el pago. Vuelve a intentar.");
         setFase("error");
       }
     },
@@ -49,12 +60,20 @@ export function PagoEnChat({ tipo, refId, asistida, alPagar }: Props) {
     cargarCliente().then((m) => setCuentas(m.cuentas.filter((k) => k.paraPagar)), () => {});
   }, [preparar]);
 
+  // Al cambiar la operación o la cuenta se recalcula el monto (con un respiro mientras escribe el monto).
+  useEffect(() => {
+    if (fase === "cargando" && !pago) return;
+    const t = setTimeout(() => preparar(cuentaId, eleccion), 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eleccion, cuentaId]);
+
   async function confirmar(metodo: MetodoAuth) {
     if (!pago) return;
     setFase("procesando");
     try {
       const r = await api<ConfirmarPagoRes>("/pagos/confirmar", {
-        cuerpo: { tipo, referenciaId: refId, cuentaId: pago.cuenta.id, idempotencyKey: pago.idempotencyKey, autenticacion: metodo, conAyuda: true },
+        cuerpo: { tipo, referenciaId: refId, cuentaId: pago.cuenta.id, ...(tipo === "CUOTA" ? { operacion: eleccion.operacion, cantidad: eleccion.cantidad } : {}), idempotencyKey: pago.idempotencyKey, autenticacion: metodo, conAyuda: true },
       });
       if (r.estado === "FALLIDO") return setFase("fallido");
       borrarKey(tipo, refId);
@@ -91,31 +110,30 @@ export function PagoEnChat({ tipo, refId, asistida, alPagar }: Props) {
         <p className="text-4xl font-bold">{soles(pago.monto)}</p>
         <p className="text-tenue">{pago.descripcion}</p>
       </div>
+      {tipo === "CUOTA" && (
+        <OpcionesCredito datos={pago.credito} valor={eleccion} onCambio={(e) => setEleccion(e)} compacto />
+      )}
+      {aviso && <p className="rounded-xl bg-aviso-claro p-3 font-bold">{aviso}</p>}
       <p>
         <span className="text-tenue">A quién: </span>
         <b>{pago.destinatario}</b>
       </p>
-      <label className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1">
         <span className="text-tenue">Desde tu cuenta</span>
         {cuentas.length > 1 ? (
-          <select
-            value={pago.cuenta.id}
-            onChange={(e) => preparar(Number(e.target.value))}
-            className="min-h-13 rounded-lg border-2 border-linea-fuerte bg-superficie px-3 text-lg font-bold"
-          >
-            {cuentas.map((k) => (
-              <option key={k.id} value={k.id}>
-                {k.tipo} {k.numeroOculto}
-              </option>
-            ))}
-          </select>
+          <ElegirOpcion
+            nombre={`cuenta-chat-${refId}`}
+            valor={String(pago.cuenta.id)}
+            onCambio={(v) => setCuentaId(Number(v))}
+            opciones={cuentas.map((k) => ({ valor: String(k.id), texto: `${k.tipo} ${k.numeroOculto}`, detalle: `Saldo ${soles(k.saldo)}` }))}
+          />
         ) : (
           <b className="text-lg">
             {pago.cuenta.tipo} {pago.cuenta.numeroOculto}
           </b>
         )}
-        <span className="text-sm text-tenue">Saldo disponible: {soles(pago.cuenta.saldo)}</span>
-      </label>
+        {cuentas.length <= 1 && <span className="text-sm text-tenue">Saldo disponible: {soles(pago.cuenta.saldo)}</span>}
+      </div>
 
       {!pago.saldoSuficiente ? (
         <p className="rounded-xl bg-aviso-claro p-3">
