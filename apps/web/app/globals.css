@@ -141,6 +141,13 @@ body {
 @keyframes tap { 0%, 100% { transform: translate(6px, 8px); } 45% { transform: translate(0, 0) scale(1); } 55% { transform: translate(0, 0) scale(.88); } 70% { transform: translate(0, 0) scale(1); } }
 .anim-tap { animation: tap 1.8s ease-in-out infinite; transform-origin: 30% 20%; }
 
+/* Foco de la guía: el borde naranja late (crece y brilla) para que se vea dónde tocar. */
+@keyframes foco {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgb(217 119 6 / 0.85), 0 0 14px 2px rgb(255 196 90 / 0.7); }
+  50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgb(217 119 6 / 0), 0 0 30px 10px rgb(255 196 90 / 0.95); }
+}
+.anim-foco { animation: foco 1.2s ease-in-out infinite; will-change: transform, box-shadow; }
+
 /* Puntitos de "Pía está respondiendo". */
 @keyframes punto { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
 .anim-punto { animation: punto 1s ease-in-out infinite; }

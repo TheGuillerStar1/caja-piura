@@ -54,23 +54,43 @@ export function Foco({ selector, mensaje, paso, textoSalir = "Cerrar", alSalir }
   const abajo = r.top + r.height / 2 < window.innerHeight / 2; // el globo va del lado con más espacio
   // Las franjas solo bloquean los toques fuera del hueco; el oscurecido lo pone la sombra del hueco (respeta las curvas).
   const franja = "fixed z-[70]";
+  // El globo va centrado; su punta apunta al centro del elemento resaltado (así se ve dónde es «aquí»).
+  const anchoGlobo = Math.min(window.innerWidth * 0.92, 416);
+  const izqGlobo = (window.innerWidth - anchoGlobo) / 2;
+  const punta = Math.max(28, Math.min(anchoGlobo - 28, r.left + r.width / 2 - izqGlobo));
   return (
     <div aria-live="polite">
       <div className={franja} style={{ top: 0, left: 0, right: 0, height: Math.max(0, r.top) }} />
       <div className={franja} style={{ top: r.top + r.height, left: 0, right: 0, bottom: 0 }} />
       <div className={franja} style={{ top: r.top, left: 0, width: Math.max(0, r.left), height: r.height }} />
       <div className={franja} style={{ top: r.top, left: r.left + r.width, right: 0, height: r.height }} />
+      {/* Oscurecido con el hueco recortado a la forma del elemento (máscara SVG: respeta las curvas, sin esquinas). */}
+      <svg aria-hidden className="pointer-events-none fixed inset-0 z-[70] h-full w-full">
+        <defs>
+          <mask id="cp-foco-hueco">
+            <rect width="100%" height="100%" fill="white" />
+            <rect x={r.left} y={r.top} width={r.width} height={r.height} rx={r.radio} fill="black" />
+          </mask>
+        </defs>
+        <rect width="100%" height="100%" fill="rgb(0 0 0 / 0.65)" mask="url(#cp-foco-hueco)" />
+      </svg>
       <div
         aria-hidden
-        className="pointer-events-none fixed z-[71]"
-        style={{ top: r.top, left: r.left, width: r.width, height: r.height, borderRadius: r.radio, boxShadow: "inset 0 0 0 4px var(--color-acento), 0 0 0 200vmax rgb(0 0 0 / 0.65)" }}
+        className="anim-foco pointer-events-none fixed z-[71] border-4 border-acento"
+        style={{ top: r.top, left: r.left, width: r.width, height: r.height, borderRadius: r.radio }}
       />
       <div
         role="dialog"
         aria-label="Guía de Pía"
-        className="fixed inset-x-0 z-[72] mx-auto flex w-[min(92vw,26rem)] flex-col gap-3 rounded-2xl bg-superficie p-4 text-tinta shadow-2xl"
-        style={abajo ? { top: r.top + r.height + 14 } : { bottom: window.innerHeight - r.top + 14 }}
+        className="fixed z-[72] flex flex-col gap-3 rounded-2xl border-2 border-acento bg-superficie p-4 text-tinta shadow-2xl"
+        style={{ left: izqGlobo, width: anchoGlobo, ...(abajo ? { top: r.top + r.height + 18 } : { bottom: window.innerHeight - r.top + 18 }) }}
       >
+        {/* Punta del globo hacia el elemento */}
+        <span
+          aria-hidden
+          className={`absolute h-5 w-5 rotate-45 bg-superficie ${abajo ? "-top-[11px] border-l-2 border-t-2" : "-bottom-[11px] border-b-2 border-r-2"} border-acento`}
+          style={{ left: punta - 10 }}
+        />
         {paso && <p className="text-sm font-bold uppercase tracking-wide text-tenue">{paso}</p>}
         <p className="text-lg font-bold leading-snug">{mensaje}</p>
         <button
