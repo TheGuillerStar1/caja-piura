@@ -35,6 +35,7 @@ describe("interpretar (respaldo sin LLM)", () => {
     expect(interpretar("ver mi saldo", rosa).tipo).toBe("SALDO");
     expect(interpretar("tengo un recibo nuevo", rosa).tipo).toBe("RECIBO");
     expect(interpretar("mis puntos", rosa)).toEqual({ tipo: "PANTALLA", pantalla: "progreso" });
+    expect(interpretar("cuánto cashback tengo", rosa)).toEqual({ tipo: "PANTALLA", pantalla: "progreso" });
   });
 
   it("seguridad: la clave nunca se pide; cambiarla lleva a Ajustes", () => {

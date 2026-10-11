@@ -4,7 +4,8 @@ import { Prisma, type Pago } from "@prisma/client";
 import { HttpError } from "../lib/errores.js";
 import { aNumero, diasEntre, nuevaOperacion } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
-import { MENSAJE_EXITO, MENSAJE_FALLO, calcularPuntos, decidirIdempotencia, fechaOperacion, sumarPuntos } from "./logica.js";
+import { MENSAJE_EXITO, MENSAJE_FALLO, calcularCashback, decidirIdempotencia, fechaOperacion, motivoCashback } from "./logica.js";
+import { inicioVentanaMes } from "../retencion/logica.js";
 import { cuentaPrincipal, debeOfrecerGuardar, obtenerCliente, resolverObjetivo } from "./servicio.js";
 
 /** Otra petición con la misma key ganó la carrera. */
@@ -24,7 +25,7 @@ async function desdePago(p: Pago, repetido: boolean): Promise<ConfirmarPagoRes> 
     monto: aNumero(p.monto),
     descripcion: p.descripcion,
     fecha: p.creadoEn.toISOString(),
-    puntosGanados: p.puntosGanados,
+    cashback: aNumero(p.cashback),
     mensaje: exitoso ? MENSAJE_EXITO : MENSAJE_FALLO,
     repetido,
     ofrecerGuardar: exitoso ? await debeOfrecerGuardar(p.clienteId, p.tipo, p.referenciaId) : false,
@@ -67,7 +68,7 @@ export async function confirmarPago(clienteId: number, b: ConfirmarPagoReq): Pro
           monto: obj.monto,
           estado: "FALLIDO",
           conAyuda: b.conAyuda,
-          puntosGanados: 0,
+          cashback: 0,
           operacion: "",
           creadoEn: fecha,
         },
@@ -81,10 +82,16 @@ export async function confirmarPago(clienteId: number, b: ConfirmarPagoReq): Pro
 
   if (aNumero(cuenta.saldo) < obj.monto) throw saldoInsuficiente();
 
-  const puntos = calcularPuntos({
+  const mes = await prisma.cashback.aggregate({
+    where: { clienteId, creadoEn: { gte: inicioVentanaMes(cliente.fechaSimulada) } },
+    _sum: { monto: true },
+  });
+  const cashback = calcularCashback({
     tipo: b.tipo,
+    monto: obj.monto,
     conAyuda: b.conAyuda,
     diasAlVencimiento: diasEntre(cliente.fechaSimulada, obj.vencimiento),
+    acumuladoMes: aNumero(mes._sum.monto ?? 0),
   });
   const datos = {
     cuentaId: cuenta.id,
@@ -92,7 +99,7 @@ export async function confirmarPago(clienteId: number, b: ConfirmarPagoReq): Pro
     monto: obj.monto,
     estado: "EXITOSO" as const,
     conAyuda: b.conAyuda,
-    puntosGanados: sumarPuntos(puntos),
+    cashback: cashback.monto,
     operacion: nuevaOperacion(),
     creadoEn: fecha,
   };
@@ -131,8 +138,12 @@ export async function confirmarPago(clienteId: number, b: ConfirmarPagoReq): Pro
           const n = await tx.recibo.updateMany({ where: { id: obj.reciboId, pagado: false }, data: { pagado: true } });
           if (n.count === 0) throw yaPagado();
         }
-        // 4) Puntos y contadores del cliente.
-        await tx.punto.createMany({ data: puntos.map((p) => ({ clienteId, motivo: p.motivo, puntos: p.puntos, creadoEn: fecha })) });
+        // 4) Cashback: vuelve a la misma cuenta al instante y queda como movimiento.
+        if (cashback.monto > 0) {
+          await tx.cuenta.update({ where: { id: cuenta.id }, data: { saldo: { increment: cashback.monto } } });
+          await tx.cashback.create({ data: { clienteId, cuentaId: cuenta.id, pagoId: id, motivo: motivoCashback(cashback), monto: cashback.monto, creadoEn: fecha } });
+        }
+        // 5) Contadores del cliente.
         await tx.cliente.update({
           where: { id: clienteId },
           data: { opsDigitalesMes: { increment: 1 }, ...(b.conAyuda ? {} : { pagosSinAyuda: { increment: 1 } }) },

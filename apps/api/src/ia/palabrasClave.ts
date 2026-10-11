@@ -116,7 +116,7 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
   // 6. Resto de accesos.
   if (algun(t, ["recibo", "foto", "fotito", "boleta", "factura"])) return { tipo: "RECIBO" };
   if (algun(t, ["saldo", "cuanto tengo", "mi plata", "mi dinero", "tengo plata", "plata tengo", "dinero tengo", "cuanto hay en mi cuenta"])) return { tipo: "SALDO" };
-  if (algun(t, ["puntos", "progreso", "premio", "premios", "millas"])) return { tipo: "PANTALLA", pantalla: "progreso" };
+  if (algun(t, ["cashback", "cash back", "me devolvieron", "devuelven", "puntos", "progreso", "premio", "premios", "millas"])) return { tipo: "PANTALLA", pantalla: "progreso" };
   if (algun(t, ["frecuente", "frecuentes", "guardados", "de siempre"])) return { tipo: "PANTALLA", pantalla: "frecuentes" };
   if (algun(t, ["ajustes", "configuracion", "vista", "letra"])) return { tipo: "PANTALLA", pantalla: "ajustes" };
   if (algun(t, ["inicio", "volver", "principal"])) return { tipo: "PANTALLA", pantalla: "inicio" };

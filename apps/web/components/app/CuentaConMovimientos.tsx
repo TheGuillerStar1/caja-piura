@@ -51,10 +51,13 @@ export function CuentaConMovimientos({ cuenta: c, grande }: { cuenta: Cuenta; gr
                   <span className="flex-1">
                     <span className={`block font-medium leading-snug ${grande ? "text-base" : "text-sm"}`}>{m.descripcion}</span>
                     <span className="block text-xs text-tenue">
-                      {fechaHora(m.fecha)} · Op. {m.operacion}
+                      {fechaHora(m.fecha)}
+                      {m.operacion && ` · Op. ${m.operacion}`}
                     </span>
                   </span>
-                  <span className={`font-bold ${grande ? "text-lg" : "text-base"}`}>- {soles(m.monto)}</span>
+                  <span className={`font-bold ${m.entrada ? "text-exito" : ""} ${grande ? "text-lg" : "text-base"}`}>
+                    {m.entrada ? "+" : "-"} {soles(m.monto)}
+                  </span>
                 </li>
               ))}
             </ul>

@@ -69,7 +69,7 @@ export type MeRes = z.infer<typeof MeRes>;
 
 // Movimientos de una cuenta (lo que se pagó desde ella), al tocarla en «Mis productos».
 export const Movimiento = z.object({
-  id: z.string(), // "p12" (pago) o "t7" (transferencia)
+  id: z.string(), // "p12" (pago), "t7" (transferencia) o "c3" (cashback)
   descripcion: z.string(),
   monto: z.number(),
   fecha: z.string(),
@@ -203,7 +203,8 @@ export const ConfirmarPagoRes = z.object({
   monto: z.number(),
   descripcion: z.string(),
   fecha: z.string(),
-  puntosGanados: z.number(),
+  /** Soles devueltos a la cuenta por este pago (0 si no ganó o llegó al tope) */
+  cashback: z.number(),
   mensaje: z.string(), // "Te ahorraste una visita a la agencia" | "No se realizó el pago. No se cobró nada"
   /** true si la key ya existía y se devolvió el resultado anterior sin cobrar de nuevo */
   repetido: z.boolean(),
@@ -247,13 +248,18 @@ export type AsistenteRes = z.infer<typeof AsistenteRes>;
 
 // ── Retención y demo ─────────────────────────────────
 export const ProgresoRes = z.object({
-  puntosTotal: z.number(),
+  /** Cashback ganado desde siempre y en los últimos 30 días, con el tope del mes */
+  cashbackTotal: z.number(),
+  cashbackMes: z.number(),
+  topeMes: z.number(),
+  /** Porcentajes vigentes, para explicar cómo se gana (0.01 = 1%) */
+  reglas: z.object({ digital: z.number(), sinAyuda: z.number(), puntual: z.number(), topePago: z.number() }),
   pagosDigitalesMes: z.number(),
   visitasAhorradas: z.number(),
   cuotasRestantes: z.number(),
   totalCuotas: z.number(),
   sugerirVistaEstandar: z.boolean(),
-  historial: z.array(z.object({ fecha: z.string(), descripcion: z.string(), puntos: z.number() })),
+  historial: z.array(z.object({ fecha: z.string(), descripcion: z.string(), monto: z.number() })),
 });
 export type ProgresoRes = z.infer<typeof ProgresoRes>;
 

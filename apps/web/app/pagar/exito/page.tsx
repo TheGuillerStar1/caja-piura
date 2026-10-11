@@ -1,5 +1,6 @@
 "use client";
-// Dueño: Agente B. Pago exitoso: constancia, puntos y "¿Lo guardo?" (ruta C).
+// Dueño: Agente B. Pago exitoso: constancia, cashback y "¿Lo guardo?" (ruta C).
+import { Coins } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -48,7 +49,11 @@ export default function PagoExito() {
     }
     // Cierra la operación: la marca de ayuda no debe pasar al siguiente pago.
     iniciarFlujo(res.tipo);
-    if (asistida) hablar(`Listo. Pagaste ${montoHablado(res.monto)}. Te ahorraste una visita a la agencia.`);
+    if (asistida)
+      hablar(
+        `Listo. Pagaste ${montoHablado(res.monto)}.` +
+          (res.cashback > 0 ? ` Te devolvimos ${montoHablado(res.cashback)} a tu cuenta.` : " Te ahorraste una visita a la agencia."),
+      );
   }, [router, asistida]);
 
   if (!r) return null;
@@ -95,17 +100,25 @@ export default function PagoExito() {
         </p>
       </Tarjeta>
 
-      <Tarjeta tono="marca" className="flex items-center justify-between gap-3">
+      {r.cashback > 0 ? (
+        <Link
+          href="/progreso"
+          onClick={() => track("exito", "tocar", { flujo: r.tipo })}
+          className="anim-aparece flex items-center gap-3 rounded-2xl border-2 border-exito/40 bg-exito-claro p-4"
+        >
+          <span aria-hidden className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-exito text-white">
+            <Coins className="h-6 w-6" />
+          </span>
+          <span className="flex-1">
+            <span className="block text-2xl font-bold text-exito">+{soles(r.cashback)}</span>
+            <span className="block leading-snug">de cashback. Ya está en tu cuenta.</span>
+          </span>
+          <span className="shrink-0 text-sm font-bold text-exito">Ver</span>
+        </Link>
+      ) : null}
+
+      <Tarjeta tono="marca">
         <p className="text-lg font-bold">{r.mensaje}</p>
-        {r.puntosGanados > 0 && (
-          <Link
-            href="/progreso"
-            onClick={() => track("exito", "tocar", { flujo: r.tipo })}
-            className="shrink-0 rounded-full bg-marca px-3 py-2 font-bold text-white"
-          >
-            +{r.puntosGanados} puntos
-          </Link>
-        )}
       </Tarjeta>
 
       <div className="mt-auto flex flex-col gap-3">

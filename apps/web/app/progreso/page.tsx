@@ -1,13 +1,12 @@
 "use client";
-// Dueño: Agente D. Progreso del cliente: puntos, beneficios, pagos del mes, visitas ahorradas y avance del crédito.
-import { Check, Star } from "lucide-react";
+// Dueño: Agente D. Progreso del cliente: cashback, cómo ganarlo, pagos del mes, visitas ahorradas y avance del crédito.
+import { CalendarCheck, Coins, Smartphone, ThumbsUp } from "lucide-react";
 import type { ProgresoRes } from "@cp/shared";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { BENEFICIOS, proximoBeneficio } from "@/components/retencion/beneficios";
 import { Boton, Cargando, Mascota, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
-import { fechaCorta } from "@/lib/formato";
+import { fechaCorta, soles } from "@/lib/formato";
 import { track } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 
@@ -56,11 +55,15 @@ export default function ProgresoPage() {
         <>
           {asistida && (
             <Mascota
-              mensaje={datos.pagosDigitalesMes > 0 ? "¡Vas muy bien! Cada pago desde tu celular suma puntos." : "Paga desde tu celular y gana puntos."}
+              mensaje={
+                datos.cashbackTotal > 0
+                  ? "¡Vas muy bien! Cada pago desde tu celular te devuelve plata a tu cuenta."
+                  : "Paga desde tu celular y te devolvemos parte de lo que pagas."
+              }
             />
           )}
 
-          <Puntos puntos={datos.puntosTotal} />
+          <Cashback datos={datos} />
 
           <div className="grid grid-cols-2 gap-3">
             <Tarjeta tono="exito" className="flex flex-col gap-1">
@@ -96,40 +99,12 @@ export default function ProgresoPage() {
             </Tarjeta>
           )}
 
-          <section className="flex flex-col gap-2">
-            <h2 className="text-lg font-bold">Beneficios</h2>
-            <ul className="flex flex-col gap-2">
-              {BENEFICIOS.map((b) => {
-                const logrado = datos.puntosTotal >= b.puntos;
-                return (
-                  <li
-                    key={b.nombre}
-                    className={`flex items-center gap-3 rounded-2xl border-2 p-3 ${logrado ? "border-exito/40 bg-exito-claro" : "border-linea bg-superficie"}`}
-                  >
-                    <span
-                      aria-hidden
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold ${
-                        logrado ? "bg-exito text-white" : "bg-fondo text-tenue"
-                      }`}
-                    >
-                      {logrado ? <Check className="h-4 w-4" aria-hidden /> : <Star className="h-4 w-4" aria-hidden />}
-                    </span>
-                    <span className="flex-1">
-                      <span className="block font-bold">{b.nombre}</span>
-                      <span className="block text-sm text-tenue">{b.detalle}</span>
-                    </span>
-                    <span className={`text-sm font-bold ${logrado ? "text-exito" : "text-tenue"}`}>{logrado ? "¡Logrado!" : `${b.puntos} pts`}</span>
-                  </li>
-                );
-              })}
-            </ul>
-            <p className="text-sm text-tenue">Una tasa preferente sería una propuesta sujeta a evaluación crediticia.</p>
-          </section>
+          <ComoGanar reglas={datos.reglas} tope={datos.topeMes} />
 
           <section className="flex flex-col gap-2">
-            <h2 className="text-lg font-bold">Tus puntos</h2>
+            <h2 className="text-lg font-bold">Tu cashback</h2>
             {datos.historial.length === 0 ? (
-              <p className="text-tenue">Aún no tienes puntos. Haz tu primer pago desde el celular y gana 10 puntos.</p>
+              <p className="text-tenue">Aún no tienes cashback. Paga tu cuota desde el celular antes de que venza y te devolvemos hasta el 3%.</p>
             ) : (
               <ul className="divide-y divide-linea rounded-2xl border-2 border-linea bg-superficie">
                 {datos.historial.map((h, i) => (
@@ -138,7 +113,7 @@ export default function ProgresoPage() {
                       <span className="block">{h.descripcion}</span>
                       <span className="block text-sm text-tenue">{fechaCorta(h.fecha)}</span>
                     </span>
-                    <span className="font-bold text-exito">+{h.puntos}</span>
+                    <span className="font-bold text-exito">+{soles(h.monto)}</span>
                   </li>
                 ))}
               </ul>
@@ -154,34 +129,69 @@ export default function ProgresoPage() {
   );
 }
 
-function Puntos({ puntos }: { puntos: number }) {
-  const prox = proximoBeneficio(puntos);
+const pct = (n: number) => `${(n * 100).toLocaleString("es-PE", { maximumFractionDigits: 1 })}%`;
+
+function Cashback({ datos }: { datos: ProgresoRes }) {
+  const avance = Math.min(1, datos.cashbackMes / datos.topeMes);
+  const queda = Math.max(0, datos.topeMes - datos.cashbackMes);
   return (
     <Tarjeta tono="marca" className="flex flex-col gap-3">
-      <p className="text-tenue">Tus puntos</p>
-      <p className="text-5xl font-bold text-marca">
-        {puntos} <span className="text-2xl">pts</span>
+      <p className="text-tenue">Cashback ganado</p>
+      <p className="text-5xl font-bold text-marca">{soles(datos.cashbackTotal)}</p>
+      <p className="-mt-1 text-sm text-tenue">Se abona al instante en la cuenta con la que pagas.</p>
+      <div
+        className="h-4 overflow-hidden rounded-full bg-superficie"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={datos.topeMes}
+        aria-valuenow={datos.cashbackMes}
+        aria-label="Cashback de este mes"
+      >
+        <div className="h-full rounded-full bg-marca transition-[width] duration-700" style={{ width: `${Math.max(4, avance * 100)}%` }} />
+      </div>
+      <p className="text-lg leading-snug">
+        {queda > 0 ? (
+          <>
+            Este mes llevas <b>{soles(datos.cashbackMes)}</b>. Puedes ganar <b>{soles(queda)}</b> más.
+          </>
+        ) : (
+          <>
+            ¡Llegaste al máximo del mes: <b>{soles(datos.topeMes)}</b>! Se renueva en 30 días.
+          </>
+        )}
       </p>
-      {prox ? (
-        <>
-          <div
-            className="h-4 overflow-hidden rounded-full bg-superficie"
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(prox.avance * 100)}
-            aria-label={`Avance hacia ${prox.beneficio.nombre}`}
-          >
-            <div className="h-full rounded-full bg-marca transition-[width] duration-700" style={{ width: `${Math.max(4, prox.avance * 100)}%` }} />
-          </div>
-          <p className="text-lg leading-snug">
-            Te faltan <b>{plural(prox.faltan, "punto", "puntos")}</b> para tu próximo beneficio: <b>{prox.beneficio.nombre}</b>
-          </p>
-        </>
-      ) : (
-        <p className="text-lg font-bold">¡Ya tienes todos los beneficios!</p>
-      )}
     </Tarjeta>
+  );
+}
+
+function ComoGanar({ reglas, tope }: { reglas: ProgresoRes["reglas"]; tope: number }) {
+  const filas = [
+    { Icono: Smartphone, nombre: "Paga desde la app", detalle: "Cuotas, recibos y pagos frecuentes", valor: pct(reglas.digital) },
+    { Icono: ThumbsUp, nombre: "Hazlo sin ayuda", detalle: "Sin Pía ni «Enséñame paso a paso»", valor: `+${pct(reglas.sinAyuda)}` },
+    { Icono: CalendarCheck, nombre: "Paga tu cuota antes de que venza", detalle: "Aunque sea un día antes", valor: `+${pct(reglas.puntual)}` },
+  ];
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="text-lg font-bold">Cómo ganar cashback</h2>
+      <ul className="flex flex-col gap-2">
+        {filas.map(({ Icono, nombre, detalle, valor }) => (
+          <li key={nombre} className="flex items-center gap-3 rounded-2xl border-2 border-linea bg-superficie p-3">
+            <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-exito-claro text-exito">
+              <Icono className="h-5 w-5" />
+            </span>
+            <span className="flex-1">
+              <span className="block font-bold">{nombre}</span>
+              <span className="block text-sm text-tenue">{detalle}</span>
+            </span>
+            <span className="text-lg font-bold text-exito">{valor}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="flex items-start gap-2 text-sm text-tenue">
+        <Coins className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        Hasta {soles(reglas.topePago)} por pago y {soles(tope)} cada 30 días. Las transferencias no generan cashback.
+      </p>
+    </section>
   );
 }
 

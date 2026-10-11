@@ -24,7 +24,7 @@ Clientes emprendedores con poca experiencia digital y celulares de gama baja **a
 |---|---|
 | Motor de personalización | Reglas → vista, tono, sugerencias y razones; graduación a vista estándar |
 | Transacción funcional | Rutas A/B/C → saldo → confirmación → éxito o error idempotente |
-| Retención comprobable | Puntos, progreso, "Adelantar 30 días" → aviso → pagar en 2 toques |
+| Retención comprobable | Cashback a la cuenta, progreso, "Adelantar 30 días" → aviso → pagar en 2 toques |
 | Gama baja | Presupuesto de peso y revisión final |
 
 ### Decisiones tomadas sobre el flujograma
@@ -96,7 +96,7 @@ caja-piura/
 | `Recibo` | codigo (único), servicioId, titular, monto, vencimiento, pagado |
 | `Frecuente` | id, clienteId, alias, servicioId, codigo, esPropio |
 | `Pago` | id, idempotencyKey (único), clienteId, tipo (CUOTA/FRECUENTE/RECIBO), referencia, monto, estado, creadoEn |
-| `Punto` | id, clienteId, motivo, puntos, creadoEn |
+| `Cashback` | id, clienteId, cuentaId, pagoId, motivo, monto, creadoEn |
 | `Evento` | id, clienteId, sesionId, pantalla, accion, msDesdeInicio, ayudaUsada, creadoEn |
 
 ### Endpoints (contrato en `packages/shared`)
@@ -109,7 +109,7 @@ caja-piura/
 | `POST /pagos/preparar` · `POST /pagos/confirmar` | B | Resumen + saldo; ejecución idempotente en transacción |
 | `POST /recibos/leer` · `GET /recibos/:codigo` | C | Foto → R2 → Groq visión → código; consulta con titular enmascarado |
 | `POST /asistente` | C | Groq con herramientas → acción para la UI (nunca paga) |
-| `GET /progreso` · `POST /demo/adelantar` · `POST /demo/reset` | D | Puntos, progreso, reloj simulado, reinicio de demo |
+| `GET /progreso` · `POST /demo/adelantar` · `POST /demo/reset` | D | Cashback, progreso, reloj simulado, reinicio de demo |
 | `POST /eventos` · `GET /panel/kpis` | D | Telemetría y los 3 indicadores |
 
 ---

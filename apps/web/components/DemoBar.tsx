@@ -149,7 +149,7 @@ export default function DemoBar() {
                   <div className="flex flex-col gap-2 rounded-xl border-2 border-error bg-error-claro p-2">
                     <p className="text-sm font-bold">¿Reiniciar la demo?</p>
                     <p className="text-sm">
-                      Rosa, Elena y Carlos vuelven al primer día: sin pagos, puntos ni frecuentes nuevos. Los demás clientes no cambian.
+                      Rosa, Elena y Carlos vuelven al primer día: sin pagos, cashback ni frecuentes nuevos. Los demás clientes no cambian.
                     </p>
                     <button type="button" onClick={reiniciar} className="rounded-boton bg-error px-3 py-2 font-bold text-white">
                       Sí, reiniciar

@@ -69,7 +69,7 @@ const ACCESOS: Partial<Record<Sugerencia["id"], Acceso>> = {
   PAGAR_RECIBO: { texto: "Pagar un recibo con foto", Icono: IconoRecibo },
   FRECUENTES: { texto: "Mis pagos de siempre", Icono: IconoFrecuente },
   VER_SALDO: { texto: "Ver mi saldo", Icono: IconoSaldo },
-  PROGRESO: { texto: "Mis puntos", Icono: IconoProgreso },
+  PROGRESO: { texto: "Mi cashback", Icono: IconoProgreso },
 };
 const ACCESOS_BASE: Sugerencia["id"][] = ["PAGAR_CUOTA", "PAGAR_RECIBO", "FRECUENTES"];
 const PREGUNTAS = ["¿Cuánto debo?", "Yapear a un contacto", "¿Se hizo mi pago?", "Me cobraron dos veces"];
@@ -87,7 +87,7 @@ function textoBoton(ruta: string) {
   if (ruta.startsWith("/pagar/recibo")) return "Tomar foto del recibo";
   if (ruta.startsWith("/pagar/cuota")) return "Ver mi cuota";
   if (ruta.startsWith("/pagar/frecuentes")) return "Ver mis pagos de siempre";
-  if (ruta.startsWith("/progreso")) return "Ver mis puntos";
+  if (ruta.startsWith("/progreso")) return "Ver mi cashback";
   if (ruta.startsWith("/ajustes")) return "Abrir Ajustes";
   if (ruta.startsWith("/inicio")) return "Ir al inicio";
   return "Abrir";

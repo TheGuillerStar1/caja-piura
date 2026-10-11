@@ -4,18 +4,44 @@ import type { TipoPago } from "@cp/shared";
 export const MENSAJE_EXITO = "Te ahorraste una visita a la agencia";
 export const MENSAJE_FALLO = "No se realizó el pago. No se cobró nada.";
 
-export type PuntoGanado = { motivo: string; puntos: number };
+const r2 = (n: number) => Math.round(n * 100) / 100;
 
-/** 10 por pago digital, +5 si lo hizo sin ayuda, +10 si paga una cuota antes de su vencimiento. */
-export function calcularPuntos(p: { tipo: TipoPago; conAyuda: boolean; diasAlVencimiento: number | null }): PuntoGanado[] {
-  const lista: PuntoGanado[] = [{ motivo: "Pago digital", puntos: 10 }];
-  if (!p.conAyuda) lista.push({ motivo: "Pagaste sin ayuda", puntos: 5 });
+// ── Cashback (como en las apps de billetera): parte del pago vuelve en soles a la cuenta del cliente ──
+/** Porcentajes sobre el monto pagado. El de puntualidad es solo para cuotas: es lo que más le importa a la Caja. */
+export const CASHBACK = {
+  digital: 0.01, // pagar desde la app en vez de ir a la agencia
+  sinAyuda: 0.005, // hacerlo sin Pía ni «Enséñame paso a paso»
+  puntual: 0.015, // cuota pagada antes de su vencimiento
+  topePago: 5, // S/ por operación
+  topeMes: 20, // S/ en los últimos 30 días
+} as const;
+
+export type ParteCashback = { motivo: string; monto: number };
+export type Cashback = { monto: number; partes: ParteCashback[]; topeAlcanzado: boolean };
+
+/**
+ * Cashback de un pago exitoso. Se calcula cada parte, se suman y se recorta con el tope por pago
+ * y con lo que le queda del tope del mes (`acumuladoMes` = cashback ya ganado en los últimos 30 días).
+ */
+export function calcularCashback(p: {
+  tipo: TipoPago;
+  monto: number;
+  conAyuda: boolean;
+  diasAlVencimiento: number | null;
+  acumuladoMes: number;
+}): Cashback {
+  const partes: ParteCashback[] = [{ motivo: "Pago desde la app", monto: r2(p.monto * CASHBACK.digital) }];
+  if (!p.conAyuda) partes.push({ motivo: "Lo hiciste sin ayuda", monto: r2(p.monto * CASHBACK.sinAyuda) });
   if (p.tipo === "CUOTA" && p.diasAlVencimiento !== null && p.diasAlVencimiento > 0)
-    lista.push({ motivo: "Cuota pagada antes de su vencimiento", puntos: 10 });
-  return lista;
+    partes.push({ motivo: "Cuota pagada antes de vencer", monto: r2(p.monto * CASHBACK.puntual) });
+  const bruto = r2(partes.reduce((s, x) => s + x.monto, 0));
+  const disponible = Math.max(0, r2(CASHBACK.topeMes - p.acumuladoMes));
+  const monto = r2(Math.min(bruto, CASHBACK.topePago, disponible));
+  return { monto, partes: partes.filter((x) => x.monto > 0), topeAlcanzado: monto < bruto };
 }
 
-export const sumarPuntos = (l: PuntoGanado[]) => l.reduce((s, p) => s + p.puntos, 0);
+/** Texto corto del movimiento de cashback en la cuenta, p. ej. «Cashback · Cuota pagada antes de vencer». */
+export const motivoCashback = (c: Cashback) => `Cashback · ${(c.partes.at(-1) ?? { motivo: "Pago desde la app" }).motivo}`;
 
 /**
  * Qué hacer con una idempotencyKey según el pago que ya existe con ella.
@@ -53,8 +79,6 @@ export type PlanCredito = { monto: number; etiqueta: string; pagar: number[]; re
 export const PORCENTAJE_INTERES = 0.28;
 export const AMORTIZACION_MINIMA = 50;
 export const ADELANTO_MAXIMO = 3;
-
-const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
  * Arma el pago de un crédito según la operación. `pendientes` va en orden de vencimiento: la primera es la cuota del mes.

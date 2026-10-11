@@ -101,7 +101,7 @@ export function planReinicio(db: PrismaClient, idPorDni: Record<string, number>,
     borrar: () => [
       db.pago.deleteMany({ where }),
       db.transferencia.deleteMany({ where: { OR: [where, { destinoClienteId: where.clienteId }] } }),
-      db.punto.deleteMany({ where }),
+      db.cashback.deleteMany({ where }),
       db.evento.deleteMany({ where }),
       db.frecuente.deleteMany({ where }),
       db.cuota.deleteMany({ where }),

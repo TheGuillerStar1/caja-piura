@@ -37,5 +37,6 @@ export function callar() {
 export function montoHablado(monto: number) {
   const soles = Math.floor(monto);
   const cent = Math.round((monto - soles) * 100);
+  if (!soles) return `${cent} céntimos`;
   return cent ? `${soles} soles con ${cent} céntimos` : `${soles} soles`;
 }

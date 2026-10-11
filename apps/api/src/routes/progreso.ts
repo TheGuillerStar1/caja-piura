@@ -4,6 +4,8 @@ import { Router } from "express";
 import { HttpError } from "../lib/errores.js";
 import { prisma } from "../lib/prisma.js";
 import { requiereSesion } from "../lib/sesion.js";
+import { aNumero } from "../lib/formato.js";
+import { CASHBACK } from "../pagos/logica.js";
 import { debeSugerirEstandar, inicioVentanaMes } from "../retencion/logica.js";
 
 export const router = Router();
@@ -21,22 +23,27 @@ router.get("/progreso", requiereSesion, async (req, res) => {
     (await prisma.cuota.findFirst({ where: { clienteId, estado: "PENDIENTE" }, orderBy: { vencimiento: "asc" } })) ??
     (await prisma.cuota.findFirst({ where: { clienteId }, orderBy: { vencimiento: "desc" } }));
 
-  const [suma, pagosMes, exitosos, restantes, historial] = await Promise.all([
-    prisma.punto.aggregate({ where: { clienteId }, _sum: { puntos: true } }),
-    prisma.pago.count({ where: { clienteId, estado: "EXITOSO", creadoEn: { gte: inicioVentanaMes(cliente.fechaSimulada) } } }),
+  const desde = inicioVentanaMes(cliente.fechaSimulada);
+  const [suma, sumaMes, pagosMes, exitosos, restantes, historial] = await Promise.all([
+    prisma.cashback.aggregate({ where: { clienteId }, _sum: { monto: true } }),
+    prisma.cashback.aggregate({ where: { clienteId, creadoEn: { gte: desde } }, _sum: { monto: true } }),
+    prisma.pago.count({ where: { clienteId, estado: "EXITOSO", creadoEn: { gte: desde } } }),
     prisma.pago.count({ where: { clienteId, estado: "EXITOSO" } }),
     ref ? prisma.cuota.count({ where: { clienteId, credito: ref.credito, estado: "PENDIENTE" } }) : Promise.resolve(0),
-    prisma.punto.findMany({ where: { clienteId }, orderBy: [{ creadoEn: "desc" }, { id: "desc" }], take: 10 }),
+    prisma.cashback.findMany({ where: { clienteId }, orderBy: [{ creadoEn: "desc" }, { id: "desc" }], take: 10 }),
   ]);
 
   const r: ProgresoRes = {
-    puntosTotal: suma._sum.puntos ?? 0,
+    cashbackTotal: aNumero(suma._sum.monto ?? 0),
+    cashbackMes: aNumero(sumaMes._sum.monto ?? 0),
+    topeMes: CASHBACK.topeMes,
+    reglas: { digital: CASHBACK.digital, sinAyuda: CASHBACK.sinAyuda, puntual: CASHBACK.puntual, topePago: CASHBACK.topePago },
     pagosDigitalesMes: pagosMes,
     visitasAhorradas: exitosos,
     cuotasRestantes: restantes,
     totalCuotas: ref?.totalCuotas ?? 0,
     sugerirVistaEstandar: debeSugerirEstandar(cliente.vistaPreferida, cliente.pagosSinAyuda),
-    historial: historial.map((p) => ({ fecha: p.creadoEn.toISOString(), descripcion: p.motivo, puntos: p.puntos })),
+    historial: historial.map((p) => ({ fecha: p.creadoEn.toISOString(), descripcion: p.motivo, monto: aNumero(p.monto) })),
   };
   res.json(r);
 });

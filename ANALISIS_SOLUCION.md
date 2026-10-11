@@ -86,7 +86,7 @@ Tres caminos al mismo punto de confirmación:
 - 🔒 *"Pía nunca te pide tu clave."*
 
 ### 3.4 Retención comprobable
-- **Puntos:** 10 por pago digital, +5 si fue sin ayuda, +10 si la cuota se pagó antes de vencer.
+- **Cashback (estilo billetera digital):** se devuelve a la cuenta, al instante, el 1% de cada pago desde la app, +0.5% si fue sin ayuda y +1.5% si la cuota se pagó antes de vencer. Tope de S/ 5 por pago y S/ 20 cada 30 días; aparece como movimiento de la cuenta.
 - **Beneficios dentro de Caja Piura:** S/ 2 menos en la cuota (50 pts) · descuento en comisión (120 pts) · prioridad en agencia (250 pts). *Sin sorteos: requieren autorización del Ministerio del Interior.*
 - **Recordatorios configurables:** 5, 3, 1 día antes o el mismo día; de cuota y/o servicios.
 - **Mensaje de éxito:** *"Te ahorraste una visita a la agencia."*
@@ -103,7 +103,7 @@ Tres caminos al mismo punto de confirmación:
 
 Además, la base tiene **500 perfiles sintéticos** con el esquema de datos de Caja Piura, usados para mostrar en el panel cómo se distribuirían las vistas.
 
-**Guion sugerido (≈ 3 min):** Rosa entra con su DNI y PIN → el motor le explica por qué la vista asistida → aviso "tu cuota vence" → paga en 2 toques y escucha el monto → gana puntos → **"Adelantar 30 días"** → llega el nuevo aviso → paga otra vez → el panel del jurado se actualiza.
+**Guion sugerido (≈ 3 min):** Rosa entra con su DNI y PIN → el motor le explica por qué la vista asistida → aviso "tu cuota vence" → paga en 2 toques y escucha el monto → recibe su cashback en la cuenta → **"Adelantar 30 días"** → llega el nuevo aviso → paga otra vez → el panel del jurado se actualiza.
 
 ---
 
@@ -151,7 +151,7 @@ Celular ──► Vercel · Next.js 16 + Tailwind 4 (la app)
               │  /api/* en el mismo dominio (sesión segura, sin CORS)
               ▼
             Railway · Node 20 + Express + Prisma
-              ├─ MySQL 8 ··········· clientes, cuotas, pagos, puntos, eventos
+              ├─ MySQL 8 ··········· clientes, cuotas, pagos, cashback, eventos
               ├─ Cloudflare R2 ····· fotos de recibos (privadas)
               └─ Groq ·············· asistente y lectura de recibos (solo desde el servidor)
 ```

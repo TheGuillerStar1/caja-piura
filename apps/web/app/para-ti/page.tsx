@@ -1,6 +1,6 @@
 "use client";
 // Sección "Para ti" de la app oficial. Además de sus tarjetas de siempre, aquí viven las dos de Pía:
-// el progreso (puntos y logros) y sus ajustes (vista y recordatorios).
+// el progreso (cashback y avance) y sus ajustes (vista y recordatorios).
 import { FilaParaTi } from "@/components/app/Lista";
 import { IcAhorro, IcAjustesPia, IcBilletes, IcLibro, IcTrofeo } from "@/components/app/IconosApp";
 import { Pantalla } from "@/components/ui";
@@ -12,7 +12,7 @@ export default function ParaTi() {
   return (
     <Pantalla titulo="Para ti" pestana="parati" plano>
       <div className="flex flex-col gap-2">
-        <FilaParaTi destacada titulo="Mi progreso con Pía" texto="Mira tus pagos sin ayuda, tus puntos y tus logros." ruta="/progreso" Icono={IcTrofeo} onClick={() => track("parati-progreso", "tocar")} />
+        <FilaParaTi destacada titulo="Mi progreso con Pía" texto="Mira tu cashback, cómo ganar más y cuánto te falta de tu crédito." ruta="/progreso" Icono={IcTrofeo} onClick={() => track("parati-progreso", "tocar")} />
         <FilaParaTi destacada titulo="Recordatorios y vista" texto="Elige cuándo te avisamos de tus pagos y cómo ver la app." ruta="/ajustes" Icono={IcAjustesPia} onClick={() => track("parati-ajustes", "tocar")} />
         <FilaParaTi titulo="LIBRO DE RECLAMACIONES" texto="En Caja Piura, tu opinión nos ayuda a mejorar." ruta={otro("Libro de reclamaciones")} Icono={IcLibro} />
         <FilaParaTi titulo="Cambiar soles y dólares" texto="Cambia los dólares que necesitas de manera rápida y segura." ruta={otro("Cambiar soles y dólares")} Icono={IcBilletes} />

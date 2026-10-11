@@ -64,7 +64,7 @@ const NOMBRE_PANTALLA: Record<Pantalla, string> = {
   pagar_cuota: "tu cuota",
   frecuentes: "tus pagos frecuentes",
   pagar_recibo: "pagar un recibo",
-  progreso: "tus puntos",
+  progreso: "tu cashback",
   ajustes: "Ajustes",
 };
 const RUBRO_TXT: Record<Rubro, string> = { LUZ: "la luz", AGUA: "el agua", TELEFONIA: "el celular", INTERNET: "el internet" };
@@ -465,7 +465,7 @@ Reglas:
 - "pagar la luz/agua/celular/internet" o un alias → preparar_pago_frecuente con el id que corresponda. Si hay más de uno posible, usa otrosCandidatos. Si no tiene ese servicio guardado → preparar_pago_recibo.
 - "cuánto debo" → ver_deuda. "mi crédito/cuota", "pagar mi saldo del mes", "la mensualidad" → preparar_pago_cuota. ver_saldo solo cuando quieren SABER cuánto tienen, nunca cuando dicen "pagar".
 - Nunca pidas ni muestres claves, DNI ni números de cuenta. Si piden su clave: "Nunca te pediré tu clave. Caja Piura no la pide por teléfono ni por mensaje."
-- Si piden algo fuera de pagos de cuota/recibos/saldo/puntos, di amablemente que no puedes y ofrece lo que sí puedes.`;
+- Si piden algo fuera de pagos de cuota/recibos/saldo/cashback, di amablemente que no puedes y ofrece lo que sí puedes.`;
 }
 
 async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<Resultado | null> {

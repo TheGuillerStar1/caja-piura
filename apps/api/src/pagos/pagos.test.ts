@@ -1,15 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { calcularPuntos, decidirIdempotencia, fechaOperacion, planCredito, sumarPuntos } from "./logica.js";
+import { calcularCashback, decidirIdempotencia, fechaOperacion, motivoCashback, planCredito } from "./logica.js";
 
-describe("calcularPuntos", () => {
-  it("cuota antes del vencimiento y sin ayuda = 25", () => {
-    expect(sumarPuntos(calcularPuntos({ tipo: "CUOTA", conAyuda: false, diasAlVencimiento: 3 }))).toBe(25);
+describe("calcularCashback", () => {
+  const base = { conAyuda: false, diasAlVencimiento: 3, acumuladoMes: 0 };
+  it("cuota de S/ 100 antes del vencimiento y sin ayuda = S/ 3 (1% + 0.5% + 1.5%)", () => {
+    const c = calcularCashback({ ...base, tipo: "CUOTA", monto: 100 });
+    expect(c.monto).toBe(3);
+    expect(c.partes).toHaveLength(3);
+    expect(c.topeAlcanzado).toBe(false);
   });
-  it("cuota el mismo día, con ayuda = 10", () => {
-    expect(sumarPuntos(calcularPuntos({ tipo: "CUOTA", conAyuda: true, diasAlVencimiento: 0 }))).toBe(10);
+  it("cuota el mismo día, con ayuda = solo el 1%", () => {
+    expect(calcularCashback({ ...base, tipo: "CUOTA", monto: 80, conAyuda: true, diasAlVencimiento: 0 }).monto).toBe(0.8);
   });
-  it("recibo sin ayuda = 15 (el bono de anticipo es solo para cuotas)", () => {
-    expect(sumarPuntos(calcularPuntos({ tipo: "RECIBO", conAyuda: false, diasAlVencimiento: 5 }))).toBe(15);
+  it("recibo sin ayuda = 1.5% (la puntualidad es solo para cuotas)", () => {
+    expect(calcularCashback({ ...base, tipo: "RECIBO", monto: 60, diasAlVencimiento: 5 }).monto).toBe(0.9);
+  });
+  it("no pasa de S/ 5 por pago", () => {
+    const c = calcularCashback({ ...base, tipo: "CUOTA", monto: 500 });
+    expect(c.monto).toBe(5);
+    expect(c.topeAlcanzado).toBe(true);
+  });
+  it("respeta lo que queda del tope del mes", () => {
+    expect(calcularCashback({ ...base, tipo: "CUOTA", monto: 100, acumuladoMes: 18.5 }).monto).toBe(1.5);
+    expect(calcularCashback({ ...base, tipo: "CUOTA", monto: 100, acumuladoMes: 20 }).monto).toBe(0);
+  });
+  it("el movimiento lleva el motivo más fuerte", () => {
+    expect(motivoCashback(calcularCashback({ ...base, tipo: "CUOTA", monto: 100 }))).toBe("Cashback · Cuota pagada antes de vencer");
   });
 });
 

@@ -38,15 +38,16 @@ router.put("/me/vista", requiereSesion, async (req, res) => {
   res.json({ ok: true, vista });
 });
 
-// Últimos movimientos de una cuenta del cliente: pagos exitosos que salieron de ella y transferencias que salieron o entraron.
+// Últimos movimientos de una cuenta del cliente: pagos exitosos que salieron de ella, transferencias que salieron o entraron y cashback recibido.
 router.get("/me/cuentas/:id/movimientos", requiereSesion, async (req, res) => {
   const cuentaId = Number(req.params.id);
   const cuenta = Number.isInteger(cuentaId) ? await prisma.cuenta.findFirst({ where: { id: cuentaId, clienteId: req.clienteId! } }) : null;
   if (!cuenta) throw new HttpError(404, "CUENTA_NO_ENCONTRADA", "No encontramos esa cuenta");
-  const [pagos, salen, entran] = await Promise.all([
+  const [pagos, salen, entran, cashbacks] = await Promise.all([
     prisma.pago.findMany({ where: { cuentaId, estado: "EXITOSO" }, orderBy: { creadoEn: "desc" }, take: 10 }),
     prisma.transferencia.findMany({ where: { cuentaOrigenId: cuentaId }, orderBy: { creadoEn: "desc" }, take: 10 }),
     prisma.transferencia.findMany({ where: { cuentaDestinoId: cuentaId }, orderBy: { creadoEn: "desc" }, take: 10, include: { cliente: true } }),
+    prisma.cashback.findMany({ where: { cuentaId, clienteId: req.clienteId! }, orderBy: { creadoEn: "desc" }, take: 10 }),
   ]);
   const movimientos: Movimiento[] = [
     ...pagos.map((p) => ({ id: `p${p.id}`, descripcion: p.descripcion, monto: aNumero(p.monto), fecha: p.creadoEn.toISOString(), operacion: p.operacion, entrada: false })),
@@ -59,6 +60,7 @@ router.get("/me/cuentas/:id/movimientos", requiereSesion, async (req, res) => {
       operacion: t.operacion,
       entrada: true,
     })),
+    ...cashbacks.map((c) => ({ id: `c${c.id}`, descripcion: c.motivo, monto: aNumero(c.monto), fecha: c.creadoEn.toISOString(), operacion: "", entrada: true })),
   ]
     .sort((a, b) => b.fecha.localeCompare(a.fecha))
     .slice(0, 10);

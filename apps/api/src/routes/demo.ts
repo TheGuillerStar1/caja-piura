@@ -53,7 +53,7 @@ router.post("/demo/adelantar", requiereSesion, async (req, res) => {
   res.json(r);
 });
 
-/** Vuelve a cero SOLO a los clientes de demo (cuotas, pagos, puntos, eventos, fecha, vista, frecuentes y recibos de demo).
+/** Vuelve a cero SOLO a los clientes de demo (cuotas, pagos, cashback, eventos, fecha, vista, frecuentes y recibos de demo).
  * Rápido, idempotente y en el sitio (mismos ids). Cierra la sesión para volver a elegir personaje. */
 router.post("/demo/reset", requiereSesion, async (req, res) => {
   await clienteDemo(req.clienteId!);
