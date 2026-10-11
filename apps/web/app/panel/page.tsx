@@ -59,6 +59,8 @@ export default function PanelPage() {
         </p>
       </header>
 
+      <AntesYAhora />
+
       {!kpis ? <Cargando texto="Cargando indicadores…" /> : <Contenido k={kpis} />}
 
       <footer className="mt-auto border-t border-linea pt-3 text-xs leading-relaxed text-tenue">
@@ -69,6 +71,34 @@ export default function PanelPage() {
         </p>
       </footer>
     </div>
+  );
+}
+
+/** Pagar la cuota en la app de hoy (según capturas de la app oficial del 10 oct) frente a la ayuda de Pía. */
+function AntesYAhora() {
+  return (
+    <section aria-labelledby="antes-ahora" className="grid gap-3 sm:grid-cols-2">
+      <h2 id="antes-ahora" className="sr-only">
+        Pagar la cuota: hoy y con Pía
+      </h2>
+      <div className="flex flex-col gap-2 rounded-2xl border-2 border-linea bg-superficie p-4">
+        <p className="text-sm font-bold uppercase tracking-wide text-tenue">Hoy en la app</p>
+        <p className="text-3xl font-bold">~10 toques</p>
+        <p>
+          Pagos › Pago de créditos propios › elegir <b>«Pagaré»</b>, <b>«Cuenta origen»</b> y <b>«Operación»</b> (pago interés, amortización,
+          cancelación) › Continuar › Confirmar. Cada lista son 2 toques.
+        </p>
+        <p className="text-sm text-tenue">3 palabras técnicas antes de pagar. Muchos abandonan aquí y vuelven a la ventanilla.</p>
+      </div>
+      <div className="flex flex-col gap-2 rounded-2xl border-2 border-marca bg-marca-claro p-4">
+        <p className="text-sm font-bold uppercase tracking-wide text-marca">Con Pía, sin cambiar la app</p>
+        <p className="text-3xl font-bold">4 toques</p>
+        <p>
+          «¿Necesitas ayuda?» › <b>Pagar mi cuota</b> › «Sí, prepáralo tú» › <b>Confirmar pago</b>. Sin palabras técnicas.
+        </p>
+        <p className="text-sm text-tenue">O «Guíame»: Pía le señala cada paso en la app de siempre, para que aprenda a hacerlo solo.</p>
+      </div>
+    </section>
   );
 }
 
