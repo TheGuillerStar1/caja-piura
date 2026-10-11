@@ -173,7 +173,7 @@ export function EnvioEnChat({ nombre, monto, billetera, asistida, activo, alEnvi
     setFase("procesando");
     try {
       const r = await api<ConfirmarTransferenciaRes>("/transferencias/confirmar", {
-        cuerpo: { ...cuerpo(), idempotencyKey: resumen.idempotencyKey, autenticacion: metodo },
+        cuerpo: { ...cuerpo(), idempotencyKey: resumen.idempotencyKey, autenticacion: metodo, conAyuda: true },
       });
       setFase("hecho");
       track("envio-chat", "completar", { ayudaUsada: true });

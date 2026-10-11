@@ -14,7 +14,7 @@ import { CampoApp, PasosApp, claseSelect } from "@/components/pago/PasosApp";
 import { Boton, Cargando, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
 import { ApiFallo, api, esSinSesion } from "@/lib/api";
 import { fechaHora, soles } from "@/lib/formato";
-import { track } from "@/lib/track";
+import { track, usoAyuda } from "@/lib/track";
 import { useVista } from "@/lib/vista";
 import { hablar, montoHablado } from "@/lib/voz";
 
@@ -106,7 +106,7 @@ export default function Transferir() {
     if (!resumen) return;
     setFase("procesando");
     try {
-      const r = await api<ConfirmarTransferenciaRes>("/transferencias/confirmar", { cuerpo: { ...cuerpo, idempotencyKey: resumen.idempotencyKey, autenticacion: metodo } });
+      const r = await api<ConfirmarTransferenciaRes>("/transferencias/confirmar", { cuerpo: { ...cuerpo, idempotencyKey: resumen.idempotencyKey, autenticacion: metodo, conAyuda: usoAyuda() } });
       setHecho(r);
       setFase("listo");
       track(`transferir-${slug}`, "completar");

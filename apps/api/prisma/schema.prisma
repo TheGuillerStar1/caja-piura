@@ -206,6 +206,8 @@ model Transferencia {
   nombreDestino    String            @db.VarChar(80)
   monto            Decimal           @db.Decimal(12, 2)
   glosa            String?           @db.VarChar(100)
+  /// Si usó ayuda (Pía en el chat, «Guíame»). null = transferencia anterior a esta columna (no se cuenta en «Pagan solos»).
+  conAyuda         Boolean?
   operacion        String            @db.VarChar(20)
   creadoEn         DateTime          @default(now())
 

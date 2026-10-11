@@ -317,6 +317,8 @@ export type PrepararTransferenciaRes = z.infer<typeof PrepararTransferenciaRes>;
 export const ConfirmarTransferenciaReq = PrepararTransferenciaReq.extend({
   idempotencyKey: z.string(),
   autenticacion: z.enum(["ROSTRO", "HUELLA", "CLAVE"]),
+  /** Si usó ayuda (Pía en el chat, «Guíame»): para «Pagan solos» en el panel */
+  conAyuda: z.boolean().optional(),
 });
 export type ConfirmarTransferenciaReq = z.infer<typeof ConfirmarTransferenciaReq>;
 
@@ -450,11 +452,32 @@ export const METAS_FUNCIONA = {
   aTiempo: 0.95,
 } as const;
 
+/** Una fila del desglose por tipo de operación (tasa null = aún sin datos de ese tipo). */
+export const FilaDesglose = z.object({
+  id: z.enum(["CREDITO", "SERVICIOS", "YAPEO", "BOLETAS"]),
+  tasa: z.number().nullable(),
+  /** Pagan solos: operaciones sin ayuda · Vuelven a pagar: clientes que repitieron */
+  logrados: z.number(),
+  /** Pagan solos: intentos · Vuelven a pagar: clientes que ya pudieron repetir */
+  total: z.number(),
+});
+export type FilaDesglose = z.infer<typeof FilaDesglose>;
+
 export const FuncionaRes = z.object({
-  /** Pagan solos: pagos exitosos sin ayuda ÷ intentos (pagos registrados + abandonos en la confirmación) */
-  sinAyuda: z.object({ tasa: z.number(), exitososSinAyuda: z.number(), intentos: z.number(), meta: z.number() }),
-  /** Vuelven a pagar: tasa null si nadie tuvo aún tiempo de repetir (en la demo: «Adelantar 30 días») */
-  repiten: z.object({ tasa: z.number().nullable(), repitieron: z.number(), elegibles: z.number(), conPago: z.number(), meta: z.number() }),
+  /**
+   * Pagan solos: operaciones exitosas sin ayuda ÷ intentos. Pagos: registrados + abandonos en la confirmación.
+   * Yapeos: envíos a celular (solo los que guardan si hubo ayuda). Desglose: crédito, servicios y yapeo.
+   */
+  sinAyuda: z.object({ tasa: z.number(), exitososSinAyuda: z.number(), intentos: z.number(), meta: z.number(), desglose: z.array(FilaDesglose) }),
+  /** Vuelven a pagar: tasa null si nadie tuvo aún tiempo de repetir (en la demo: «Adelantar 30 días»). Desglose: boletas y crédito. */
+  repiten: z.object({
+    tasa: z.number().nullable(),
+    repitieron: z.number(),
+    elegibles: z.number(),
+    conPago: z.number(),
+    meta: z.number(),
+    desglose: z.array(FilaDesglose),
+  }),
   /** Pagan a tiempo: cuotas pagadas por la app el día del vencimiento o antes */
   aTiempo: z.object({ tasa: z.number().nullable(), aTiempo: z.number(), cuotas: z.number(), diasAnticipacion: z.number().nullable(), meta: z.number() }),
   /** Le cuesta menos a la Caja: ahorro estimado al mes (supuestos de SUPUESTOS_GESTION) */

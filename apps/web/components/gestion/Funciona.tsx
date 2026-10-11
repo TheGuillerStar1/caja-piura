@@ -1,14 +1,38 @@
 "use client";
-// «¿Está funcionando?»: la primera franja de /gestion y /panel. Los 4 KPIs que prueban la solución, cada uno con su meta:
-// pagan solos, vuelven a pagar, pagan a tiempo y le cuesta menos a la Caja. Se actualiza cada 5 s.
-import type { FuncionaRes } from "@cp/shared";
-import { Activity, CalendarCheck, CircleCheck, CircleDashed, type LucideIcon, PiggyBank, Repeat, TriangleAlert, UserCheck } from "lucide-react";
+// «¿Está funcionando?»: la primera franja de /gestion y /panel. Se actualiza cada 5 s.
+// /gestion: los 4 KPIs (pagan solos, vuelven a pagar, pagan a tiempo, cuesta menos), cada uno con su meta.
+// /panel (modo jurado): solo los 2 que responden el reto «De la ventanilla al celular» (que no abandonen y que vuelvan),
+// desglosados por tipo de operación.
+import type { FilaDesglose, FuncionaRes } from "@cp/shared";
+import {
+  Activity,
+  CalendarCheck,
+  CircleCheck,
+  CircleDashed,
+  Landmark,
+  type LucideIcon,
+  PiggyBank,
+  Receipt,
+  Repeat,
+  Send,
+  TriangleAlert,
+  UserCheck,
+  Zap,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { DEGRADADO_BARRA, DEGRADADO_MARCA, entero, pct, soles, TARJETA } from "./formato";
 import { Encabezado } from "./Marca";
 
-export function Funciona() {
+const FILAS: Record<FilaDesglose["id"], { nombre: string; detalle: string; icono: LucideIcon }> = {
+  CREDITO: { nombre: "Pago de crédito", detalle: "cuota del préstamo", icono: Landmark },
+  SERVICIOS: { nombre: "Pago de servicios", detalle: "luz, agua, teléfono", icono: Zap },
+  YAPEO: { nombre: "Yapeo", detalle: "envío a un celular", icono: Send },
+  BOLETAS: { nombre: "Pago de boletas", detalle: "luz, agua, teléfono", icono: Receipt },
+};
+
+/** `jurado`: solo «Pagan solos» y «Vuelven a pagar», con su desglose (para /panel). */
+export function Funciona({ jurado = false }: { jurado?: boolean }) {
   const [f, setF] = useState<FuncionaRes | null>(null);
 
   useEffect(() => {
@@ -32,17 +56,21 @@ export function Funciona() {
         id="t-funciona"
         antetitulo="¿Está funcionando?"
         sobreAzul
-        titulo="Pagan solos, vuelven a pagar, pagan a tiempo y le cuesta menos a la Caja"
-        texto="Los 4 números que prueban la solución, cada uno con su meta. Se actualizan en vivo con lo que hacen los clientes en la app."
+        titulo={jurado ? "Pagan solos y vuelven a pagar" : "Pagan solos, vuelven a pagar, pagan a tiempo y le cuesta menos a la Caja"}
+        texto={
+          jurado
+            ? "Lo que pide el reto: que no abandonen y vuelvan a la ventanilla, y que el uso del celular se vuelva hábito. En vivo y por tipo de operación."
+            : "Los 4 números que prueban la solución, cada uno con su meta. Se actualizan en vivo con lo que hacen los clientes en la app."
+        }
       />
       {!f ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-hidden>
-          {[0, 1, 2, 3].map((i) => (
+        <div className={`grid gap-4 ${jurado ? "lg:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-4"}`} aria-hidden>
+          {(jurado ? [0, 1] : [0, 1, 2, 3]).map((i) => (
             <div key={i} className="h-64 animate-pulse rounded-2xl bg-superficie-2" />
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className={`grid gap-4 ${jurado ? "lg:grid-cols-2" : "sm:grid-cols-2 xl:grid-cols-4"}`}>
           <Kpi
             n={1}
             icono={UserCheck}
@@ -50,9 +78,11 @@ export function Funciona() {
             pregunta="¿Lo logran sin ir a la agencia?"
             tasa={f.sinAyuda.tasa}
             meta={f.sinAyuda.meta}
-            detalle={`${entero(f.sinAyuda.exitososSinAyuda)} de ${entero(f.sinAyuda.intentos)} intentos de pago terminaron sin ayuda`}
+            detalle={`${entero(f.sinAyuda.exitososSinAyuda)} de ${entero(f.sinAyuda.intentos)} intentos terminaron sin ayuda`}
             sinDatos={f.sinAyuda.intentos === 0}
             pista="Aún no hay intentos de pago."
+            desglose={jurado ? f.sinAyuda.desglose : undefined}
+            unidad="sin ayuda"
           />
           <Kpi
             n={2}
@@ -68,7 +98,11 @@ export function Funciona() {
                 ? `${entero(f.repiten.conPago)} ${f.repiten.conPago === 1 ? "cliente pagó" : "clientes pagaron"}: en la demo, «Adelantar 30 días» y paga de nuevo.`
                 : "Aún nadie pagó por la app."
             }
+            desglose={jurado ? f.repiten.desglose : undefined}
+            unidad="clientes volvieron"
           />
+          {!jurado && (
+            <>
           <Kpi
             n={3}
             icono={CalendarCheck}
@@ -85,11 +119,14 @@ export function Funciona() {
             pista="Aún no hay cuotas pagadas por la app."
           />
           <Ahorro a={f.ahorro} />
+            </>
+          )}
         </div>
       )}
       <p className="text-xs text-tenue">
-        Metas propuestas para el piloto (ajustables con Caja Piura). «Vuelven a pagar» cuenta a quien hizo otro pago por la app al menos 20 días
-        después del primero. El ahorro es estimado con costos supuestos por operación.
+        Metas propuestas para el piloto (ajustables con Caja Piura). «Pagan solos» cuenta como intento cada pago o yapeo y cada abandono en la
+        confirmación; lo que se hace dentro del chat con Pía cuenta como «con ayuda». «Vuelven a pagar» cuenta a quien hizo otro pago por la app al
+        menos 20 días después del primero.{jurado ? "" : " El ahorro es estimado con costos supuestos por operación."}
       </p>
     </section>
   );
@@ -121,7 +158,11 @@ function Kpi({
   detalle,
   sinDatos,
   pista,
+  desglose,
+  unidad,
 }: {
+  desglose?: FilaDesglose[];
+  unidad?: string;
   n: number;
   icono: LucideIcon;
   titulo: string;
@@ -160,6 +201,7 @@ function Kpi({
         <span className="text-xs font-bold text-acento">Meta {pct(meta)}</span>
       </div>
       <p className="text-sm leading-snug text-tenue">{sinDatos ? pista : detalle}</p>
+      {desglose && <Desglose filas={desglose} meta={meta} unidad={unidad ?? ""} />}
     </article>
   );
 }
@@ -189,5 +231,44 @@ function Ahorro({ a }: { a: FuncionaRes["ahorro"] }) {
         <b className="text-base">+{soles(a.potencialMes)}/mes</b> más si pasan a la app las {entero(a.opsMigrablesMes)} operaciones de clientes con celular apto
       </p>
     </article>
+  );
+}
+
+function Desglose({ filas, meta, unidad }: { filas: FilaDesglose[]; meta: number; unidad: string }) {
+  return (
+    <div className="mt-2 flex flex-col gap-2 border-t border-linea pt-3">
+      <p className="text-xs font-bold uppercase tracking-wider text-tenue">Por tipo de operación</p>
+      <ul className="flex flex-col gap-2">
+        {filas.map((f) => {
+          const { nombre, detalle, icono: I } = FILAS[f.id];
+          const sin = f.tasa == null;
+          return (
+            <li
+              key={f.id}
+              className="grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl bg-[color-mix(in_srgb,var(--cp-login-light)_40%,var(--color-superficie))] p-2.5"
+            >
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-superficie text-[var(--cp-brand)] shadow-sm" aria-hidden>
+                <I className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-bold">
+                  {nombre} <span className="text-xs font-normal text-tenue">· {detalle}</span>
+                </p>
+                <div className="relative mt-1.5" aria-hidden>
+                  <div className="h-2 overflow-hidden rounded-full bg-superficie">
+                    {!sin && (
+                      <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${Math.min(1, f.tasa!) * 100}%`, background: DEGRADADO_BARRA }} />
+                    )}
+                  </div>
+                  <span className="absolute -top-0.5 h-3 w-0.5 rounded bg-acento" style={{ left: `calc(${meta * 100}% - 1px)` }} />
+                </div>
+                <p className="mt-1 text-xs text-tenue">{sin ? "Aún sin datos" : `${entero(f.logrados)} de ${entero(f.total)} ${unidad}`}</p>
+              </div>
+              <p className={`w-16 text-right text-2xl font-bold tabular-nums ${sin ? "text-tenue" : ""}`}>{sin ? "—" : pct(f.tasa!)}</p>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

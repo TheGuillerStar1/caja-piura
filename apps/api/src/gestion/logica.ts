@@ -168,3 +168,48 @@ export function pagosATiempo(pagos: { pagado: Date; vencimiento: Date }[]) {
     diasAnticipacion: pagos.length ? Math.round((dias.reduce((a, b) => a + Math.min(31, Math.max(0, b)), 0) / pagos.length) * 10) / 10 : null,
   };
 }
+
+/** Tipo de pago (o flujo de telemetría) → grupo del desglose: la cuota es crédito; frecuentes y recibos son servicios. */
+export function grupoDePago(tipo: string | null | undefined): "CREDITO" | "SERVICIOS" | null {
+  if (tipo === "CUOTA") return "CREDITO";
+  if (tipo === "FRECUENTE" || tipo === "RECIBO") return "SERVICIOS";
+  return null;
+}
+
+const tasa3 = (logrados: number, total: number) => (total > 0 ? Math.round((logrados / total) * 1000) / 1000 : null);
+
+/**
+ * Pagan solos, en total y por tipo (crédito, servicios, yapeo). Misma regla que retencion/tasaExitoSinAyuda:
+ * éxitos sin ayuda ÷ intentos, donde un pago registrado (exitoso o fallido) o un abandono en «confirmar» es un intento.
+ * Yapeos: envíos a celular que guardan si hubo ayuda (los anteriores a esa columna no se cuentan).
+ */
+export function pagosSinAyuda(d: {
+  pagos: { tipo: string; registrados: number; sinAyuda: number }[];
+  abandonos: { flujo: string | null; n: number }[];
+  yapeos: { total: number; sinAyuda: number };
+}) {
+  const g = { CREDITO: { logrados: 0, total: 0 }, SERVICIOS: { logrados: 0, total: 0 } };
+  let logrados = d.yapeos.sinAyuda;
+  let total = d.yapeos.total;
+  for (const p of d.pagos) {
+    logrados += p.sinAyuda;
+    total += p.registrados;
+    const k = grupoDePago(p.tipo);
+    if (k) {
+      g[k].logrados += p.sinAyuda;
+      g[k].total += p.registrados;
+    }
+  }
+  for (const a of d.abandonos) {
+    total += a.n;
+    const k = grupoDePago(a.flujo);
+    if (k) g[k].total += a.n;
+  }
+  const fila = (id: "CREDITO" | "SERVICIOS" | "YAPEO", x: { logrados: number; total: number }) => ({ id, tasa: tasa3(x.logrados, x.total), ...x });
+  return {
+    tasa: tasa3(logrados, total) ?? 0,
+    exitososSinAyuda: logrados,
+    intentos: total,
+    desglose: [fila("CREDITO", g.CREDITO), fila("SERVICIOS", g.SERVICIOS), fila("YAPEO", { logrados: d.yapeos.sinAyuda, total: d.yapeos.total })],
+  };
+}

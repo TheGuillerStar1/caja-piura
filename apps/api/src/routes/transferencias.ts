@@ -108,6 +108,7 @@ router.post("/transferencias/confirmar", requiereSesion, async (req, res) => {
           nombreDestino: r.nombreDestino,
           monto: r.monto,
           glosa: b.glosa || null,
+          conAyuda: b.conAyuda ?? null,
           operacion: nuevaOperacion(),
           creadoEn: fechaOperacion(cliente.fechaSimulada),
         },

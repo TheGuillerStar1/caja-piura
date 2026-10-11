@@ -22,7 +22,7 @@ import { HttpError, validar } from "../lib/errores.js";
 import { aNumero, diasEntre } from "../lib/formato.js";
 import { prisma } from "../lib/prisma.js";
 import { recomendar } from "../motor/index.js";
-import { AHORRO_POR_OP, alcance, pagosATiempo, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "../gestion/logica.js";
+import { AHORRO_POR_OP, alcance, grupoDePago, pagosATiempo, pagosSinAyuda, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "../gestion/logica.js";
 import { tasaExitoSinAyuda } from "../retencion/logica.js";
 
 export const router = Router();
@@ -181,19 +181,39 @@ router.get("/gestion/resumen", async (_req, res) => {
 });
 
 async function calcularFunciona(): Promise<FuncionaRes> {
-  const [ps, pagos, pagosRegistrados, exitososSinAyuda, abandonosConfirmar] = await Promise.all([
+  const [ps, pagos, registradosPorTipo, sinAyudaPorTipo, abandonosPorFlujo, yapeosTotal, yapeosSinAyuda] = await Promise.all([
     perfiles(),
     // creadoEn es la fecha simulada del cliente (pagos/confirmar.ts): «Adelantar 30 días» cuenta como otro mes.
     prisma.pago.findMany({ where: { estado: "EXITOSO" }, select: { clienteId: true, creadoEn: true, tipo: true, referenciaId: true } }),
-    prisma.pago.count(),
-    prisma.pago.count({ where: { estado: "EXITOSO", conAyuda: false } }),
-    prisma.evento.count({ where: { pantalla: "confirmar", accion: "abandonar" } }),
+    prisma.pago.groupBy({ by: ["tipo"], _count: { _all: true } }),
+    prisma.pago.groupBy({ by: ["tipo"], where: { estado: "EXITOSO", conAyuda: false }, _count: { _all: true } }),
+    prisma.evento.groupBy({ by: ["flujo"], where: { pantalla: "confirmar", accion: "abandonar" }, _count: { _all: true } }),
+    // Yapeos = envíos a celular. Solo los que guardan si hubo ayuda (conAyuda no nulo).
+    prisma.transferencia.count({ where: { tipo: "CONTACTO", conAyuda: { not: null } } }),
+    prisma.transferencia.count({ where: { tipo: "CONTACTO", conAyuda: false } }),
   ]);
 
+  const sinAyudaDe = new Map(sinAyudaPorTipo.map((g) => [g.tipo, g._count._all]));
+  const sinAyuda = pagosSinAyuda({
+    pagos: registradosPorTipo.map((g) => ({ tipo: g.tipo, registrados: g._count._all, sinAyuda: sinAyudaDe.get(g.tipo) ?? 0 })),
+    abandonos: abandonosPorFlujo.map((g) => ({ flujo: g.flujo, n: g._count._all })),
+    yapeos: { total: yapeosTotal, sinAyuda: yapeosSinAyuda },
+  });
+
+  // Vuelven a pagar: en total y por tipo (boletas = servicios con recibo; crédito = cuota).
   const hoyDe = new Map(ps.map((p) => [p.id, p.fechaSimulada]));
-  const porCliente = new Map<number, Date[]>();
-  for (const p of pagos) porCliente.set(p.clienteId, [...(porCliente.get(p.clienteId) ?? []), p.creadoEn]);
-  const repiten = vuelvenAPagar([...porCliente].map(([id, fechas]) => ({ hoy: hoyDe.get(id) ?? new Date(), pagos: fechas })));
+  const repitenEn = (filtro: (tipo: string) => boolean) => {
+    const porCliente = new Map<number, Date[]>();
+    for (const p of pagos) if (filtro(p.tipo)) porCliente.set(p.clienteId, [...(porCliente.get(p.clienteId) ?? []), p.creadoEn]);
+    return { ...vuelvenAPagar([...porCliente].map(([id, fechas]) => ({ hoy: hoyDe.get(id) ?? new Date(), pagos: fechas }))), conPago: porCliente.size };
+  };
+  const repiten = repitenEn(() => true);
+  const filaRepiten = (id: "BOLETAS" | "CREDITO", x: { tasa: number | null; repitieron: number; elegibles: number }) => ({
+    id,
+    tasa: x.tasa,
+    logrados: x.repitieron,
+    total: x.elegibles,
+  });
 
   const pagosCuota = pagos.filter((p) => p.tipo === "CUOTA");
   const cuotas = await prisma.cuota.findMany({ where: { id: { in: pagosCuota.map((p) => p.referenciaId) } }, select: { id: true, vencimiento: true } });
@@ -211,13 +231,15 @@ async function calcularFunciona(): Promise<FuncionaRes> {
   const r2 = (n: number) => Math.round(n * 100) / 100;
 
   return {
-    sinAyuda: {
-      tasa: tasaExitoSinAyuda(exitososSinAyuda, pagosRegistrados, abandonosConfirmar),
-      exitososSinAyuda,
-      intentos: pagosRegistrados + abandonosConfirmar,
-      meta: METAS_FUNCIONA.sinAyuda,
+    sinAyuda: { ...sinAyuda, meta: METAS_FUNCIONA.sinAyuda },
+    repiten: {
+      ...repiten,
+      meta: METAS_FUNCIONA.repiten,
+      desglose: [
+        filaRepiten("BOLETAS", repitenEn((t) => grupoDePago(t) === "SERVICIOS")),
+        filaRepiten("CREDITO", repitenEn((t) => grupoDePago(t) === "CREDITO")),
+      ],
     },
-    repiten: { ...repiten, conPago: porCliente.size, meta: METAS_FUNCIONA.repiten },
     aTiempo: { ...aTiempo, meta: METAS_FUNCIONA.aTiempo },
     ahorro: { actualMes: r2(opsAppMes * AHORRO_POR_OP), potencialMes: r2(opsMigrablesMes * AHORRO_POR_OP), opsAppMes, opsMigrablesMes, ahorroPorOp: AHORRO_POR_OP },
   };

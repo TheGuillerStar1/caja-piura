@@ -1,6 +1,6 @@
 import { SegmentoCampana } from "@cp/shared";
 import { describe, expect, it } from "vitest";
-import { alcance, enSegmento, pagosATiempo, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "./logica.js";
+import { alcance, enSegmento, grupoDePago, pagosATiempo, pagosSinAyuda, type PerfilGestion, proyectarCampana, ubigeoDe, vuelvenAPagar } from "./logica.js";
 
 const base: PerfilGestion = {
   id: 1,
@@ -114,5 +114,36 @@ describe("¿está funcionando?: vuelven a pagar y pagan a tiempo", () => {
     expect(pagosATiempo([])).toEqual({ cuotas: 0, aTiempo: 0, tasa: null, diasAnticipacion: null });
     // Adelantar una cuota de dentro de 3 meses cuenta como a tiempo, pero su anticipación se limita a 31 días.
     expect(pagosATiempo([{ pagado: d("2026-10-10"), vencimiento: d("2027-01-21") }]).diasAnticipacion).toBe(31);
+  });
+});
+
+describe("¿está funcionando?: desglose por tipo de operación", () => {
+  it("pagan solos: crédito, servicios (frecuentes + recibos) y yapeo; los abandonos cuentan como intentos de su tipo", () => {
+    const r = pagosSinAyuda({
+      pagos: [
+        { tipo: "CUOTA", registrados: 4, sinAyuda: 3 },
+        { tipo: "FRECUENTE", registrados: 2, sinAyuda: 1 },
+        { tipo: "RECIBO", registrados: 2, sinAyuda: 2 },
+      ],
+      abandonos: [
+        { flujo: "CUOTA", n: 2 },
+        { flujo: null, n: 1 }, // abandono sin tipo: solo cuenta en el total
+      ],
+      yapeos: { total: 5, sinAyuda: 4 },
+    });
+    expect(r.desglose).toEqual([
+      { id: "CREDITO", tasa: 0.5, logrados: 3, total: 6 },
+      { id: "SERVICIOS", tasa: 0.75, logrados: 3, total: 4 },
+      { id: "YAPEO", tasa: 0.8, logrados: 4, total: 5 },
+    ]);
+    expect(r).toMatchObject({ exitososSinAyuda: 10, intentos: 16, tasa: 0.625 });
+  });
+
+  it("sin intentos de un tipo, su tasa es null (aún sin datos)", () => {
+    const r = pagosSinAyuda({ pagos: [], abandonos: [], yapeos: { total: 0, sinAyuda: 0 } });
+    expect(r.tasa).toBe(0);
+    expect(r.desglose.map((f) => f.tasa)).toEqual([null, null, null]);
+    expect(grupoDePago("RECIBO")).toBe("SERVICIOS");
+    expect(grupoDePago("LOGIN")).toBeNull();
   });
 });

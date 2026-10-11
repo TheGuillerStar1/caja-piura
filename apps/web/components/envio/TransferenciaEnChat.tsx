@@ -97,7 +97,7 @@ export function TransferenciaEnChat({ tipo, destino: destinoDicho, monto, asisti
     setFase("procesando");
     try {
       const r = await api<ConfirmarTransferenciaRes>("/transferencias/confirmar", {
-        cuerpo: { tipo, cuentaOrigenId: origenId, destino: limpio, monto: n, idempotencyKey: resumen.idempotencyKey, autenticacion: metodo },
+        cuerpo: { tipo, cuentaOrigenId: origenId, destino: limpio, monto: n, idempotencyKey: resumen.idempotencyKey, autenticacion: metodo, conAyuda: true },
       });
       setFase("hecho");
       track(`transferir-chat-${tipo.toLowerCase()}`, "completar", { ayudaUsada: true });

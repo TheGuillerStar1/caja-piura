@@ -80,7 +80,7 @@ export default function PanelPage() {
       />
 
       <main className="relative mx-auto -mt-36 flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 sm:px-8 lg:px-12">
-        <Funciona />
+        <Funciona jurado />
         <AntesYAhora />
         {!kpis ? (
           <div className={`${TARJETA} py-6`}>
