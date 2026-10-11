@@ -14,9 +14,10 @@ import { iniciarFlujo, track } from "@/lib/track";
 
 const OPERACIONES = [
   { id: "CUOTA", texto: "Pago de cuota" },
+  { id: "INTERES", texto: "Pago interés" },
   { id: "ADELANTO", texto: "Adelanto de cuotas" },
-  { id: "ANTICIPADO", texto: "Pago anticipado (amortización)" },
-  { id: "CANCELACION", texto: "Cancelación del crédito" },
+  { id: "AMORTIZACION", texto: "Amortización" },
+  { id: "CANCELACION", texto: "Cancelación" },
 ] as const;
 
 export default function PagoCreditos() {

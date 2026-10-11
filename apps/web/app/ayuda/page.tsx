@@ -25,6 +25,9 @@ type AccionChat =
   | { tipo: "CONSTANCIA"; resultado: ResultadoPago };
 type Mensaje = { id: number; de: "pia" | "yo"; texto: string; accion?: AccionChat };
 
+/** El tono sigue a la vista elegida (si ya eligió); si no, al que recomienda el motor. */
+const tonoDe = (m: MeRes): Tono => (m.vistaPreferida ? (m.vistaPreferida === "ASISTIDA" ? "CALIDO" : "DIRECTO") : m.recomendacion.tono);
+
 /** "/pagar/confirmar?tipo=CUOTA&ref=12" → { pago: "CUOTA", ref: 12 } */
 function pagoDe(ruta: string): { pago: TipoPago; ref: number } | null {
   if (!ruta.startsWith("/pagar/confirmar")) return null;
@@ -126,7 +129,7 @@ export default function Ayuda() {
   const [escuchando, setEscuchando] = useState(false);
   const reconocedor = useRef<{ stop: () => void } | null>(null);
 
-  const tono: Tono = me?.recomendacion.tono ?? "CALIDO";
+  const tono: Tono = me ? tonoDe(me) : "CALIDO";
 
   useEffect(() => {
     iniciarFlujo("ASISTENTE");
@@ -134,7 +137,7 @@ export default function Ayuda() {
     api<MeRes>("/me")
       .then((m) => {
         setMe(m);
-        setMensajes([{ id: 0, de: "pia", texto: SALUDOS[m.recomendacion.tono](m.nombre.split(" ")[0]) }]);
+        setMensajes([{ id: 0, de: "pia", texto: SALUDOS[tonoDe(m)](m.nombre.split(" ")[0]) }]);
       })
       .catch((e) => {
         if (esSinSesion(e)) router.replace("/entrar");

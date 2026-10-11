@@ -4,11 +4,11 @@ import type { Vista } from "@cp/shared";
 export const INFO_VISTA: Record<Vista, { titulo: string; puntos: string[] }> = {
   ASISTIDA: {
     titulo: "Vista asistida",
-    puntos: ["Botones y letra grandes", "Te leemos los montos en voz alta", "Te guiamos con “toca aquí”"],
+    puntos: ["Pía, tu asistente, te ayuda con tus pagos desde «¿Necesitas ayuda?».", "Te muestra paso a paso dónde tocar. Tú confirmas cada pago."],
   },
   ESTANDAR: {
     titulo: "Vista estándar",
-    puntos: ["Más opciones a la vista", "Letra normal", "Menos explicaciones"],
+    puntos: ["Tu app de siempre, con todas las opciones.", "Pía está en «¿Necesitas ayuda?» cuando la necesites.", "Tú confirmas cada pago."],
   },
 };
 

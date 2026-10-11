@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ICONO_RUBRO, largoCodigo, type ServicioOpcion } from "@/components/ia/tipos";
+import { TecladoCodigo } from "@/components/ia/TecladoCodigo";
 import { CampoApp, claseSelect, PasosApp } from "@/components/pago/PasosApp";
 import { rutaConfirmar } from "@/components/pago/almacen";
 import { Boton, Cargando, MensajeError, Pantalla, Tarjeta } from "@/components/ui";
@@ -15,6 +16,8 @@ import { fechaCorta, soles } from "@/lib/formato";
 import { iniciarFlujo, track } from "@/lib/track";
 
 const RUBROS: Record<string, string> = { AGUA: "Agua", LUZ: "Energía eléctrica", TELEFONIA: "Telecomunicaciones", INTERNET: "Internet" };
+/** Servicio que ofrece cada empresa (ventana «Elige un servicio» de la app oficial). */
+const SERVICIO_DE: Record<string, string> = { AGUA: "Pago de agua", LUZ: "Pago de luz", TELEFONIA: "Pago de recibo móvil", INTERNET: "Pago de internet" };
 /** Cómo se llama el código en el recibo de cada rubro. */
 const NOMBRE_CODIGO: Record<string, string> = {
   AGUA: "Código de suministro",
@@ -32,6 +35,7 @@ export default function PagoServicios() {
   const [rubro, setRubro] = useState("");
   const [buscar, setBuscar] = useState("");
   const [servicio, setServicio] = useState<ServicioOpcion | null>(null);
+  const [eligiendo, setEligiendo] = useState<ServicioOpcion | null>(null);
   const [codigo, setCodigo] = useState("");
   const [consultando, setConsultando] = useState(false);
   const [errorCodigo, setErrorCodigo] = useState<string | null>(null);
@@ -105,7 +109,6 @@ export default function PagoServicios() {
                   ))}
                 </select>
               </CampoApp>
-              {me.cuentas.some((k) => !k.paraPagar) && <p className="-mt-3 text-sm text-tenue">La CTS y los depósitos a plazo fijo no se usan para pagar.</p>}
               <CampoApp etiqueta="Filtrar por empresa o institución">
                 <input value={buscar} onChange={(e) => setBuscar(e.target.value)} placeholder="Buscar" className={claseSelect} />
               </CampoApp>
@@ -115,12 +118,7 @@ export default function PagoServicios() {
                     <button
                       type="button"
                       data-paso={k === 0 ? "empresa" : undefined}
-                      onClick={() => {
-                        setServicio(s);
-                        setCodigo("");
-                        setErrorCodigo(null);
-                        setPaso(2);
-                      }}
+                      onClick={() => setEligiendo(s)}
                       className="flex min-h-14 w-full items-center gap-3 rounded-lg border-2 border-linea bg-superficie px-3 text-left text-lg font-bold active:bg-marca-claro"
                     >
                       <span aria-hidden className="text-2xl">
@@ -135,6 +133,36 @@ export default function PagoServicios() {
                 ))}
               </ul>
               <p className="rounded-lg bg-marca-claro px-3 py-2 text-sm">ⓘ Este servicio podría estar sujeto al cobro de comisión.</p>
+              {eligiendo && (
+                <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" role="dialog" aria-modal="true" aria-labelledby="elige-servicio">
+                  <div className="flex w-full max-w-app flex-col gap-3 rounded-t-2xl bg-superficie p-4 shadow-2xl sm:rounded-2xl">
+                    <div className="flex items-center justify-between">
+                      <h3 id="elige-servicio" className="text-lg font-bold text-marca">
+                        Elige un servicio
+                      </h3>
+                      <button type="button" onClick={() => setEligiendo(null)} className="flex min-h-11 items-center gap-1 rounded-lg px-2 font-bold text-tenue">
+                        <span aria-hidden className="text-xl">✕</span> Cerrar
+                      </button>
+                    </div>
+                    <p className="text-sm text-tenue">{eligiendo.empresa}</p>
+                    <button
+                      type="button"
+                      data-paso="servicio"
+                      onClick={() => {
+                        setServicio(eligiendo);
+                        setEligiendo(null);
+                        setCodigo("");
+                        setErrorCodigo(null);
+                        setPaso(2);
+                      }}
+                      className="flex min-h-14 items-center justify-between rounded-lg border-2 border-linea px-3 text-left text-lg font-bold uppercase active:bg-marca-claro"
+                    >
+                      {SERVICIO_DE[eligiendo.rubro] ?? "Pago de recibo"}
+                      <span aria-hidden className="text-2xl text-marca">›</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
 
@@ -142,17 +170,8 @@ export default function PagoServicios() {
             <>
               <h2 className="text-center text-xl font-bold text-marca">{servicio.empresa}</h2>
               <form data-paso="codigo" onSubmit={consultar} className="flex flex-col gap-3">
-                <CampoApp etiqueta={nombreCodigo}>
-                  <input
-                    value={codigo}
-                    onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ""))}
-                    inputMode="numeric"
-                    autoComplete="off"
-                    maxLength={largoCodigo(servicio.formatoCodigo)}
-                    placeholder={nombreCodigo}
-                    className={`${claseSelect} font-mono tracking-widest`}
-                  />
-                </CampoApp>
+                <p className="text-sm font-bold text-marca">{nombreCodigo}</p>
+                <TecladoCodigo valor={codigo} largo={largoCodigo(servicio.formatoCodigo)} onCambio={setCodigo} etiqueta={nombreCodigo} />
                 <p className="text-sm text-tenue">{servicio.ayudaCodigo}</p>
                 {errorCodigo && <p className="rounded-lg bg-error-claro px-3 py-2 font-bold text-error">{errorCodigo}</p>}
                 <Boton type="submit" disabled={!codigo || consultando}>
@@ -189,6 +208,7 @@ export default function PagoServicios() {
                   ))}
                 </select>
               </CampoApp>
+              {me.cuentas.some((k) => !k.paraPagar) && <p className="-mt-3 text-sm text-tenue">La CTS y los depósitos a plazo fijo no se usan para pagar.</p>}
               <Boton
                 data-paso="continuar"
                 disabled={!cuenta}

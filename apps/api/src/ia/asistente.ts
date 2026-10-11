@@ -33,7 +33,8 @@ async function cargarContexto(clienteId: number): Promise<Ctx> {
       cuotas: { where: { estado: "PENDIENTE" }, orderBy: { vencimiento: "asc" }, take: 1 },
     },
   });
-  const tono = recomendar(perfilDeCliente(c, c.frecuentes.length > 0)).tono;
+  // El tono sigue a la vista que eligió el cliente; si todavía no eligió, a la que recomienda el motor.
+  const tono: Tono = c.vistaPreferida ? (c.vistaPreferida === "ASISTIDA" ? "CALIDO" : "DIRECTO") : recomendar(perfilDeCliente(c, c.frecuentes.length > 0)).tono;
   const q = c.cuotas[0];
   return {
     clienteId,
