@@ -20,7 +20,7 @@ describe("motor de personalización", () => {
     expect(r.tono).toBe("CALIDO");
     expect(r.sugerencias.some((s) => s.id === "FRECUENTES")).toBe(false);
   });
-  it("Carlos → estándar, tono directo", () => {
+  it("Javier → estándar, tono directo", () => {
     const r = recomendar(carlos);
     expect(r.vista).toBe("ESTANDAR");
     expect(r.tono).toBe("DIRECTO");

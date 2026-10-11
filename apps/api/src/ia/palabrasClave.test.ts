@@ -86,7 +86,7 @@ describe("guion de la demo (respaldo sin LLM)", () => {
     expect(interpretar("tengo mi recibo de agua", elena)).toEqual({ tipo: "RUBRO_SIN_FRECUENTE", rubro: "AGUA" });
   });
 
-  it("Carlos: celular e internet guardados", () => {
+  it("Javier: celular e internet guardados", () => {
     expect(interpretar("pagar mi celular", carlos)).toEqual({ tipo: "FRECUENTE", ids: [2] });
     expect(interpretar("pagar el internet de la casa", carlos)).toEqual({ tipo: "FRECUENTE", ids: [3] });
   });

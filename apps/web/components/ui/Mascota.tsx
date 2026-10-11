@@ -19,6 +19,8 @@ export function Mascota({ mensaje, tamano = 72, animada, className = "" }: Props
         <circle cx="32.5" cy="35.5" r="1.3" fill="#fff" />
         <circle cx="50.5" cy="35.5" r="1.3" fill="#fff" />
         <path d="M31 48c5 5 13 5 18 0" stroke="#1c1f24" strokeWidth="3" fill="none" strokeLinecap="round" />
+        <circle cx="25" cy="46" r="3.5" fill="#d97706" opacity=".28" />
+        <circle cx="55" cy="46" r="3.5" fill="#d97706" opacity=".28" />
         <path d="M40 10v-6" stroke="#00549f" strokeWidth="3" strokeLinecap="round" />
         <circle cx="40" cy="4" r="3.5" fill="#d97706" />
       </svg>

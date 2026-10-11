@@ -1,4 +1,4 @@
-// Dueño: Agente A. Datos FIJOS de demo (Rosa, Elena, Carlos, Pedro) + servicios + recibos de demo.
+// Dueño: Agente A. Datos FIJOS de demo (Rosa, Elena, Javier, Pedro; Rosa y Javier son los del pitch) + servicios + recibos de demo.
 // sembrarDemo() es idempotente: borra y recrea solo lo de demo. La usan seed.ts y "Reiniciar demo" (Agente D).
 import type { PrismaClient } from "@prisma/client";
 
@@ -61,7 +61,7 @@ type DemoCliente = {
 
 export const CLIENTES_DEMO: DemoCliente[] = [
   {
-    dni: "40000001", nombre: "Rosa", apellido: "Huamán", edad: 63, ocupacion: "COMERCIANTE", zona: "URBANA", distrito: "Castilla",
+    dni: "40000001", nombre: "Rosa", apellido: "Huamán", edad: 55, ocupacion: "COMERCIANTE", zona: "URBANA", distrito: "Tambogrande",
     presenciales: 9, digitales: 0, gama: "BAJA", cuentaTipo: "Ahorro emprendedor", saldo: 1200, otrasCuentas: [{ tipo: "Ahorro corriente", saldo: 280 }, { tipo: "CTS", saldo: 3500 }, { tipo: "Depósito a plazo fijo", saldo: 5000 }],
     credito: "0012345", totalCuotas: 12, montoCuota: 350, pagadas: 7, diasSiguiente: 3,
     frecuentes: [{ alias: "Luz de mamá", empresa: "Enosa", codigo: "45781236", esPropio: false, titular: "MARIA PEREZ", monto: 85.4, dias: 5 }],
@@ -73,12 +73,12 @@ export const CLIENTES_DEMO: DemoCliente[] = [
     frecuentes: [],
   },
   {
-    dni: "40000003", nombre: "Carlos", apellido: "Rojas", edad: 35, ocupacion: "TRANSPORTISTA", zona: "URBANA", distrito: "Piura",
+    dni: "40000003", nombre: "Javier", apellido: "Rojas", edad: 33, ocupacion: "COMERCIANTE", zona: "URBANA", distrito: "Castilla",
     presenciales: 1, digitales: 14, gama: "MEDIA", cuentaTipo: "Ahorro", saldo: 3000, otrasCuentas: [{ tipo: "Cuenta sueldo", saldo: 850 }, { tipo: "CTS", saldo: 2100 }],
     credito: "0034567", totalCuotas: 24, montoCuota: 520, pagadas: 15, diasSiguiente: 20,
     frecuentes: [
-      { alias: "Mi celular", empresa: "Movistar", codigo: "987654321", esPropio: true, titular: "CARLOS ROJAS", monto: 59.9, dias: 2 },
-      { alias: "Internet casa", empresa: "Claro", codigo: "4455667788", esPropio: true, titular: "CARLOS ROJAS", monto: 99, dias: 12 },
+      { alias: "Mi celular", empresa: "Movistar", codigo: "987654321", esPropio: true, titular: "JAVIER ROJAS", monto: 59.9, dias: 2 },
+      { alias: "Internet casa", empresa: "Claro", codigo: "4455667788", esPropio: true, titular: "JAVIER ROJAS", monto: 99, dias: 12 },
     ],
   },
   {

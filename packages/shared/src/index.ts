@@ -27,7 +27,7 @@ export type LoginReq = z.infer<typeof LoginReq>;
 export const LoginRes = z.object({ ok: z.literal(true), nombre: z.string(), primerIngreso: z.boolean() });
 export type LoginRes = z.infer<typeof LoginRes>;
 
-/** Clientes de demo para la pantalla de selección rápida (Rosa, Elena, Carlos) */
+/** Clientes de demo para la pantalla de selección rápida (Rosa, Elena, Javier) */
 export const ClienteDemo = z.object({ dni: z.string(), nombre: z.string(), edad: z.number(), descripcion: z.string() });
 export const ClientesDemoRes = z.array(ClienteDemo);
 export type ClienteDemo = z.infer<typeof ClienteDemo>;
