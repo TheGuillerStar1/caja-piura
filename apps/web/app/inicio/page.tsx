@@ -217,7 +217,7 @@ export default function Inicio() {
 
         {filaSeccion("cuentas", IcCuentas, `Cuentas (${cuentas.length})`)}
         {abierta === "cuentas" && (
-          <ul className="anim-aparece flex flex-col gap-2 py-3">
+          <ul className="anim-aparece flex flex-col gap-2 py-3 md:grid md:grid-cols-2">
             {cuentas.map((c) => (
               <CuentaConMovimientos key={c.id} cuenta={c} grande={asistida} />
             ))}

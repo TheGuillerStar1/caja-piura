@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { IconoCuota, IconoFrecuente, IconoProgreso, IconoRecibo, IconoSaldo } from "@/components/pago/Iconos";
 import { ReciboEnChat } from "@/components/ia/ReciboEnChat";
 import { guardarResultado, type ResultadoPago } from "@/components/pago/almacen";
+import { TutorialPia, tutorialVisto } from "@/components/ayuda/TutorialPia";
 import { BotonConstanciaWhatsApp } from "@/components/pago/ConstanciaWhatsApp";
 import { PagoEnChat } from "@/components/pago/PagoEnChat";
 import { Boton, Mascota, Pantalla } from "@/components/ui";
@@ -120,6 +121,7 @@ export default function Ayuda() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState("");
   const [pensando, setPensando] = useState(false);
+  const [tutorial, setTutorial] = useState(false);
   const fin = useRef<HTMLDivElement>(null);
   const sigId = useRef(1);
 
@@ -145,6 +147,8 @@ export default function Ayuda() {
     api<MeRes>("/me")
       .then((m) => {
         setMe(m);
+        // Primera vez en el chat: tutorial guiado (una sola vez; se repite con «¿Cómo se usa el chat?»).
+        if (!tutorialVisto()) setTutorial(true);
         setMensajes([{ id: 0, de: "pia", texto: SALUDOS[tonoDe(m)](m.nombre.split(" ")[0]) }]);
       })
       .catch((e) => {
@@ -290,7 +294,7 @@ export default function Ayuda() {
               ))}
             </div>
           )}
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2" data-tutorial="escribir">
             {/* Varias líneas: lo que dictas o escribes baja como párrafo en vez de cortarse. Enter envía; Shift+Enter, nueva línea. */}
             <textarea
               ref={campo}
@@ -338,7 +342,7 @@ export default function Ayuda() {
           ) : dictado && texto.trim() ? (
             <p role="status" className="text-center text-sm font-bold text-marca">Revisa el texto (puedes corregirlo) y toca «Enviar».</p>
           ) : (
-            <p className="flex items-center justify-center gap-1.5 text-sm text-tenue"><Lock className="h-4 w-4" aria-hidden /> Pía nunca te pide tu clave.</p>
+            <p className="flex items-center justify-center gap-1.5 text-sm text-tenue" data-tutorial="seguridad"><Lock className="h-4 w-4" aria-hidden /> Pía nunca te pide tu clave.</p>
           )}
         </form>
       }
@@ -355,6 +359,7 @@ export default function Ayuda() {
               <button
                 type="button"
                 onClick={() => hablar(mensajes[0]?.texto ?? "")}
+                data-tutorial="escuchar"
                 className="flex min-h-10! items-center gap-1 rounded-full px-2 text-base font-bold text-marca active:bg-marca-claro"
               >
                 <IcParlante />
@@ -478,7 +483,7 @@ export default function Ayuda() {
 
         {inicio && me && (
           <>
-            <section aria-label="Lo más pedido" className="grid grid-cols-3 gap-2">
+            <section aria-label="Lo más pedido" className="grid grid-cols-3 gap-2" data-tutorial="accesos">
               {accesos.map((id, i) => {
                 const acc = ACCESOS[id]!;
                 return (
@@ -496,7 +501,7 @@ export default function Ayuda() {
                 );
               })}
             </section>
-            <section aria-labelledby="preguntas" className="flex flex-col items-center gap-2">
+            <section aria-labelledby="preguntas" className="flex flex-col items-center gap-2" data-tutorial="preguntas">
               <h2 id="preguntas" className="text-sm font-bold tracking-wide text-tenue uppercase">
                 Preguntas rápidas
               </h2>
@@ -513,6 +518,13 @@ export default function Ayuda() {
                 ))}
               </div>
             </section>
+            <button
+              type="button"
+              onClick={() => setTutorial(true)}
+              className="min-h-11 self-center font-bold text-marca underline underline-offset-4"
+            >
+              ¿Cómo se usa el chat?
+            </button>
           </>
         )}
 
@@ -530,6 +542,7 @@ export default function Ayuda() {
         )}
         <div ref={fin} />
       </div>
+      {tutorial && <TutorialPia alCerrar={() => setTutorial(false)} />}
     </Pantalla>
   );
 }

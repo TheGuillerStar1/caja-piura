@@ -28,7 +28,7 @@ export function Teclado({ onDigito, onBorrar, onListo, listoActivo = true, desha
     </button>
   );
   return (
-    <div className="grid grid-cols-3 gap-1.5 bg-[color-mix(in_srgb,var(--cp-surface-dark)_70%,white)] p-1.5 pb-[max(0.375rem,env(safe-area-inset-bottom))]" role="group" aria-label="Teclado numérico">
+    <div className="grid grid-cols-3 gap-1.5 bg-[color-mix(in_srgb,var(--cp-surface-dark)_70%,white)] p-1.5 md:rounded-t-xl pb-[max(0.375rem,env(safe-area-inset-bottom))]" role="group" aria-label="Teclado numérico">
       {orden.slice(0, 9).map(digito)}
       <button type="button" disabled={deshabilitado} onClick={onBorrar} className={`${tecla} bg-[color-mix(in_srgb,var(--cp-surface-dark)_55%,white)] active:bg-[color-mix(in_srgb,var(--cp-surface-dark)_45%,white)]`}>
         Borrar

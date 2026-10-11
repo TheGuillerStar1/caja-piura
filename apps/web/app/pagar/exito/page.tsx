@@ -73,8 +73,8 @@ export default function PagoExito() {
     <Pantalla titulo="Pago realizado">
       <EstilosPago />
       <div className="anim-aparece flex flex-col items-center gap-2 pt-2 text-center">
-        <IconoCheck className="h-24 w-24 text-exito" />
-        <h2 className="text-2xl font-bold text-exito">¡Pago realizado!</h2>
+        <IconoCheck className="h-24 w-24 text-marca" />
+        <h2 className="text-2xl font-bold text-marca">¡Pago realizado!</h2>
         <p className="text-5xl font-bold tracking-tight">{soles(r.monto)}</p>
         <p className="text-lg">{r.descripcion}</p>
         {r.repetido && <p className="text-tenue">Este pago ya estaba hecho. No se cobró otra vez.</p>}
@@ -95,13 +95,13 @@ export default function PagoExito() {
         </p>
       </Tarjeta>
 
-      <Tarjeta tono="exito" className="flex items-center justify-between gap-3">
+      <Tarjeta tono="marca" className="flex items-center justify-between gap-3">
         <p className="text-lg font-bold">{r.mensaje}</p>
         {r.puntosGanados > 0 && (
           <Link
             href="/progreso"
             onClick={() => track("exito", "tocar", { flujo: r.tipo })}
-            className="shrink-0 rounded-full bg-exito px-3 py-2 font-bold text-white"
+            className="shrink-0 rounded-full bg-marca px-3 py-2 font-bold text-white"
           >
             +{r.puntosGanados} puntos
           </Link>

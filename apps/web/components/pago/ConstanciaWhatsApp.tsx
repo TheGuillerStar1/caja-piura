@@ -2,10 +2,10 @@
 // Constancia como imagen, al estilo Yape: se dibuja una tarjeta (check, monto, a quién, operación y fecha) y se comparte
 // la imagen. En el celular abre el menú de compartir (WhatsApp y el contacto); si el navegador no puede compartir
 // archivos (computadora), descarga la imagen y abre WhatsApp con el texto.
-import { MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { fechaHora, soles } from "@/lib/formato";
 import { track } from "@/lib/track";
+import { IconoWhatsApp } from "./Iconos";
 
 export type DatosConstancia = { monto: number; descripcion: string; destinatario: string; operacion: string | null; fecha: string; transferencia?: boolean };
 const nombreDe = (d: DatosConstancia) => (d.transferencia ? "transferencia" : "pago");
@@ -53,8 +53,8 @@ export async function imagenConstancia(d: DatosConstancia): Promise<Blob> {
   x.beginPath();
   x.roundRect(tx, ty, tw, th, 40);
   x.fill();
-  // Check verde
-  x.fillStyle = "#157347";
+  // Check azul de la app
+  x.fillStyle = "#0b4ed4";
   x.beginPath();
   x.arc(W / 2, ty + 140, 80, 0, Math.PI * 2);
   x.fill();
@@ -69,7 +69,7 @@ export async function imagenConstancia(d: DatosConstancia): Promise<Blob> {
   x.stroke();
   // Título y monto
   x.textAlign = "center";
-  x.fillStyle = "#157347";
+  x.fillStyle = "#0b4ed4";
   x.font = fuente(700, 52);
   x.fillText(d.transferencia ? "¡Transferencia realizada!" : "¡Pago realizado!", W / 2, ty + 300);
   x.fillStyle = "#1c1f24";
@@ -149,9 +149,9 @@ export function BotonConstanciaWhatsApp({ datos, className = "" }: { datos: Dato
         type="button"
         onClick={enviar}
         disabled={estado === "preparando"}
-        className="flex min-h-13 items-center justify-center gap-2 rounded-boton bg-[var(--cp-success)] px-5 text-lg font-bold text-white active:bg-[color-mix(in_srgb,var(--cp-success)_80%,black)] disabled:opacity-70"
+        className="flex min-h-13 items-center justify-center gap-2 rounded-boton bg-marca px-5 text-lg font-bold text-white hover:bg-marca-oscuro active:bg-marca-oscuro disabled:opacity-70"
       >
-        <MessageCircle className="h-5 w-5" aria-hidden />
+        <IconoWhatsApp className="h-6 w-6" />
         {estado === "preparando" ? "Preparando la constancia…" : "Enviar constancia por WhatsApp"}
       </button>
       {estado === "descargada" && <p className="text-center text-sm text-tenue">La imagen se descargó: adjúntala en el chat de WhatsApp que se abrió.</p>}
