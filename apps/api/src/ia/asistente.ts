@@ -221,6 +221,25 @@ function fueraDeAlcance(ctx: Ctx): Resultado {
   };
 }
 
+function transferir(ctx: Ctx): Resultado {
+  return {
+    respuesta: t(ctx, {
+      calido: `${ctx.nombre}, las transferencias se hacen en su pantalla y tú confirmas cada paso. ¿A dónde quieres enviar?`,
+      corto: "Las transferencias se hacen en su pantalla. ¿A dónde quieres enviar?",
+      directo: "Elige el tipo de transferencia:",
+    }),
+    accion: {
+      tipo: "OPCIONES",
+      opciones: [
+        { texto: "A un celular (contacto)", ruta: "/transferir/contacto" },
+        { texto: "A otra cuenta de Caja Piura", ruta: "/transferir/terceros" },
+        { texto: "Entre mis cuentas", ruta: "/transferir/propias" },
+        { texto: "A otro banco", ruta: "/transferir/interbancaria" },
+      ],
+    },
+  };
+}
+
 function opcionesNoEntendi(ctx: Ctx): Resultado {
   return {
     respuesta: t(ctx, { calido: `No te entendí, ${ctx.nombre}. ¿Es alguna de estas?`, corto: "No te entendí. ¿Es alguna de estas?", directo: "Elige una opción:" }),
@@ -323,6 +342,8 @@ export async function ejecutarIntencion(ctx: Ctx, i: Intencion): Promise<Resulta
       return respuestaSegura();
     case "FUERA_DE_ALCANCE":
       return fueraDeAlcance(ctx);
+    case "TRANSFERIR":
+      return transferir(ctx);
     case "PROBLEMA_PAGO":
       return problemaPago(ctx, i.problema);
     default:
@@ -381,9 +402,9 @@ Cuota pendiente: ${cuota}
 Reglas:
 - Usa SIEMPRE una herramienta cuando el pedido encaje con alguna. Tú NO pagas nada: solo preparas y el cliente confirma.
 - "pagar la luz/agua/celular/internet" o un alias → preparar_pago_frecuente con el id que corresponda. Si hay más de uno posible, usa otrosCandidatos. Si no tiene ese servicio guardado → preparar_pago_recibo.
-- "cuánto debo" → ver_deuda. "mi crédito/cuota" → preparar_pago_cuota.
+- "cuánto debo" → ver_deuda. "mi crédito/cuota", "pagar mi saldo del mes", "la mensualidad" → preparar_pago_cuota. ver_saldo solo cuando quieren SABER cuánto tienen, nunca cuando dicen "pagar".
 - Nunca pidas ni muestres claves, DNI ni números de cuenta. Si piden su clave: "Nunca te pediré tu clave. Caja Piura no la pide por teléfono ni por mensaje."
-- Si piden transferir dinero o algo fuera de pagos de cuota/recibos/saldo/puntos, di amablemente que no puedes y ofrece lo que sí puedes.`;
+- Si piden algo fuera de pagos de cuota/recibos/saldo/puntos, di amablemente que no puedes y ofrece lo que sí puedes.`;
 }
 
 async function conLLM(ctx: Ctx, mensaje: string, intencion: Intencion): Promise<Resultado | null> {
@@ -471,7 +492,7 @@ async function responderSinRespaldo(clienteId: number, mensaje: string): Promise
   const ctx = await cargarContexto(clienteId);
   const intencion = interpretar(mensaje, ctx.frecuentes);
   // Seguridad determinista: la clave, mover dinero y los reclamos de pagos nunca pasan por el LLM.
-  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "PROBLEMA_PAGO") {
+  if (intencion.tipo === "CLAVE_PEDIDA" || intencion.tipo === "CLAVE_CAMBIAR" || intencion.tipo === "FUERA_DE_ALCANCE" || intencion.tipo === "TRANSFERIR" || intencion.tipo === "PROBLEMA_PAGO" || (intencion.tipo === "CUOTA" && /pag|cancel/.test(mensaje.toLowerCase()))) {
     return { ...(await ejecutarIntencion(ctx, intencion)), fuente: "PALABRAS_CLAVE" };
   }
   if (hayGroq) {

@@ -42,7 +42,10 @@ describe("interpretar (respaldo sin LLM)", () => {
     expect(interpretar("cuál es mi contraseña", rosa).tipo).toBe("CLAVE_PEDIDA");
     expect(interpretar("quiero cambiar mi clave", rosa).tipo).toBe("CLAVE_CAMBIAR");
     expect(interpretar("olvidé mi clave", rosa).tipo).toBe("CLAVE_CAMBIAR");
-    expect(interpretar("transfiere 100 soles a mi hijo", rosa).tipo).toBe("FUERA_DE_ALCANCE");
+    expect(interpretar("transfiere 100 soles a mi hijo", rosa).tipo).toBe("TRANSFERIR");
+    expect(interpretar("préstame plata", rosa).tipo).toBe("FUERA_DE_ALCANCE");
+    expect(interpretar("Quiero pagar mi saldo del mes", rosa).tipo).toBe("CUOTA");
+    expect(interpretar("cuánto saldo tengo", rosa).tipo).toBe("SALDO");
   });
 
   it("si nada coincide → NADA (la UI muestra ¿Quisiste decir…?)", () => {

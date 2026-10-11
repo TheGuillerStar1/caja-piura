@@ -126,6 +126,8 @@ export default function Ayuda() {
   const [hayVoz, setHayVoz] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
   const reconocedor = useRef<{ stop: () => void } | null>(null);
+  const campo = useRef<HTMLInputElement>(null);
+  const [dictado, setDictado] = useState(false);
 
   const tono: Tono = me ? tonoDe(me) : "CALIDO";
 
@@ -171,6 +173,7 @@ export default function Ayuda() {
     marcarAyuda();
     track("ayuda", "ayuda", { flujo: "ASISTENTE", ayudaUsada: true });
     setTexto("");
+    setDictado(false);
     setMensajes((m) => [...m, { id: sigId.current++, de: "yo", texto: msg }]);
     setPensando(true);
     try {
@@ -196,26 +199,37 @@ export default function Ayuda() {
     }
   }
 
+  // Dictado: lo que dices se va escribiendo en la caja de texto; no se envía solo. Al parar, lo revisas (puedes
+  // corregirlo) y tocas «Enviar».
   function hablarAPia() {
     if (escuchando) return reconocedor.current?.stop();
+    type Resultados = { length: number; [i: number]: { [j: number]: { transcript: string } } };
     const w = window as unknown as Record<string, new () => {
-      lang: string; interimResults: boolean; maxAlternatives: number; start: () => void; stop: () => void;
-      onresult: (e: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void; onend: () => void; onerror: () => void;
+      lang: string; interimResults: boolean; continuous: boolean; maxAlternatives: number; start: () => void; stop: () => void;
+      onresult: (e: { results: Resultados }) => void; onend: () => void; onerror: () => void;
     }>;
     const SR = w.SpeechRecognition ?? w.webkitSpeechRecognition;
     if (!SR) return;
     const r = new SR();
     r.lang = "es-PE";
-    r.interimResults = false;
+    r.interimResults = true;
+    r.continuous = true;
     r.maxAlternatives = 1;
+    const antes = texto.trim() ? `${texto.trim()} ` : "";
     r.onresult = (e) => {
-      const dicho = e.results[0]?.[0]?.transcript ?? "";
-      if (dicho.trim()) enviar(dicho);
+      let dicho = "";
+      for (let i = 0; i < e.results.length; i++) dicho += e.results[i]?.[0]?.transcript ?? "";
+      setTexto((antes + dicho.trim()).slice(0, 500));
     };
-    r.onend = () => setEscuchando(false);
+    r.onend = () => {
+      setEscuchando(false);
+      setDictado(true);
+      campo.current?.focus();
+    };
     r.onerror = () => setEscuchando(false);
     reconocedor.current = r;
     track("ayuda", "tocar", { flujo: "ASISTENTE" });
+    setDictado(false);
     setEscuchando(true);
     r.start();
   }
@@ -268,6 +282,7 @@ export default function Ayuda() {
           )}
           <div className="flex gap-2">
             <input
+              ref={campo}
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
               maxLength={500}
@@ -276,7 +291,7 @@ export default function Ayuda() {
               enterKeyHint="send"
               className="min-h-14 min-w-0 flex-1 rounded-full border-2 border-linea bg-superficie px-5 text-lg focus:border-marca focus:outline-none"
             />
-            {!texto.trim() && hayVoz ? (
+            {escuchando || (!texto.trim() && hayVoz) ? (
               <button
                 type="button"
                 onClick={hablarAPia}
@@ -300,7 +315,13 @@ export default function Ayuda() {
               </button>
             )}
           </div>
-          <p className="flex items-center justify-center gap-1.5 text-sm text-tenue"><Lock className="h-4 w-4" aria-hidden /> Pía nunca te pide tu clave.</p>
+          {escuchando ? (
+            <p role="status" className="text-center text-sm font-bold text-marca">Te escucho: lo que digas aparece arriba. Toca «Parar» cuando termines.</p>
+          ) : dictado && texto.trim() ? (
+            <p role="status" className="text-center text-sm font-bold text-marca">Revisa el texto (puedes corregirlo) y toca «Enviar».</p>
+          ) : (
+            <p className="flex items-center justify-center gap-1.5 text-sm text-tenue"><Lock className="h-4 w-4" aria-hidden /> Pía nunca te pide tu clave.</p>
+          )}
         </form>
       }
     >

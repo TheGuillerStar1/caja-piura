@@ -19,6 +19,7 @@ export type Intencion =
   | { tipo: "CLAVE_CAMBIAR" }
   | { tipo: "CLAVE_PEDIDA" }
   | { tipo: "FUERA_DE_ALCANCE" }
+  | { tipo: "TRANSFERIR" }
   | { tipo: "PROBLEMA_PAGO"; problema: ProblemaPago }
   | { tipo: "NADA" };
 
@@ -68,10 +69,12 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
       ? { tipo: "CLAVE_CAMBIAR" }
       : { tipo: "CLAVE_PEDIDA" };
   }
-  // 2. Mover dinero fuera de lo que la app prepara: no se hace desde el asistente.
-  if (algun(t, ["transferir", "transferencia", "transfiere", "yapear", "yape", "plin", "prestame plata", "prestame dinero", "retirar", "depositar a", "enviar plata", "mandar plata", "enviar dinero", "mandar dinero"])) {
-    return { tipo: "FUERA_DE_ALCANCE" };
+  // 2. Transferir: Pía no mueve ese dinero desde el chat, pero lleva a la pantalla de Transferencias de la app.
+  if (algun(t, ["transferir", "transferencia", "transfiere", "yapear", "yape", "plin", "depositar a", "enviar plata", "mandar plata", "enviar dinero", "mandar dinero"])) {
+    return { tipo: "TRANSFERIR" };
   }
+  // 2a. Préstamos de dinero o retiros: no se hacen desde la app.
+  if (algun(t, ["prestame plata", "prestame dinero", "retirar"])) return { tipo: "FUERA_DE_ALCANCE" };
 
   // 2b. Problemas con un pago (duplicado, no procesado, errado): antes que "cuota" para "me cobraron la cuota dos veces".
   for (const [problema, claves] of PROBLEMAS) {
@@ -83,7 +86,9 @@ export function interpretar(mensaje: string, frecuentes: FrecuenteCtx[]): Intenc
   if (porAlias.length) return { tipo: "FRECUENTE", ids: porAlias };
 
   // 4. Cuota / crédito.
-  const mencionaCuota = algun(t, ["cuota", "credito", "prestamo"]);
+  // "pagar mi saldo del mes", "pagar la mensualidad": es la cuota del crédito, no ver el saldo.
+  const pagoDelMes = algun(t, ["pagar", "pago", "pagarle", "cancelar"]) && algun(t, ["del mes", "mensualidad", "mensual", "saldo"]);
+  const mencionaCuota = pagoDelMes || algun(t, ["cuota", "credito", "prestamo"]);
   if (mencionaCuota) return { tipo: "CUOTA" };
   if (algun(t, ["deuda", "debo", "deudas", "pendiente", "pendientes", "vence"])) return { tipo: "DEUDA" };
 
