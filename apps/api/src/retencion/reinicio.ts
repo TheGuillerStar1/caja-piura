@@ -68,6 +68,10 @@ export function planReinicio(db: PrismaClient, idPorDni: Record<string, number>,
       }),
     );
     cuentas.push({ clienteId, numero: `0011020000${String(i + 1).padStart(4, "0")}`, tipo: c.cuentaTipo, saldo: c.saldo });
+    // Cuentas adicionales (multicuentas): mismas que en prisma/demo.ts.
+    (c.otrasCuentas ?? []).forEach((o, k) =>
+      cuentas.push({ clienteId, numero: `0011030000${String(i + 1).padStart(2, "0")}${String(k + 1).padStart(2, "0")}`, tipo: o.tipo, saldo: o.saldo }),
+    );
     for (let k = 0; k < c.totalCuotas; k++) {
       const numero = k + 1;
       const offset = numero - (c.pagadas + 1);
