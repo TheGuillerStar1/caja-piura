@@ -13,7 +13,8 @@ import { guardarResultado, type ResultadoPago } from "@/components/pago/almacen"
 import { TutorialPia, tutorialVisto } from "@/components/ayuda/TutorialPia";
 import { BotonConstanciaWhatsApp } from "@/components/pago/ConstanciaWhatsApp";
 import { PagoEnChat } from "@/components/pago/PagoEnChat";
-import { EnvioEnChat } from "@/components/envio/EnvioEnChat";
+import { ConstanciaEnvio } from "@/components/envio/ConstanciaEnvio";
+import { EnvioEnChat, type EnvioHecho } from "@/components/envio/EnvioEnChat";
 import { NOMBRE_BILLETERA } from "@/components/envio/contactos";
 import { Boton, Mascota, Pantalla } from "@/components/ui";
 import { fechaCorta, soles } from "@/lib/formato";
@@ -28,7 +29,8 @@ type AccionChat =
   | AccionUI
   | { tipo: "RECIBO_FOTO" }
   | { tipo: "PAGO_CHAT"; pago: TipoPago; ref: number }
-  | { tipo: "CONSTANCIA"; resultado: ResultadoPago };
+  | { tipo: "CONSTANCIA"; resultado: ResultadoPago }
+  | { tipo: "CONSTANCIA_ENVIO"; envio: EnvioHecho };
 type Mensaje = { id: number; de: "pia" | "yo"; texto: string; accion?: AccionChat };
 
 /** El tono sigue a la vista elegida (si ya eligió); si no, al que recomienda el motor. */
@@ -419,12 +421,14 @@ export default function Ayuda() {
                   asistida={asistida}
                   activo={m === ultimoPia}
                   alEnviar={(r) =>
-                    decirPia(
-                      `¡Listo! Enviaste ${soles(r.monto)} a ${r.contacto.nombre} por ${NOMBRE_BILLETERA[r.billetera]}. N.º de operación ${r.operacion}.${r.repetida ? " Ya estaba hecho: no se envió otra vez." : ""}`,
-                    )
+                    decirPia(`¡Listo! Enviaste ${soles(r.monto)} a ${r.contacto.nombre} por ${NOMBRE_BILLETERA[r.billetera]}. Aquí tienes tu constancia:`, {
+                      tipo: "CONSTANCIA_ENVIO",
+                      envio: r,
+                    })
                   }
                 />
               )}
+              {m.accion?.tipo === "CONSTANCIA_ENVIO" && <ConstanciaEnvio envio={m.accion.envio} />}
               {m.accion?.tipo === "CONSTANCIA" && (
                 <div className="ml-10">
                   <Boton
