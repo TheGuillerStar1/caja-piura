@@ -7,7 +7,8 @@ import { useState } from "react";
 import { fechaHora, soles } from "@/lib/formato";
 import { track } from "@/lib/track";
 
-export type DatosConstancia = { monto: number; descripcion: string; destinatario: string; operacion: string | null; fecha: string };
+export type DatosConstancia = { monto: number; descripcion: string; destinatario: string; operacion: string | null; fecha: string; transferencia?: boolean };
+const nombreDe = (d: DatosConstancia) => (d.transferencia ? "transferencia" : "pago");
 
 function partirTexto(ctx: CanvasRenderingContext2D, texto: string, ancho: number) {
   const palabras = texto.split(" ");
@@ -42,7 +43,7 @@ export async function imagenConstancia(d: DatosConstancia): Promise<Blob> {
   x.font = fuente(700, 56);
   x.fillText("Caja Piura", 80, 130);
   x.font = fuente(400, 34);
-  x.fillText("Constancia de pago", 80, 180);
+  x.fillText(`Constancia de ${nombreDe(d)}`, 80, 180);
   // Tarjeta blanca
   const tx = 60;
   const ty = 260;
@@ -70,7 +71,7 @@ export async function imagenConstancia(d: DatosConstancia): Promise<Blob> {
   x.textAlign = "center";
   x.fillStyle = "#157347";
   x.font = fuente(700, 52);
-  x.fillText("¡Pago realizado!", W / 2, ty + 300);
+  x.fillText(d.transferencia ? "¡Transferencia realizada!" : "¡Pago realizado!", W / 2, ty + 300);
   x.fillStyle = "#1c1f24";
   x.font = fuente(700, 120);
   x.fillText(soles(d.monto), W / 2, ty + 440);
@@ -106,12 +107,12 @@ export async function imagenConstancia(d: DatosConstancia): Promise<Blob> {
   x.textAlign = "center";
   x.fillStyle = "#00549f";
   x.font = fuente(400, 30);
-  x.fillText("Pagado desde la app con Pía · Te ahorraste una visita a la agencia", W / 2, H - 70);
+  x.fillText(`${d.transferencia ? "Hecha" : "Pagado"} desde la app · Te ahorraste una visita a la agencia`, W / 2, H - 70);
   return new Promise((ok, mal) => c.toBlob((b) => (b ? ok(b) : mal(new Error("sin imagen"))), "image/png"));
 }
 
 const texto = (d: DatosConstancia) =>
-  `Constancia de pago · Caja Piura\n${d.descripcion}\nMonto: ${soles(d.monto)}\nPara: ${d.destinatario}\nN.º de operación: ${d.operacion ?? "-"}`;
+  `Constancia de ${nombreDe(d)} · Caja Piura\n${d.descripcion}\nMonto: ${soles(d.monto)}\nPara: ${d.destinatario}\nN.º de operación: ${d.operacion ?? "-"}`;
 
 export function BotonConstanciaWhatsApp({ datos, className = "" }: { datos: DatosConstancia; className?: string }) {
   const [estado, setEstado] = useState<"" | "preparando" | "descargada">("");
@@ -123,7 +124,7 @@ export function BotonConstanciaWhatsApp({ datos, className = "" }: { datos: Dato
       const blob = await imagenConstancia(datos);
       const archivo = new File([blob], `constancia-${datos.operacion ?? "pago"}.png`, { type: "image/png" });
       if (navigator.canShare?.({ files: [archivo] })) {
-        await navigator.share({ files: [archivo], title: "Constancia de pago", text: "Constancia de pago · Caja Piura" });
+        await navigator.share({ files: [archivo], title: `Constancia de ${nombreDe(datos)}`, text: `Constancia de ${nombreDe(datos)} · Caja Piura` });
         setEstado("");
         return;
       }

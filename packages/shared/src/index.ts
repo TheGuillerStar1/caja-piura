@@ -68,7 +68,14 @@ export const MeRes = z.object({
 export type MeRes = z.infer<typeof MeRes>;
 
 // Movimientos de una cuenta (lo que se pagó desde ella), al tocarla en «Mis productos».
-export const Movimiento = z.object({ id: z.number(), descripcion: z.string(), monto: z.number(), fecha: z.string(), operacion: z.string() });
+export const Movimiento = z.object({
+  id: z.string(), // "p12" (pago) o "t7" (transferencia)
+  descripcion: z.string(),
+  monto: z.number(),
+  fecha: z.string(),
+  operacion: z.string(),
+  entrada: z.boolean(), // true = el dinero entró a la cuenta
+});
 export type Movimiento = z.infer<typeof Movimiento>;
 export const MovimientosRes = z.object({ cuentaId: z.number(), movimientos: z.array(Movimiento) });
 export type MovimientosRes = z.infer<typeof MovimientosRes>;
@@ -252,3 +259,47 @@ export const KpisRes = z.object({
   pagosTotales: z.number(),
 });
 export type KpisRes = z.infer<typeof KpisRes>;
+
+// ── Transferencias (propias, a terceros, interbancarias y a contacto), como en la app oficial ──
+export const TipoTransferencia = z.enum(["PROPIAS", "TERCEROS", "INTERBANCARIA", "CONTACTO"]);
+export type TipoTransferencia = z.infer<typeof TipoTransferencia>;
+
+export const PrepararTransferenciaReq = z.object({
+  tipo: TipoTransferencia,
+  cuentaOrigenId: z.number(),
+  /** Propias: id de la cuenta destino · Terceros: n.º de cuenta · Interbancaria: CCI · Contacto: celular */
+  destino: z.string().trim().min(1).max(30),
+  monto: z.number().positive().max(100000),
+  glosa: z.string().trim().max(100).optional(),
+});
+export type PrepararTransferenciaReq = z.infer<typeof PrepararTransferenciaReq>;
+
+export const PrepararTransferenciaRes = z.object({
+  tipo: TipoTransferencia,
+  origen: Cuenta,
+  destinoMostrado: z.string(), // "****0101", "CCI ****1234", "987 *** 321"
+  nombreDestino: z.string(),
+  monto: z.number(),
+  glosa: z.string().nullable(),
+  saldoSuficiente: z.boolean(),
+  idempotencyKey: z.string(),
+});
+export type PrepararTransferenciaRes = z.infer<typeof PrepararTransferenciaRes>;
+
+export const ConfirmarTransferenciaReq = PrepararTransferenciaReq.extend({
+  idempotencyKey: z.string(),
+  autenticacion: z.enum(["ROSTRO", "HUELLA", "CLAVE"]),
+});
+export type ConfirmarTransferenciaReq = z.infer<typeof ConfirmarTransferenciaReq>;
+
+export const ConfirmarTransferenciaRes = z.object({
+  tipo: TipoTransferencia,
+  operacion: z.string(),
+  fecha: z.string(),
+  monto: z.number(),
+  nombreDestino: z.string(),
+  destinoMostrado: z.string(),
+  origen: Cuenta,
+  repetida: z.boolean(),
+});
+export type ConfirmarTransferenciaRes = z.infer<typeof ConfirmarTransferenciaRes>;

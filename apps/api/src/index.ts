@@ -17,6 +17,7 @@ import { router as me } from "./routes/me.js";
 import { router as pagos } from "./routes/pagos.js";
 import { router as panel } from "./routes/panel.js";
 import { router as progreso } from "./routes/progreso.js";
+import { router as transferencias } from "./routes/transferencias.js";
 import { router as recibos } from "./routes/recibos.js";
 
 const app = express();
@@ -47,7 +48,7 @@ app.get("/archivos/*key", requiereSesion, async (req, res) => {
   res.type(key.endsWith(".png") ? "png" : "jpeg").set("Cache-Control", "public, max-age=86400").send(buf);
 });
 
-for (const r of [auth, me, inicio, cuotas, frecuentes, pagos, recibos, asistente, progreso, demo, eventos, panel]) app.use(r);
+for (const r of [auth, me, inicio, cuotas, frecuentes, pagos, transferencias, recibos, asistente, progreso, demo, eventos, panel]) app.use(r);
 
 app.use((_req, res) => {
   res.status(404).json({ error: { codigo: "NO_ENCONTRADO", mensaje: "Ruta no encontrada" } });

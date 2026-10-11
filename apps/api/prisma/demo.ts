@@ -110,6 +110,7 @@ export async function sembrarDemo(prisma: PrismaClient) {
   if (ids.length) {
     const where = { clienteId: { in: ids } };
     await prisma.pago.deleteMany({ where });
+    await prisma.transferencia.deleteMany({ where: { OR: [where, { destinoClienteId: where.clienteId }] } });
     await prisma.punto.deleteMany({ where });
     await prisma.evento.deleteMany({ where });
     await prisma.frecuente.deleteMany({ where });

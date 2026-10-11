@@ -100,6 +100,7 @@ export function planReinicio(db: PrismaClient, idPorDni: Record<string, number>,
     //    Los recibos de demo incluyen los del "mes siguiente" que crea "Adelantar 30 días" y los marcados como pagados.
     borrar: () => [
       db.pago.deleteMany({ where }),
+      db.transferencia.deleteMany({ where: { OR: [where, { destinoClienteId: where.clienteId }] } }),
       db.punto.deleteMany({ where }),
       db.evento.deleteMany({ where }),
       db.frecuente.deleteMany({ where }),

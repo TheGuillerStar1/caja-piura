@@ -264,7 +264,7 @@ export default function Inicio() {
 
       <section aria-label="Mis servicios">
         <h2 className={`${asistida ? "text-xl" : "text-lg"} mb-2 font-bold`}>Mis servicios</h2>
-        <Link href="/servicio?n=Transferencias%20a%20contacto" className="flex items-center gap-3 px-1 py-2">
+        <Link href="/transferir/contacto" className="flex items-center gap-3 px-1 py-2">
           <IcCelular className="h-10 w-10 text-marca" />
           <span className="w-28 text-sm font-bold leading-tight text-marca">Transferencias a contacto</span>
         </Link>

@@ -48,6 +48,13 @@ enum EstadoPago {
   FALLIDO
 }
 
+enum TipoTransferencia {
+  PROPIAS
+  TERCEROS
+  INTERBANCARIA
+  CONTACTO
+}
+
 enum Rubro {
   LUZ
   AGUA
@@ -56,34 +63,35 @@ enum Rubro {
 }
 
 model Cliente {
-  id                 Int        @id @default(autoincrement())
-  dni                String     @unique @db.VarChar(8)
-  nombre             String     @db.VarChar(60)
-  apellido           String     @db.VarChar(60)
+  id                 Int       @id @default(autoincrement())
+  dni                String    @unique @db.VarChar(8)
+  nombre             String    @db.VarChar(60)
+  apellido           String    @db.VarChar(60)
   edad               Int
   ocupacion          Ocupacion
   zona               Zona
-  distrito           String     @db.VarChar(60)
+  distrito           String    @db.VarChar(60)
   opsPresencialesMes Int
   opsDigitalesMes    Int
   gamaDispositivo    Gama
   diaPagoHabitual    Int // 1..28
   /// Clave simulada de 6 dígitos (datos ficticios; nunca se muestra ni se envía a la IA)
-  claveDemo          String     @db.VarChar(6)
+  claveDemo          String    @db.VarChar(6)
   vistaPreferida     Vista?
-  primerIngreso      Boolean    @default(true)
+  primerIngreso      Boolean   @default(true)
   /// Reloj simulado para la demo ("Adelantar 30 días")
-  fechaSimulada      DateTime   @default(now())
-  pagosSinAyuda      Int        @default(0)
-  esDemo             Boolean    @default(false)
-  creadoEn           DateTime   @default(now())
+  fechaSimulada      DateTime  @default(now())
+  pagosSinAyuda      Int       @default(0)
+  esDemo             Boolean   @default(false)
+  creadoEn           DateTime  @default(now())
 
-  cuentas    Cuenta[]
-  cuotas     Cuota[]
-  frecuentes Frecuente[]
-  pagos      Pago[]
-  puntos     Punto[]
-  eventos    Evento[]
+  cuentas        Cuenta[]
+  cuotas         Cuota[]
+  frecuentes     Frecuente[]
+  pagos          Pago[]
+  transferencias Transferencia[]
+  puntos         Punto[]
+  eventos        Evento[]
 }
 
 model Cuenta {
@@ -100,14 +108,14 @@ model Cuenta {
 }
 
 model Cuota {
-  id           Int         @id @default(autoincrement())
-  clienteId    Int
-  credito      String      @db.VarChar(20) // número de crédito
-  numero       Int // n.º de cuota
-  totalCuotas  Int
-  monto        Decimal     @db.Decimal(12, 2)
-  vencimiento  DateTime
-  estado       EstadoCuota @default(PENDIENTE)
+  id          Int         @id @default(autoincrement())
+  clienteId   Int
+  credito     String      @db.VarChar(20) // número de crédito
+  numero      Int // n.º de cuota
+  totalCuotas Int
+  monto       Decimal     @db.Decimal(12, 2)
+  vencimiento DateTime
+  estado      EstadoCuota @default(PENDIENTE)
 
   cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
@@ -115,13 +123,13 @@ model Cuota {
 }
 
 model Servicio {
-  id            Int     @id @default(autoincrement())
-  empresa       String  @db.VarChar(60) // "Enosa", "EPS Grau", ...
+  id            Int    @id @default(autoincrement())
+  empresa       String @db.VarChar(60) // "Enosa", "EPS Grau", ...
   rubro         Rubro
   /// Regex que valida el código de suministro, p. ej. "^\\d{8}$"
-  formatoCodigo String  @db.VarChar(60)
+  formatoCodigo String @db.VarChar(60)
   /// Texto de ayuda: dónde está el código en el recibo
-  ayudaCodigo   String  @db.VarChar(160)
+  ayudaCodigo   String @db.VarChar(160)
 
   recibos    Recibo[]
   frecuentes Frecuente[]
@@ -179,6 +187,31 @@ model Pago {
   cuenta  Cuenta  @relation(fields: [cuentaId], references: [id])
 
   @@index([clienteId, creadoEn])
+}
+
+/// Transferencias de la sección «Transferencias» (propias, a terceros, interbancarias y a contacto).
+/// Las cuentas se guardan como números sueltos (sin llave foránea): el reinicio de la demo recrea las cuentas.
+model Transferencia {
+  id               Int               @id @default(autoincrement())
+  idempotencyKey   String            @unique @db.VarChar(64)
+  clienteId        Int
+  tipo             TipoTransferencia
+  cuentaOrigenId   Int
+  /// Cuenta de Caja Piura que recibe (propias y a terceros); null si el dinero sale a otro banco o a un celular
+  cuentaDestinoId  Int?
+  destinoClienteId Int?
+  /// Lo que escribió el cliente: n.º de cuenta, CCI o celular
+  destino          String            @db.VarChar(30)
+  nombreDestino    String            @db.VarChar(80)
+  monto            Decimal           @db.Decimal(12, 2)
+  glosa            String?           @db.VarChar(100)
+  operacion        String            @db.VarChar(20)
+  creadoEn         DateTime          @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@index([cuentaOrigenId])
+  @@index([cuentaDestinoId])
 }
 
 model Punto {
