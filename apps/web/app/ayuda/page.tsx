@@ -243,6 +243,7 @@ export default function Ayuda() {
         </span>
       }
       volver="/inicio"
+      omitirAyuda
       pie={
         <form
           className="flex flex-col gap-2"

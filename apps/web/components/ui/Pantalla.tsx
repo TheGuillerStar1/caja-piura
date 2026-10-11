@@ -14,14 +14,16 @@ type Props = {
   plano?: boolean;
   children: React.ReactNode;
   pie?: React.ReactNode;
+  /** «Omitir ayuda» solo se muestra en el chat de Pía (pedido del equipo, 10 oct). */
+  omitirAyuda?: boolean;
 };
 
-export function Pantalla({ titulo, volver, subtitulo, pestana, sinPia, plano, children, pie }: Props) {
+export function Pantalla({ titulo, volver, subtitulo, pestana, sinPia, plano, children, pie, omitirAyuda }: Props) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-app flex-col bg-fondo shadow-[0_0_48px_rgb(0_0_0/0.45)]">
       {(titulo || volver || pestana) && <Cabecera titulo={titulo} volver={volver} subtitulo={subtitulo} />}
       <main className={`flex flex-1 flex-col gap-4 ${plano ? "py-3" : "px-4 py-5"}`}>
-        <OmitirAyuda />
+        {omitirAyuda && <OmitirAyuda />}
         {children}
       </main>
       {pie && <footer className="sticky bottom-0 z-40 border-t border-linea bg-fondo px-4 pb-5 pt-3">{pie}</footer>}
