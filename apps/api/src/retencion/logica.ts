@@ -104,7 +104,7 @@ export function tasaExitoSinAyuda(exitososSinAyuda: number, pagosRegistrados: nu
 }
 
 /** Orden del embudo según el flujo de pago. */
-export const ORDEN_EMBUDO = ["inicio", "pagar-cuota", "pagar-frecuentes", "pagar-recibo", "confirmar", "exito"];
+export const ORDEN_EMBUDO = ["inicio", "pagar-creditos", "pagar-servicios", "pagar-frecuentes", "confirmar", "exito"];
 
 export type FilaEmbudo = { pantalla: string; vistas: number; abandonos: number };
 
@@ -136,3 +136,66 @@ export function inicioVentanaMes(fechaSimulada: Date, ahora: Date = new Date()) 
 
 /** Fase 7: solo se sugiere (el cliente decide) si usa la asistida y ya hizo 3 pagos sin ayuda. */
 export const debeSugerirEstandar = (vista: string | null, pagosSinAyuda: number) => vista === "ASISTIDA" && pagosSinAyuda >= 3;
+
+// ── Recorrido por trámite (pedido del jurado: «medir finalización sin asistencia y abandonos») ──
+// Cada sesión del navegador que empieza un trámite se sigue paso a paso: hasta dónde llegó, si pagó, si pidió ayuda
+// y si tuvo un error y aun así terminó. Así se ve en qué paso se queda la gente, no solo en qué pantalla.
+export type TramiteId = "CUOTA" | "RECIBO" | "FRECUENTE";
+export type EventoRecorrido = { sesionId: string; flujo: string | null; pantalla: string; accion: string; ayudaUsada: boolean };
+export type Recorrido = {
+  tramite: TramiteId;
+  empezaron: number;
+  llegaronAConfirmar: number;
+  pagaron: number;
+  pagaronSinAyuda: number;
+  conError: number;
+  seRecuperaron: number; // tuvieron un error y aun así pagaron
+  seQuedaron: { paso: string; n: number }[]; // último paso de quienes no pagaron, de más a menos
+};
+
+const TRAMITES: TramiteId[] = ["CUOTA", "RECIBO", "FRECUENTE"];
+const PANTALLAS_CONFIRMAR = new Set(["confirmar", "pago-chat"]);
+
+/** Nombre del paso para quien no terminó (la pantalla técnica → algo que se entiende). */
+export function pasoDe(pantalla: string): string {
+  if (PANTALLAS_CONFIRMAR.has(pantalla) || pantalla === "pago-fallido") return "Confirmar el pago";
+  if (/servicios|recibo|frecuentes/.test(pantalla)) return "Buscar el recibo";
+  if (/creditos|cuota/.test(pantalla)) return "Elegir qué pagar";
+  if (pantalla === "inicio" || pantalla.startsWith("pagos")) return "Entrar al trámite";
+  return "Otro";
+}
+
+export function armarRecorridos(eventos: EventoRecorrido[]): Recorrido[] {
+  type S = { confirmar: boolean; pago: boolean; ayuda: boolean; error: boolean; ultimo: string };
+  const porTramite = new Map<TramiteId, Map<string, S>>(TRAMITES.map((t) => [t, new Map()]));
+  for (const e of eventos) {
+    const t = e.flujo as TramiteId;
+    const sesiones = porTramite.get(t);
+    if (!sesiones) continue;
+    const s = sesiones.get(e.sesionId) ?? { confirmar: false, pago: false, ayuda: false, error: false, ultimo: e.pantalla };
+    if (PANTALLAS_CONFIRMAR.has(e.pantalla) || e.pantalla === "exito") s.confirmar = true;
+    if (e.accion === "completar" && (e.pantalla === "exito" || e.pantalla === "pago-chat")) s.pago = true;
+    if (e.ayudaUsada || e.accion === "ayuda") s.ayuda = true;
+    if (e.accion === "error") s.error = true;
+    if (!s.pago) s.ultimo = e.pantalla;
+    sesiones.set(e.sesionId, s);
+  }
+  return TRAMITES.map((tramite) => {
+    const ss = [...porTramite.get(tramite)!.values()];
+    const quedaron = new Map<string, number>();
+    for (const s of ss.filter((x) => !x.pago)) {
+      const paso = pasoDe(s.ultimo);
+      quedaron.set(paso, (quedaron.get(paso) ?? 0) + 1);
+    }
+    return {
+      tramite,
+      empezaron: ss.length,
+      llegaronAConfirmar: ss.filter((s) => s.confirmar).length,
+      pagaron: ss.filter((s) => s.pago).length,
+      pagaronSinAyuda: ss.filter((s) => s.pago && !s.ayuda).length,
+      conError: ss.filter((s) => s.error).length,
+      seRecuperaron: ss.filter((s) => s.error && s.pago).length,
+      seQuedaron: [...quedaron].map(([paso, n]) => ({ paso, n })).sort((a, b) => b.n - a.n),
+    };
+  });
+}

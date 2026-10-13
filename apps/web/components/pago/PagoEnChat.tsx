@@ -11,6 +11,7 @@ import { soles } from "@/lib/formato";
 import { track } from "@/lib/track";
 import { borrarKey, guardarKey, leerKey } from "./almacen";
 import { CuentaOrigen } from "./CuentaOrigen";
+import { SaldoInsuficiente } from "./SaldoInsuficiente";
 import { EstilosPago } from "./EstilosPago";
 import { OpcionesCredito, type EleccionCredito } from "./OpcionesCredito";
 import { HojaAutenticacion, type MetodoAuth } from "./HojaAutenticacion";
@@ -123,9 +124,7 @@ export function PagoEnChat({ tipo, refId, asistida, alPagar }: Props) {
       </div>
 
       {!pago.saldoSuficiente ? (
-        <p className="rounded-xl bg-aviso-claro p-3">
-          <b>Tu cuenta no tiene saldo suficiente.</b> Elige otra cuenta o deposita en una agencia o agente Caja Piura. No se movió dinero.
-        </p>
+        <SaldoInsuficiente monto={pago.monto} actual={pago.cuenta} cuentas={cuentas} onUsarCuenta={(id) => setCuentaId(id)} grande={asistida} />
       ) : fase === "fallido" ? (
         <p className="rounded-xl bg-error-claro p-3">
           <b>No se realizó el pago. No se cobró nada.</b> Puedes intentarlo otra vez: no se cobra dos veces.

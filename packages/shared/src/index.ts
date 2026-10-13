@@ -285,6 +285,19 @@ export const KpisRes = z.object({
   embudo: z.array(z.object({ pantalla: z.string(), vistas: z.number(), abandonos: z.number() })),
   distribucionVistas: z.object({ ASISTIDA: z.number(), ESTANDAR: z.number() }), // sobre los 500 perfiles
   pagosTotales: z.number(),
+  /** Recorrido de cada trámite por sesión: empezaron → llegaron a confirmar → pagaron (solos), errores y dónde se quedan. */
+  recorridos: z.array(
+    z.object({
+      tramite: z.enum(["CUOTA", "RECIBO", "FRECUENTE"]),
+      empezaron: z.number(),
+      llegaronAConfirmar: z.number(),
+      pagaron: z.number(),
+      pagaronSinAyuda: z.number(),
+      conError: z.number(),
+      seRecuperaron: z.number(),
+      seQuedaron: z.array(z.object({ paso: z.string(), n: z.number() })),
+    }),
+  ),
 });
 export type KpisRes = z.infer<typeof KpisRes>;
 

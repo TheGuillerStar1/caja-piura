@@ -2,7 +2,7 @@
 // "Pago de servicios" igual que la app oficial (fotos del 10 oct), en 4 pasos:
 // 1) rubro y empresa · 2) código del recibo · 3) monto y cuenta origen · 4) confirmar (pantalla de confirmación).
 // Lo nuevo es un atajo dentro del flujo de siempre: si no encuentra el código, le toma una foto al recibo.
-import { Camera, ChevronRight, X } from "lucide-react";
+import { Camera, ChevronRight, MessageCircle, X } from "lucide-react";
 import type { MeRes, ReciboRes } from "@cp/shared";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,6 +42,8 @@ export default function PagoServicios() {
   const [codigo, setCodigo] = useState("");
   const [consultando, setConsultando] = useState(false);
   const [errorCodigo, setErrorCodigo] = useState<string | null>(null);
+  // Intentos fallidos con el código: al segundo, se ofrece la foto del recibo y a Pía con más fuerza.
+  const [fallos, setFallos] = useState(0);
   const [recibo, setRecibo] = useState<ReciboRes | null>(null);
   const [cuenta, setCuenta] = useState("");
 
@@ -80,7 +82,16 @@ export default function PagoServicios() {
       track("pagar-servicios", "tocar", { flujo: "RECIBO" });
     } catch (e) {
       if (esSinSesion(e)) return router.replace("/entrar");
-      setErrorCodigo(e instanceof ApiFallo ? e.message : "No pudimos consultar el recibo. Vuelve a intentar.");
+      track("pagar-servicios", "error", { flujo: "RECIBO" });
+      // «No hay deuda» no es un error del cliente: no cuenta como intento fallido.
+      if (!(e instanceof ApiFallo && e.codigo === "NO_HAY_DEUDA")) setFallos((n) => n + 1);
+      setErrorCodigo(
+        e instanceof ApiFallo
+          ? e.codigo === "NO_HAY_DEUDA"
+            ? "Este recibo no tiene deuda: ya está pagado o todavía no llega el del mes. No tienes que hacer nada."
+            : e.message
+          : "No pudimos consultar el recibo. Revisa tu internet y vuelve a intentar: no se cobra nada.",
+      );
     } finally {
       setConsultando(false);
     }
@@ -160,6 +171,7 @@ export default function PagoServicios() {
                         setEligiendo(null);
                         setCodigo("");
                         setErrorCodigo(null);
+                        setFallos(0);
                         setPaso(2);
                       }}
                       className="flex min-h-14 items-center justify-between rounded-lg border-2 border-linea px-3 text-left text-lg font-bold uppercase active:bg-marca-claro"
@@ -180,12 +192,31 @@ export default function PagoServicios() {
                 <p className="text-sm font-bold text-marca">{nombreCodigo}</p>
                 <TecladoCodigo valor={codigo} largo={largoCodigo(servicio.formatoCodigo)} onCambio={setCodigo} etiqueta={nombreCodigo} />
                 <p className="text-sm text-tenue">{servicio.ayudaCodigo}</p>
-                {errorCodigo && <p className="rounded-lg bg-error-claro px-3 py-2 font-bold text-error">{errorCodigo}</p>}
+                {errorCodigo && (
+                  <div role="alert" className="flex flex-col gap-2 rounded-xl bg-error-claro px-3 py-3">
+                    <p className="font-bold text-error">{errorCodigo}</p>
+                    {fallos >= 2 && (
+                      <p className="text-sm">
+                        ¿Sigue sin salir? Tómale una foto al recibo y lo leemos por ti, o pídele ayuda a Pía.
+                      </p>
+                    )}
+                    <Link
+                      href="/ayuda"
+                      onClick={() => track("pagar-servicios", "ayuda", { flujo: "RECIBO", ayudaUsada: true })}
+                      className="flex min-h-11 items-center gap-2 self-start font-bold text-marca underline underline-offset-4"
+                    >
+                      <MessageCircle className="h-5 w-5 shrink-0" aria-hidden /> Pídele ayuda a Pía
+                    </Link>
+                  </div>
+                )}
                 <Boton type="submit" disabled={!codigo || consultando}>
                   {consultando ? "Buscando…" : "Buscar deuda"}
                 </Boton>
               </form>
-              <Link href="/pagar/recibo" className="flex min-h-12 items-center justify-center gap-2 font-bold text-marca underline underline-offset-4">
+              <Link
+                href="/pagar/recibo"
+                className={`flex min-h-12 items-center justify-center gap-2 font-bold ${fallos >= 2 ? "rounded-boton bg-marca px-4 text-white" : "text-marca underline underline-offset-4"}`}
+              >
                 <Camera className="h-5 w-5 shrink-0" aria-hidden /> ¿No encuentras el código? Tómale una foto al recibo
               </Link>
               <button type="button" onClick={() => setPaso(1)} className="min-h-11 font-bold text-tenue underline underline-offset-4">

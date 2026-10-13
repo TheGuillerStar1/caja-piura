@@ -2,7 +2,7 @@
 // Dueño: Agente D. Panel del jurado (público): indicadores en vivo, se actualiza cada 5 s.
 // Mismo estilo de marca que el Centro de mando (/gestion): ver components/gestion/Marca.tsx.
 import type { KpisRes } from "@cp/shared";
-import { Activity, ArrowLeftRight, ChevronRight, CircleCheck, Compass, Hand, ShieldCheck, Filter, Smartphone, Sparkles, Timer, Users } from "lucide-react";
+import { Activity, ArrowLeftRight, LifeBuoy, Route, ChevronRight, CircleCheck, Compass, Hand, ShieldCheck, Filter, Smartphone, Sparkles, Timer, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Cargando } from "@/components/ui";
 import { DEGRADADO_BARRA, DEGRADADO_MARCA, TARJETA } from "@/components/gestion/formato";
@@ -70,6 +70,7 @@ export default function PanelPage() {
           { href: "#funciona", texto: "¿Funciona?", icono: Activity },
           { href: "#antes-ahora", texto: "Hoy vs. con PÍA", icono: ArrowLeftRight },
           { href: "#indicadores", texto: "Rapidez", icono: Timer },
+          { href: "#recorrido", texto: "Paso a paso", icono: Route },
           { href: "#embudo", texto: "Abandono", icono: Filter },
           { href: "#vistas", texto: "Vistas", icono: Users },
         ]}
@@ -245,6 +246,21 @@ function Contenido({ k }: { k: KpisRes }) {
         </div>
       </section>
 
+      <section id="recorrido" className="flex scroll-mt-4 flex-col gap-4" aria-labelledby="t-rec">
+        <Encabezado
+          icono={Route}
+          id="t-rec"
+          antetitulo="Paso a paso"
+          titulo="¿Terminan el trámite solos? ¿Dónde se quedan?"
+          texto="Cada persona que empieza un pago, seguida de principio a fin: si llega a confirmar, si paga sin ayuda, si se recupera de un error y en qué paso se queda quien no termina."
+        />
+        <div className="grid items-start gap-4 lg:grid-cols-3">
+          {k.recorridos.map((r) => (
+            <Recorrido key={r.tramite} r={r} />
+          ))}
+        </div>
+      </section>
+
       <div className="grid gap-10 lg:grid-cols-[3fr_2fr] lg:gap-4">
         <section id="embudo" className="flex scroll-mt-4 flex-col gap-4" aria-labelledby="t-emb">
           <Encabezado icono={Filter} id="t-emb" antetitulo="Embudo" titulo="¿Dónde se abandona?" texto="Visitas y abandonos en cada pantalla del pago." />
@@ -304,6 +320,61 @@ function Embudo({ filas }: { filas: KpisRes["embudo"] }) {
           <span className="inline-block h-2.5 w-4 rounded-full bg-error" /> abandonos
         </span>
       </p>
+    </div>
+  );
+}
+
+const NOMBRE_TRAMITE: Record<KpisRes["recorridos"][number]["tramite"], string> = { CUOTA: "Pagar la cuota", RECIBO: "Pagar un recibo", FRECUENTE: "Pago frecuente" };
+
+/** Un trámite: barras empezaron → confirmar → pagaron → solos, más errores recuperados y dónde se quedan. */
+function Recorrido({ r }: { r: KpisRes["recorridos"][number] }) {
+  const base = Math.max(1, r.empezaron);
+  const pasos = [
+    { t: "Empezaron", n: r.empezaron },
+    { t: "Llegaron a confirmar", n: r.llegaronAConfirmar },
+    { t: "Pagaron", n: r.pagaron },
+    { t: "Pagaron solos", n: r.pagaronSinAyuda },
+  ];
+  return (
+    <div className={`${TARJETA} flex flex-col gap-4 p-5`}>
+      <div className="flex items-baseline justify-between gap-2">
+        <h3 className="text-lg font-bold">{NOMBRE_TRAMITE[r.tramite]}</h3>
+        <span className="text-sm font-bold tabular-nums text-[var(--cp-brand)]">{r.empezaron ? `${pct(r.pagaronSinAyuda / base)} solos` : "sin datos"}</span>
+      </div>
+      <ul className="flex flex-col gap-2.5">
+        {pasos.map((p, i) => (
+          <li key={p.t} className="flex flex-col gap-1">
+            <div className="flex justify-between text-sm">
+              <span className={i === 3 ? "font-bold" : "text-tenue"}>{p.t}</span>
+              <span className="font-bold tabular-nums">{p.n}</span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-fondo" aria-hidden>
+              <div className="h-full rounded-full transition-[width] duration-500" style={{ width: `${(p.n / base) * 100}%`, background: i === 3 ? DEGRADADO_MARCA : DEGRADADO_BARRA }} />
+            </div>
+          </li>
+        ))}
+      </ul>
+      <p className={`flex items-start gap-2 rounded-xl px-3 py-2 text-sm ${LILA}`}>
+        <LifeBuoy className="mt-0.5 h-4 w-4 shrink-0 text-[var(--cp-brand)]" aria-hidden />
+        {r.conError ? (
+          <span>
+            De {r.conError} con un error, <b>{r.seRecuperaron}</b> {r.seRecuperaron === 1 ? "pagó" : "pagaron"} igual
+          </span>
+        ) : (
+          <span>Sin errores registrados</span>
+        )}
+      </p>
+      {r.seQuedaron.length > 0 && (
+        <p className="text-sm">
+          <span className="text-tenue">Se quedan en: </span>
+          {r.seQuedaron.slice(0, 2).map((q, i) => (
+            <span key={q.paso}>
+              {i > 0 && " · "}
+              <b>{q.paso}</b> ({q.n})
+            </span>
+          ))}
+        </p>
+      )}
     </div>
   );
 }

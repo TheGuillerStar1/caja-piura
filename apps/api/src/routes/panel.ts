@@ -4,7 +4,7 @@ import type { KpisRes } from "@cp/shared";
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 import { recomendar } from "../motor/index.js";
-import { armarEmbudo, msASeg, tasaExitoSinAyuda } from "../retencion/logica.js";
+import { armarEmbudo, armarRecorridos, msASeg, tasaExitoSinAyuda } from "../retencion/logica.js";
 
 export const router = Router();
 
@@ -18,7 +18,7 @@ const CACHE_MS = 10_000;
 let cache: { hasta: number; datos: KpisRes } | null = null;
 
 async function calcularKpis(): Promise<KpisRes> {
-  const [pagosRegistrados, exitososSinAyuda, pagosExitosos, abandonosConfirmar, porPantalla, tiempos, clientes] = await Promise.all([
+  const [pagosRegistrados, exitososSinAyuda, pagosExitosos, abandonosConfirmar, porPantalla, tiempos, clientes, eventosTramite] = await Promise.all([
     prisma.pago.count(),
     prisma.pago.count({ where: { estado: "EXITOSO", conAyuda: false } }),
     prisma.pago.count({ where: { estado: "EXITOSO" } }),
@@ -42,6 +42,13 @@ async function calcularKpis(): Promise<KpisRes> {
         pagosSinAyuda: true,
       },
     }),
+    // Eventos de los trámites de pago (últimos 30 días, como máximo 20 000) para seguir cada sesión paso a paso.
+    prisma.evento.findMany({
+      where: { flujo: { in: ["CUOTA", "RECIBO", "FRECUENTE"] }, creadoEn: { gte: new Date(Date.now() - 30 * 24 * 3600 * 1000) } },
+      select: { sesionId: true, flujo: true, pantalla: true, accion: true, ayudaUsada: true },
+      orderBy: { id: "asc" },
+      take: 20000,
+    }),
   ]);
 
   const tiempo = (f: string) => msASeg(tiempos.find((t) => t.flujo === f)?._avg.msDesdeInicio);
@@ -57,6 +64,7 @@ async function calcularKpis(): Promise<KpisRes> {
     distribucionVistas,
     // Pagos realizados con éxito desde la app.
     pagosTotales: pagosExitosos,
+    recorridos: armarRecorridos(eventosTramite),
   };
 }
 

@@ -13,6 +13,7 @@ import { callar, hablar, montoHablado } from "@/lib/voz";
 import { cargarCliente } from "@/lib/cliente";
 import { borrarKey, guardarKey, guardarResultado, leerKey, rutaConfirmar } from "./almacen";
 import { CuentaOrigen } from "./CuentaOrigen";
+import { SaldoInsuficiente } from "./SaldoInsuficiente";
 import { EstilosPago } from "./EstilosPago";
 import { HojaAutenticacion, type MetodoAuth } from "./HojaAutenticacion";
 import { IconoX } from "./Iconos";
@@ -185,6 +186,15 @@ export function Confirmar() {
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [pago, tipo, ref, fallar, asistida, router, flujo, preparar, operacion, cantidad],
+  );
+
+  // Cambiar la cuenta de origen (desde «Cambiar cuenta» o desde el aviso de saldo insuficiente): se recalcula el pago.
+  const usarCuenta = useCallback(
+    (id: number) => {
+      track("confirmar", "tocar", { flujo });
+      router.replace(`${rutaConfirmar(tipo!, ref)}&cuenta=${id}${operacion ? `&op=${operacion}${cantidad ? `&cant=${cantidad}` : ""}` : ""}`);
+    },
+    [router, tipo, ref, operacion, cantidad, flujo],
   );
 
   const salirDeCancelado = useCallback(() => {
@@ -396,24 +406,12 @@ export function Confirmar() {
             nombre="cuenta-confirmar"
             cuentas={cuentasPago}
             actual={pago.cuenta}
-            onCambio={(id) => {
-              track("confirmar", "tocar", { flujo });
-              router.replace(`${rutaConfirmar(tipo!, ref)}&cuenta=${id}${operacion ? `&op=${operacion}${cantidad ? `&cant=${cantidad}` : ""}` : ""}`);
-            }}
+            onCambio={usarCuenta}
           />
         </div>
       </section>
 
-      {saldoInsuficiente && (
-        <Tarjeta tono="aviso">
-          <p className="text-xl font-bold">Tu cuenta no tiene saldo suficiente</p>
-          <p className="mt-2 text-lg">
-            Te faltan {soles(Math.max(0, pago.monto - pago.cuenta.saldo))}. Deposita en cualquier agencia o agente Caja Piura, o recibe una
-            transferencia. Luego vuelve aquí y paga en 2 toques.
-          </p>
-          <p className="mt-2 text-tenue">No se movió dinero.</p>
-        </Tarjeta>
-      )}
+      {saldoInsuficiente && <SaldoInsuficiente monto={pago.monto} actual={pago.cuenta} cuentas={cuentasPago} onUsarCuenta={usarCuenta} grande={asistida} />}
 
       {estado.fase === "autenticando" && <HojaAutenticacion asistida={asistida} onOk={enviar} onCancelar={cancelar} />}
     </Pantalla>

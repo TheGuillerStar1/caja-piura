@@ -79,7 +79,7 @@ describe("KPIs", () => {
       { pantalla: "ayuda", accion: "abandonar", n: 2 },
       { pantalla: "progreso", accion: "ver", n: 3 },
     ]);
-    expect(e.map((f) => f.pantalla)).toEqual(["inicio", "pagar-cuota", "pagar-frecuentes", "pagar-recibo", "confirmar", "exito", "ayuda"]);
+    expect(e.map((f) => f.pantalla)).toEqual(["inicio", "pagar-creditos", "pagar-servicios", "pagar-frecuentes", "confirmar", "exito", "ayuda"]);
     expect(e[4]).toEqual({ pantalla: "confirmar", vistas: 5, abandonos: 1 });
   });
   it("ms a segundos", () => {
